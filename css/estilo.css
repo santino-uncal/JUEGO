@@ -1,0 +1,112 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  background: #f4ecd8;
+  color: #3b2f22;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 10px 20px;
+  background: #7b1e1e;
+  color: #fbe9c6;
+  border-bottom: 4px solid #d4a017;
+}
+header h1 { margin: 0; font-size: 1.6rem; letter-spacing: 2px; }
+.stats { display: flex; gap: 20px; flex-wrap: wrap; flex: 1; }
+.stats b { color: #ffd76a; }
+.stats small { color: #b8e6a0; }
+
+main {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 14px;
+  padding: 14px;
+}
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; }
+}
+
+#mapa-contenedor {
+  background: #8ec5d6;
+  border: 4px solid #d4a017;
+  border-radius: 12px;
+  overflow: hidden;
+}
+#mapa { width: 100%; height: auto; display: block; }
+
+/* Mapa */
+.ruta { stroke: #b39b6e; stroke-width: 3; }
+.ruta.mar { stroke: #ffffff; stroke-dasharray: 6 6; opacity: .8; }
+.prov { cursor: pointer; }
+.prov .halo { opacity: .35; transition: opacity .2s; }
+.prov:hover .halo { opacity: .6; }
+.prov .ficha { stroke: #fff; stroke-width: 3; transition: stroke .2s; }
+.prov .num { fill: #fff; font: bold 18px sans-serif; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.prov .nombre { fill: #3b2f22; font: bold 13px Georgia, serif; text-anchor: middle; pointer-events: none;
+  paint-order: stroke; stroke: #f4ecd8; stroke-width: 4px; }
+.prov .estrella { fill: #ffd700; font-size: 16px; text-anchor: middle; pointer-events: none;
+  paint-order: stroke; stroke: #5a3d00; stroke-width: 2px; }
+.prov.seleccionada .ficha { stroke: #ffd700; stroke-width: 6; }
+.prov.objetivo .anillo { display: block; }
+.anillo { display: none; fill: none; stroke: #ffd700; stroke-width: 3; stroke-dasharray: 8 5;
+  animation: girar 4s linear infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes girar { to { transform: rotate(360deg); } }
+.prov.atacada .ficha { animation: golpe .5s ease 2; }
+@keyframes golpe { 50% { stroke: #ff3b3b; stroke-width: 8; } }
+
+/* Panel */
+#panel { display: flex; flex-direction: column; gap: 12px; }
+.caja {
+  background: #fffaf0;
+  border: 2px solid #d9c39a;
+  border-radius: 10px;
+  padding: 12px;
+}
+.caja h3 { margin: 0 0 8px; }
+.oculto { display: none !important; }
+.ayuda { color: #7a6a55; font-style: italic; margin: 6px 0; }
+.fila { display: flex; gap: 6px; flex-wrap: wrap; }
+input[type=range] { width: 100%; accent-color: #7b1e1e; }
+
+button {
+  font-family: inherit;
+  font-size: .95rem;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #7b1e1e;
+  color: #fbe9c6;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { background: #9b2a2a; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.grande { font-size: 1.15rem; padding: 12px; background: #d4a017; color: #3b2f22; font-weight: bold; }
+button.grande:hover { background: #e8b52a; }
+button.secundario { background: transparent; border: 2px solid #fbe9c6; }
+
+#info h2 { margin: 0 0 6px; display: flex; align-items: center; gap: 8px; }
+.punto { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+
+#log { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; font-size: .9rem; }
+#log li { padding: 4px 0; border-bottom: 1px dashed #e0d0b0; }
+#log li.bien { color: #22783a; }
+#log li.mal { color: #b02a2a; }
+#log li.turno { font-weight: bold; color: #7b1e1e; }
+.reglas { padding-left: 18px; font-size: .9rem; }
+
+/* Cartel de victoria / derrota */
+#cartel {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center;
+}
+.cartel-caja {
+  background: #fffaf0; border: 4px solid #d4a017; border-radius: 14px;
+  padding: 30px; text-align: center; max-width: 420px;
+}

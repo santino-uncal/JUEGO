@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Imperium – Conquistá el Mediterráneo</title>
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+  <header>
+    <h1>🏛️ Imperium</h1>
+    <div class="stats">
+      <span>📅 Turno <b id="turno">1</b></span>
+      <span>💰 Oro <b id="oro">0</b> <small id="ingreso"></small></span>
+      <span>🗺️ Provincias <b id="cant-prov">0</b>/<b id="total-prov">0</b></span>
+    </div>
+    <button id="btn-nueva" class="secundario">Nueva partida</button>
+  </header>
+
+  <main>
+    <section id="mapa-contenedor">
+      <svg id="mapa" viewBox="0 0 1000 560" aria-label="Mapa del Mediterráneo"></svg>
+    </section>
+
+    <aside id="panel">
+      <div id="info" class="caja">
+        <p class="ayuda">Tocá una provincia para ver su información.</p>
+      </div>
+
+      <div id="acciones" class="caja oculto">
+        <label>Legiones a mover: <b id="cant-valor">1</b></label>
+        <input type="range" id="cantidad" min="1" max="1" value="1">
+        <p class="ayuda">Ahora tocá una provincia vecina (resaltada) para moverte o atacar.</p>
+        <div class="fila">
+          <button id="btn-reclutar">Reclutar 1 legión (10 💰)</button>
+          <button id="btn-reclutar5">Reclutar 5 (50 💰)</button>
+        </div>
+      </div>
+
+      <button id="btn-turno" class="grande">Terminar turno ➜</button>
+
+      <div class="caja">
+        <h3>Crónica</h3>
+        <ul id="log"></ul>
+      </div>
+
+      <details class="caja">
+        <summary>¿Cómo se juega?</summary>
+        <ul class="reglas">
+          <li>Sos <b style="color:#c0392b">Roma</b>. Ganás si conquistás todas las provincias. Perdés si cae Roma.</li>
+          <li>Tocá una provincia tuya, elegí cuántas legiones mandar y tocá una vecina.</li>
+          <li>Si la vecina es tuya, las tropas se mueven. Si es enemiga, hay batalla.</li>
+          <li>Siempre queda al menos 1 legión cuidando la provincia.</li>
+          <li>Las tropas que se mueven o se reclutan descansan hasta el próximo turno.</li>
+          <li>Las capitales (★) se defienden mejor, y Roma todavía más.</li>
+          <li>Los primeros 2 turnos los enemigos solo se arman: aprovechá para organizarte.</li>
+          <li>Al terminar el turno cobrás el oro de tus provincias y los enemigos actúan.</li>
+        </ul>
+      </details>
+    </aside>
+  </main>
+
+  <div id="cartel" class="oculto">
+    <div class="cartel-caja">
+      <h2 id="cartel-titulo"></h2>
+      <p id="cartel-texto"></p>
+      <button id="cartel-btn">Jugar de nuevo</button>
+    </div>
+  </div>
+
+  <script src="data/provincias.js"></script>
+  <script src="js/juego.js"></script>
+</body>
+</html>
