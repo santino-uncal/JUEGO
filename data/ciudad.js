@@ -73,97 +73,112 @@ const EDIFICIOS = {
 //   tributo:     1     los pueblos conquistados pagan +100% de tributo
 //   descuentoTropas: 0.25   los soldados cuestan 25% menos
 //
-// El árbol se dibuja solo: cada tecnología va una época después de la más
-// avanzada que requiere. Para que las ramas no se crucen, conviene que lo que
-// requiere esté en la época anterior y mantener el orden de arriba a abajo
-// (acá están agrupadas por época y ordenadas como se ven en el árbol).
+// periodo: a qué período de Roma pertenece ("monarquia", "republica" o "imperio").
+//   En el árbol solo se ve el período en el que estás, y sus tecnologías no se
+//   pueden investigar antes de llegar a él.
+//
+// El árbol se dibuja solo: dentro de su período, cada tecnología va una columna
+// después de la más avanzada que requiere (las de períodos anteriores no cuentan).
+// Para que las ramas no se crucen, conviene que lo que requiere esté en la
+// columna anterior y mantener el orden de arriba a abajo
+// (acá están agrupadas por columna y ordenadas como se ven en el árbol).
 const TECNOLOGIAS = {
+  // ===== Monarquía =====
   // Fundación
-  agricultura: { nombre: "Agricultura",  icono: "🌱", costo: 15, desc: "Arado de hierro: cada granja da +2 de comida.",
+  agricultura: { nombre: "Agricultura",  icono: "🌱", periodo: "monarquia", costo: 15, desc: "Arado de hierro: cada granja da +2 de comida.",
                  efecto: { mejora: { granja: { comida: 2 } } } },
-  alfareria:   { nombre: "Alfarería",    icono: "🏺", costo: 15, desc: "Vasijas para guardar el grano: cada casa da +2 de lugar.",
+  alfareria:   { nombre: "Alfarería",    icono: "🏺", periodo: "monarquia", costo: 15, desc: "Vasijas para guardar el grano: cada casa da +2 de lugar.",
                  efecto: { capacidad: { casa: 2 } } },
-  albanileria: { nombre: "Albañilería",  icono: "🧱", costo: 20, desc: "Desbloquea Cantera, Templo y Muralla." },
-  escritura:   { nombre: "Escritura",    icono: "✍️", costo: 15, desc: "Desbloquea la Biblioteca." },
-  bronce:      { nombre: "Bronce",       icono: "🔱", costo: 20, desc: "Desbloquea Lanceros." },
+  albanileria: { nombre: "Albañilería",  icono: "🧱", periodo: "monarquia", costo: 20, desc: "Desbloquea Cantera, Templo y Muralla." },
+  escritura:   { nombre: "Escritura",    icono: "✍️", periodo: "monarquia", costo: 15, desc: "Desbloquea la Biblioteca." },
+  bronce:      { nombre: "Bronce",       icono: "🔱", periodo: "monarquia", costo: 20, desc: "Desbloquea Lanceros." },
 
   // Reino
-  riego:       { nombre: "Riego",        icono: "💧", costo: 45, desc: "Canales desde el Tíber: cada granja da +2 de comida más.", requiere: ["agricultura"],
+  riego:       { nombre: "Riego",        icono: "💧", periodo: "monarquia", costo: 45, desc: "Canales desde el Tíber: cada granja da +2 de comida más.", requiere: ["agricultura"],
                  efecto: { mejora: { granja: { comida: 2 } } } },
-  equitacion:  { nombre: "Equitación",   icono: "🐴", costo: 70, desc: "Desbloquea Establo y Caballería.", requiere: ["agricultura"] },
-  comercio:    { nombre: "Comercio",     icono: "⚖️", costo: 45, desc: "Desbloquea el Mercado.", requiere: ["alfareria"] },
-  construccion:{ nombre: "Construcción", icono: "🔨", costo: 40, desc: "Vigas y tejas: cada casa da +3 de lugar y cada aserradero +2 de madera.", requiere: ["albanileria"],
+  equitacion:  { nombre: "Equitación",   icono: "🐴", periodo: "monarquia", costo: 70, desc: "Desbloquea Establo y Caballería.", requiere: ["agricultura"] },
+  comercio:    { nombre: "Comercio",     icono: "⚖️", periodo: "monarquia", costo: 45, desc: "Desbloquea el Mercado.", requiere: ["alfareria"] },
+  construccion:{ nombre: "Construcción", icono: "🔨", periodo: "monarquia", costo: 40, desc: "Vigas y tejas: cada casa da +3 de lugar y cada aserradero +2 de madera.", requiere: ["albanileria"],
                  efecto: { capacidad: { casa: 3 }, mejora: { aserradero: { madera: 2 } } } },
-  matematicas: { nombre: "Matemáticas",  icono: "📐", costo: 60, desc: "Cada biblioteca da +2 de conocimiento.", requiere: ["escritura"],
+  matematicas: { nombre: "Matemáticas",  icono: "📐", periodo: "monarquia", costo: 60, desc: "Cada biblioteca da +2 de conocimiento.", requiere: ["escritura"],
                  efecto: { mejora: { biblioteca: { ciencia: 2 } } } },
-  filosofia:   { nombre: "Filosofía",    icono: "🦉", costo: 50, desc: "Los sabios debaten en la Regia: +2 de conocimiento por turno.", requiere: ["escritura"],
+  filosofia:   { nombre: "Filosofía",    icono: "🦉", periodo: "monarquia", costo: 50, desc: "Los sabios debaten en la Regia: +2 de conocimiento por turno.", requiere: ["escritura"],
                  efecto: { mejora: { regia: { ciencia: 2 } } } },
-  hierro:      { nombre: "Hierro",       icono: "⚒️", costo: 70, desc: "Desbloquea Herrería y Legionarios.", requiere: ["bronce"] },
-  arqueria:    { nombre: "Arquería",     icono: "🏹", costo: 40, desc: "Desbloquea Arqueros.", requiere: ["bronce"] },
+  hierro:      { nombre: "Hierro",       icono: "⚒️", periodo: "monarquia", costo: 70, desc: "Desbloquea Herrería y Legionarios.", requiere: ["bronce"] },
+  arqueria:    { nombre: "Arquería",     icono: "🏹", periodo: "monarquia", costo: 40, desc: "Desbloquea Arqueros.", requiere: ["bronce"] },
 
-  // República
-  vias:        { nombre: "Vías romanas", icono: "🛣️", costo: 100, desc: "Caminos de piedra: llega 1 habitante más por turno.", requiere: ["equitacion", "comercio"],
+  // Fin de la monarquía
+  democracia:  { nombre: "Democracia",   icono: "🗳️", periodo: "monarquia", costo: 120, desc: "El pueblo quiere elegir a sus gobernantes. Te permite proclamar la República.",
+                 requiere: ["comercio", "filosofia"] },
+
+  // ===== República =====
+  // Primeros cónsules
+  vias:        { nombre: "Vías romanas", icono: "🛣️", periodo: "republica", costo: 100, desc: "Caminos de piedra: llega 1 habitante más por turno.", requiere: ["equitacion", "comercio"],
                  efecto: { crecimiento: 1 } },
-  moneda:      { nombre: "Acuñación",    icono: "🏦", costo: 90,  desc: "Monedas con la cara del rey: cada mercado da +3 de oro.", requiere: ["comercio"],
+  moneda:      { nombre: "Acuñación",    icono: "🏦", periodo: "republica", costo: 90,  desc: "Monedas con la cara del rey: cada mercado da +3 de oro.", requiere: ["comercio"],
                  efecto: { mejora: { mercado: { oro: 3 } } } },
-  navegacion:  { nombre: "Navegación",   icono: "⛵", costo: 90,  desc: "Desbloquea el Puerto.", requiere: ["comercio", "construccion"] },
-  ingenieria:  { nombre: "Ingeniería",   icono: "🏗️", costo: 110, desc: "Desbloquea Acueducto, Taller y Catapultas.", requiere: ["construccion", "matematicas"] },
-  astronomia:  { nombre: "Astronomía",   icono: "🔭", costo: 100, desc: "Los sacerdotes estudian el cielo: cada templo da +3 de conocimiento.", requiere: ["matematicas", "filosofia"],
+  navegacion:  { nombre: "Navegación",   icono: "⛵", periodo: "republica", costo: 90,  desc: "Desbloquea el Puerto.", requiere: ["comercio", "construccion"] },
+  ingenieria:  { nombre: "Ingeniería",   icono: "🏗️", periodo: "republica", costo: 110, desc: "Desbloquea Acueducto, Taller y Catapultas.", requiere: ["construccion", "matematicas"] },
+  astronomia:  { nombre: "Astronomía",   icono: "🔭", periodo: "republica", costo: 100, desc: "Los sacerdotes estudian el cielo: cada templo da +3 de conocimiento.", requiere: ["matematicas", "filosofia"],
                  efecto: { mejora: { templo: { ciencia: 3 } } } },
-  derecho:     { nombre: "Derecho romano", icono: "📜", costo: 100, desc: "Impuestos ordenados: +50% de oro de los habitantes.", requiere: ["filosofia"],
+  derecho:     { nombre: "Derecho romano", icono: "📜", periodo: "republica", costo: 100, desc: "Impuestos ordenados: +50% de oro de los habitantes.", requiere: ["filosofia"],
                  efecto: { impuestos: 0.5 } },
-  disciplina:  { nombre: "Disciplina",   icono: "🦅", costo: 120, desc: "Todo tu ejército pelea +25% mejor.", requiere: ["hierro"],
+  disciplina:  { nombre: "Disciplina",   icono: "🦅", periodo: "republica", costo: 120, desc: "Todo tu ejército pelea +25% mejor.", requiere: ["hierro"],
                  efecto: { ataque: 0.25, defensa: 0.25 } },
-  tacticas:    { nombre: "Tácticas",     icono: "🎖️", costo: 110, desc: "Flanqueos y emboscadas: tus tropas atacan +15% mejor.", requiere: ["hierro", "arqueria"],
+  tacticas:    { nombre: "Tácticas",     icono: "🎖️", periodo: "republica", costo: 110, desc: "Flanqueos y emboscadas: tus tropas atacan +15% mejor.", requiere: ["hierro", "arqueria"],
                  efecto: { ataque: 0.15 } },
 
   // Expansión
-  administracion:{ nombre: "Administración", icono: "📋", costo: 150, desc: "Gobernadores en cada pueblo: los conquistados pagan el doble de tributo.", requiere: ["vias", "moneda"],
+  administracion:{ nombre: "Administración", icono: "📋", periodo: "republica", costo: 150, desc: "Gobernadores en cada pueblo: los conquistados pagan el doble de tributo.", requiere: ["vias", "moneda"],
                  efecto: { tributo: 1 } },
-  rutas:       { nombre: "Rutas marítimas", icono: "🚢", costo: 140, desc: "Comercio por mar: cada puerto da +3 de oro.", requiere: ["navegacion"],
+  rutas:       { nombre: "Rutas marítimas", icono: "🚢", periodo: "republica", costo: 140, desc: "Comercio por mar: cada puerto da +3 de oro.", requiere: ["navegacion"],
                  efecto: { mejora: { puerto: { oro: 3 } } } },
-  fortificacion:{ nombre: "Fortificaciones", icono: "🏰", costo: 120, desc: "La muralla protege el doble: +100% en vez de +50%.", requiere: ["ingenieria"],
+  fortificacion:{ nombre: "Fortificaciones", icono: "🏰", periodo: "republica", costo: 120, desc: "La muralla protege el doble: +100% en vez de +50%.", requiere: ["ingenieria"],
                  efecto: { muralla: 0.5 } },
-  arquitectura:{ nombre: "Arquitectura", icono: "📏", costo: 140, desc: "Arcos y bóvedas: desbloquea el Anfiteatro y cada cantera da +2 de piedra.", requiere: ["ingenieria"],
+  arquitectura:{ nombre: "Arquitectura", icono: "📏", periodo: "republica", costo: 140, desc: "Arcos y bóvedas: desbloquea el Anfiteatro y cada cantera da +2 de piedra.", requiere: ["ingenieria"],
                  efecto: { mejora: { cantera: { piedra: 2 } } } },
-  calendario:  { nombre: "Calendario",   icono: "🗓️", costo: 130, desc: "Saber cuándo sembrar: cada granja +1 de comida y la Regia +2 de conocimiento.", requiere: ["astronomia"],
+  calendario:  { nombre: "Calendario",   icono: "🗓️", periodo: "republica", costo: 130, desc: "Saber cuándo sembrar: cada granja +1 de comida y la Regia +2 de conocimiento.", requiere: ["astronomia"],
                  efecto: { mejora: { granja: { comida: 1 }, regia: { ciencia: 2 } } } },
-  senado:      { nombre: "Senado",       icono: "🗳️", costo: 150, desc: "Los ancianos aconsejan al rey: desbloquea el Foro.", requiere: ["derecho"] },
-  legion:      { nombre: "Legión profesional", icono: "💪", costo: 160, desc: "Soldados con sueldo fijo: entrenar tropas cuesta 25% menos.", requiere: ["disciplina"],
+  senado:      { nombre: "Senado",       icono: "👴", periodo: "republica", costo: 150, desc: "Los ancianos aconsejan al rey: desbloquea el Foro.", requiere: ["derecho"] },
+  legion:      { nombre: "Legión profesional", icono: "💪", periodo: "republica", costo: 160, desc: "Soldados con sueldo fijo: entrenar tropas cuesta 25% menos.", requiere: ["disciplina"],
                  efecto: { descuentoTropas: 0.25 } },
-  pretoriana:  { nombre: "Guardia pretoriana", icono: "⚜️", costo: 170, desc: "Desbloquea Pretorianos, la élite del ejército.", requiere: ["disciplina", "tacticas"] },
+  pretoriana:  { nombre: "Guardia pretoriana", icono: "⚜️", periodo: "republica", costo: 170, desc: "Desbloquea Pretorianos, la élite del ejército.", requiere: ["disciplina", "tacticas"] },
 
-  // Imperio
-  pax:         { nombre: "Pax Romana",   icono: "🕊️", costo: 250, desc: "Paz en los caminos: llegan 2 habitantes más por turno y los tributos suben +50%.", requiere: ["administracion", "rutas"],
+  // Fin de la república
+  principado:  { nombre: "Principado",   icono: "🌿", periodo: "republica", costo: 220, desc: "Un general victorioso junta todo el poder en sus manos. Te permite proclamar el Imperio.",
+                 requiere: ["senado", "legion"] },
+
+  // ===== Imperio =====
+  pax:         { nombre: "Pax Romana",   icono: "🕊️", periodo: "imperio", costo: 250, desc: "Paz en los caminos: llegan 2 habitantes más por turno y los tributos suben +50%.", requiere: ["administracion", "rutas"],
                  efecto: { crecimiento: 2, tributo: 0.5 } },
-  urbanismo:   { nombre: "Urbanismo",    icono: "🏘️", costo: 220, desc: "Ciudades bien planeadas: cada casa da +4 de lugar y cada acueducto +8.", requiere: ["fortificacion", "arquitectura"],
+  urbanismo:   { nombre: "Urbanismo",    icono: "🏘️", periodo: "imperio", costo: 220, desc: "Ciudades bien planeadas: cada casa da +4 de lugar y cada acueducto +8.", requiere: ["fortificacion", "arquitectura"],
                  efecto: { capacidad: { casa: 4, acueducto: 8 } } },
-  academia:    { nombre: "Academia",     icono: "🎓", costo: 230, desc: "Escuelas de sabios: cada biblioteca da +3 de conocimiento y el Foro +3.", requiere: ["calendario", "senado"],
+  academia:    { nombre: "Academia",     icono: "🎓", periodo: "imperio", costo: 230, desc: "Escuelas de sabios: cada biblioteca da +3 de conocimiento y el Foro +3.", requiere: ["calendario", "senado"],
                  efecto: { mejora: { biblioteca: { ciencia: 3 }, foro: { ciencia: 3 } } } },
-  imperial:    { nombre: "Ejército imperial", icono: "🚩", costo: 260, desc: "Las legiones más temidas del mundo: todo tu ejército pelea +25% mejor.", requiere: ["legion", "pretoriana"],
+  imperial:    { nombre: "Ejército imperial", icono: "🚩", periodo: "imperio", costo: 260, desc: "Las legiones más temidas del mundo: todo tu ejército pelea +25% mejor.", requiere: ["legion", "pretoriana"],
                  efecto: { ataque: 0.25, defensa: 0.25 } },
 };
 
-// Nombres de las épocas del árbol de tecnologías (una por columna, de izquierda a derecha).
-const ERAS_TEC = ["Fundación", "Los reyes", "Primeros cónsules", "Expansión", "Los césares"];
-
-// Los tres períodos de Roma. Cada uno abarca algunas columnas del árbol:
-// las tecnologías de un período no se pueden investigar hasta llegar a él.
-// Para pasar al siguiente hay que cumplir los requisitos y pagar el costo:
-//   tecnologias: cuántas tecnologías del período actual tenés que tener
-//   habitantes:  cuánta gente tiene que vivir en Roma
+// Los tres períodos de Roma. En el árbol solo se ve el período en el que estás.
+// eras: nombre de cada columna del árbol en ese período.
+// requisitos para pasar a este período desde el anterior:
+//   tecnologia:  la tecnología que hay que investigar (la última del período anterior)
 //   conquistas:  cuántos pueblos vecinos tenés que haber conquistado
-// efecto: bonus que da el período mientras estés en él o después (igual que en las tecnologías).
+//   costo:       lo que se paga al proclamarlo
+// efecto: bonus que da el período desde que llegás (igual que en las tecnologías).
 const PERIODOS = [
-  { id: "monarquia", nombre: "Monarquía", icono: "👑", titulo: "Rey de Roma", columnas: [0, 1],
+  { id: "monarquia", nombre: "Monarquía", icono: "👑", titulo: "Rey de Roma",
+    eras: ["Fundación", "Los reyes", "Fin de la monarquía"],
     desc: "Roma es gobernada por un rey." },
-  { id: "republica", nombre: "República", icono: "🏛️", titulo: "Cónsul de Roma", columnas: [2, 3],
+  { id: "republica", nombre: "República", icono: "🏛️", titulo: "Cónsul de Roma",
+    eras: ["Primeros cónsules", "Expansión", "Fin de la república"],
     desc: "El pueblo echa al último rey y Roma la gobiernan cónsules elegidos y el Senado.",
-    requisitos: { tecnologias: 6, habitantes: 15, costo: { oro: 80 } },
+    requisitos: { tecnologia: "democracia" },
     efecto: { impuestos: 0.25 }, bonus: "+25% de oro de los impuestos." },
-  { id: "imperio", nombre: "Imperio", icono: "🦅", titulo: "Emperador de Roma", columnas: [4],
+  { id: "imperio", nombre: "Imperio", icono: "🦅", titulo: "Emperador de Roma",
+    eras: ["Los césares"],
     desc: "Un general victorioso se corona emperador. Roma domina el Mediterráneo.",
-    requisitos: { tecnologias: 5, conquistas: 2, costo: { oro: 200 } },
+    requisitos: { tecnologia: "principado", conquistas: 2 },
     efecto: { ataque: 0.1, defensa: 0.1, tributo: 0.5 }, bonus: "Tu ejército pelea +10% mejor y los tributos suben +50%." },
 ];
 

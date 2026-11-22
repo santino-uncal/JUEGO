@@ -289,10 +289,10 @@ function investigar(id) {
   return true;
 }
 
-// Columna (época) de cada tecnología en el árbol: 0 si no requiere nada,
-// si no, una más que la más avanzada de las que requiere.
+// Columna de cada tecnología dentro del árbol de su período: 0 si no requiere
+// nada de su mismo período; si no, una más que la más avanzada de esas.
 function columnaTec(id) {
-  const req = TECNOLOGIAS[id].requiere || [];
+  const req = (TECNOLOGIAS[id].requiere || []).filter((r) => TECNOLOGIAS[r].periodo === TECNOLOGIAS[id].periodo);
   return req.length ? 1 + Math.max(...req.map(columnaTec)) : 0;
 }
 
@@ -332,11 +332,16 @@ function avanzarMeta() {
 const periodoActual = () => estado.periodo || 0;
 const articulo = (i) => (PERIODOS[i].nombre.endsWith("a") ? "la" : "el");   // "la República", "el Imperio"
 
-// A qué período pertenece una tecnología (según su columna en el árbol)
+// A qué período pertenece una tecnología (0 Monarquía, 1 República, 2 Imperio)
 function periodoTec(id) {
-  const c = columnaTec(id);
-  const i = PERIODOS.findIndex((p) => p.columnas.includes(c));
-  return i < 0 ? PERIODOS.length - 1 : i;
+  const i = PERIODOS.findIndex((p) => p.id === TECNOLOGIAS[id].periodo);
+  return i < 0 ? 0 : i;
+}
+
+// La tecnología que te deja pasar al período siguiente (por ejemplo, Democracia)
+function tecCierre(periodo) {
+  const sig = PERIODOS[periodo + 1];
+  return sig && sig.requisitos ? sig.requisitos.tecnologia : null;
 }
 
 // Lista de requisitos para pasar al próximo período: [{ texto, ok }]
@@ -345,6 +350,9 @@ function requisitosPeriodo() {
   if (!sig) return [];
   const r = sig.requisitos || {};
   const lista = [];
+  if (r.tecnologia) {
+    lista.push({ texto: `Investigar ${TECNOLOGIAS[r.tecnologia].icono} ${TECNOLOGIAS[r.tecnologia].nombre}`, ok: tiene(r.tecnologia) });
+  }
   if (r.tecnologias) {
     const n = Object.keys(TECNOLOGIAS).filter((id) => tiene(id) && periodoTec(id) === periodoActual()).length;
     lista.push({ texto: `${r.tecnologias} tecnologías de ${articulo(periodoActual())} ${PERIODOS[periodoActual()].nombre} (tenés ${n})`, ok: n >= r.tecnologias });

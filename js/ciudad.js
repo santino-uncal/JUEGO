@@ -281,18 +281,26 @@ function infoCasilla() {
 
 // ---------- Árbol de tecnologías ----------
 
-const ARBOL = { anchoCol: 200, anchoNodo: 168, altoNodo: 64, altoFila: 78, arriba: 64 };
+const ARBOL = { anchoCol: 200, anchoNodo: 168, altoNodo: 64, altoFila: 78, arriba: 34 };
 
-// Todas las flechas del árbol: [de, a]
-function flechasArbol() {
+// Período que se está mirando en el árbol (null = el período actual)
+let periodoVisto = null;
+const periodoEnArbol = () => (periodoVisto === null ? periodoActual() : Math.min(periodoVisto, periodoActual()));
+
+// Tecnologías de un período
+const tecsDe = (per) => Object.keys(TECNOLOGIAS).filter((id) => periodoTec(id) === per);
+
+// Flechas dentro de un período: [de, a]
+function flechasArbol(per) {
   const f = [];
-  for (const id in TECNOLOGIAS) for (const r of TECNOLOGIAS[id].requiere || []) f.push([r, id]);
+  for (const id of tecsDe(per)) {
+    for (const r of TECNOLOGIAS[id].requiere || []) if (periodoTec(r) === per) f.push([r, id]);
+  }
   return f;
 }
 
 // Cuántas flechas se cruzan con este orden (fila de cada tecnología)
-function crucesArbol(fila) {
-  const f = flechasArbol();
+function crucesArbol(fila, f) {
   let n = 0;
   for (let i = 0; i < f.length; i++) {
     for (let j = i + 1; j < f.length; j++) {
@@ -304,21 +312,25 @@ function crucesArbol(fila) {
   return n;
 }
 
-let disposicionGuardada = null;
+const disposicionesGuardadas = {};
 
-// Calcula dónde va cada tecnología: columna según la época y fila elegida
-// para que las ramas no se crucen. Prueba varias veces acomodando cada
-// tecnología a la altura promedio de sus vecinas y se queda con el mejor orden.
-function disposicionArbol() {
-  if (disposicionGuardada) return disposicionGuardada;
+// Calcula dónde va cada tecnología de un período: columna según lo que requiere
+// y fila elegida para que las ramas no se crucen. Prueba varias veces acomodando
+// cada tecnología a la altura promedio de sus vecinas y se queda con el mejor orden.
+function disposicionArbol(per) {
+  if (disposicionesGuardadas[per]) return disposicionesGuardadas[per];
+  const flechas = flechasArbol(per);
   const columnas = [];
-  for (const id in TECNOLOGIAS) {
+  for (const id of tecsDe(per)) {
     const c = columnaTec(id);
     (columnas[c] = columnas[c] || []).push(id);
   }
   const maxFilas = Math.max(...columnas.map((c) => c.length));
-  const hijos = {};
-  for (const [r, id] of flechasArbol()) (hijos[r] = hijos[r] || []).push(id);
+  const padres = {}, hijos = {};
+  for (const [r, id] of flechas) {
+    (padres[id] = padres[id] || []).push(r);
+    (hijos[r] = hijos[r] || []).push(id);
+  }
 
   const fila = {};
   const ubicar = (ids) => {
@@ -329,26 +341,26 @@ function disposicionArbol() {
     vecinas && vecinas.length ? vecinas.reduce((s, x) => s + fila[x], 0) / vecinas.length : fila[id];
   const ordenar = (ids, vecinasDe) => {
     const valor = {};
-    ids.forEach((id) => (valor[id] = promedio(id, vecinasDe(id))));
+    ids.forEach((id) => (valor[id] = promedio(id, vecinasDe[id])));
     ids.sort((a, b) => valor[a] - valor[b]);   // si empatan, queda el orden de los datos
     ubicar(ids);
   };
 
   columnas.forEach(ubicar);
-  let mejor = null, menosCruces = Infinity;
+  let mejor = { ...fila }, menosCruces = crucesArbol(fila, flechas);
   for (let vuelta = 0; vuelta < 8 && menosCruces > 0; vuelta++) {
-    for (let c = 1; c < columnas.length; c++) ordenar(columnas[c], (id) => TECNOLOGIAS[id].requiere);
-    const n = crucesArbol(fila);
+    for (let c = 1; c < columnas.length; c++) ordenar(columnas[c], padres);
+    const n = crucesArbol(fila, flechas);
     if (n < menosCruces) { menosCruces = n; mejor = { ...fila }; }
-    for (let c = columnas.length - 2; c >= 0; c--) ordenar(columnas[c], (id) => hijos[id]);
+    for (let c = columnas.length - 2; c >= 0; c--) ordenar(columnas[c], hijos);
   }
 
   const pos = {};
   for (const id in mejor) {
     pos[id] = { x: columnaTec(id) * ARBOL.anchoCol + 16, y: ARBOL.arriba + mejor[id] * ARBOL.altoFila };
   }
-  disposicionGuardada = { pos, columnas: columnas.length, alto: ARBOL.arriba + maxFilas * ARBOL.altoFila, cruces: menosCruces };
-  return disposicionGuardada;
+  disposicionesGuardadas[per] = { pos, flechas, columnas: columnas.length, alto: ARBOL.arriba + maxFilas * ARBOL.altoFila, cruces: menosCruces };
+  return disposicionesGuardadas[per];
 }
 
 // Qué edificios y tropas destraba una tecnología
@@ -367,58 +379,65 @@ function estadoTec(id) {
 }
 
 function dibujarArbol() {
-  const { pos, columnas, alto } = disposicionArbol();
+  const per = periodoEnArbol();
+  const { pos, flechas, columnas, alto } = disposicionArbol(per);
   const camino = estado.meta ? faltanPara(estado.meta) : [];
   const ancho = columnas * ARBOL.anchoCol;
+  const cierre = tecCierre(per);
+  if (tecElegida && periodoTec(tecElegida) !== per) tecElegida = null;
 
-  // Franjas de los períodos (Monarquía, República, Imperio) y nombre de cada época
-  let eras = "";
-  PERIODOS.forEach((per, i) => {
-    const desde = Math.min(...per.columnas), hasta = Math.max(...per.columnas);
+  // Botones de los períodos: se pueden mirar los anteriores; los que vienen están cerrados
+  let botones = "";
+  PERIODOS.forEach((p, i) => {
     const futuro = i > periodoActual();
-    const clase = futuro ? "futuro" : i === periodoActual() ? "actual" : "pasado";
-    eras += `<div class="franja-periodo ${clase}" style="left:${desde * ARBOL.anchoCol}px;width:${(hasta - desde + 1) * ARBOL.anchoCol}px">
-      <div class="nombre-periodo">${futuro ? "🔒" : per.icono} ${per.nombre}${i === periodoActual() ? " <small>(ahora)</small>" : ""}</div></div>`;
+    botones += `<button data-accion="ver-periodo" data-periodo="${i}" class="${i === per ? "activa" : ""}" ${futuro ? "disabled" : ""}
+      title="${futuro ? "Todavía no llegaste a este período" : ""}">${futuro ? "🔒" : p.icono} ${p.nombre}${i === periodoActual() ? " <small>(ahora)</small>" : ""}</button>`;
   });
+
+  let eras = "";
   for (let c = 0; c < columnas; c++) {
-    eras += `<div class="era" style="left:${c * ARBOL.anchoCol}px;width:${ARBOL.anchoCol}px">${ERAS_TEC[c] || "Época " + (c + 1)}</div>`;
+    eras += `<div class="era" style="left:${c * ARBOL.anchoCol}px;width:${ARBOL.anchoCol}px">${PERIODOS[per].eras[c] || ""}</div>`;
   }
 
   let lineas = "";
-  for (const id in TECNOLOGIAS) {
-    for (const r of TECNOLOGIAS[id].requiere || []) {
-      const a = pos[r], b = pos[id];
-      const x1 = a.x + ARBOL.anchoNodo, y1 = a.y + ARBOL.altoNodo / 2;
-      const x2 = b.x, y2 = b.y + ARBOL.altoNodo / 2;
-      const medio = (x1 + x2) / 2;
-      const clase = tiene(id) ? "hecha" : camino.includes(id) ? "camino" : tiene(r) ? "abierta" : "";
-      lineas += `<path class="${clase}" d="M${x1},${y1} C${medio},${y1} ${medio},${y2} ${x2},${y2}" />`;
-    }
+  for (const [r, id] of flechas) {
+    const a = pos[r], b = pos[id];
+    const x1 = a.x + ARBOL.anchoNodo, y1 = a.y + ARBOL.altoNodo / 2;
+    const x2 = b.x, y2 = b.y + ARBOL.altoNodo / 2;
+    const medio = (x1 + x2) / 2;
+    const clase = tiene(id) ? "hecha" : camino.includes(id) ? "camino" : tiene(r) ? "abierta" : "";
+    lineas += `<path class="${clase}" d="M${x1},${y1} C${medio},${y1} ${medio},${y2} ${x2},${y2}" />`;
   }
 
   let nodos = "";
-  for (const id in TECNOLOGIAS) {
+  for (const id of tecsDe(per)) {
     const t = TECNOLOGIAS[id];
     const est = estadoTec(id);
     const enCamino = camino.includes(id);
-    const clases = ["nodo-tec", est, enCamino ? "en-camino" : "", id === estado.meta ? "meta" : "", id === tecElegida ? "elegida" : ""].join(" ");
+    const clases = ["nodo-tec", est, enCamino ? "en-camino" : "", id === estado.meta ? "meta" : "",
+      id === tecElegida ? "elegida" : "", id === cierre ? "cierre" : ""].join(" ");
     const iconos = destraba(id).map((d) => d.icono).join("");
+    const extra = id === cierre ? `<span class="nodo-destraba">➡ ${PERIODOS[per + 1].icono} ${PERIODOS[per + 1].nombre}</span>` : iconos ? `<span class="nodo-destraba">${iconos}</span>` : "";
     nodos += `
       <div class="${clases}" data-tech="${id}" style="left:${pos[id].x}px;top:${pos[id].y}px;width:${ARBOL.anchoNodo}px;height:${ARBOL.altoNodo}px">
-        <div class="nodo-icono">${est === "hecha" ? "✅" : est === "futuro" ? "🔒" : t.icono}</div>
+        <div class="nodo-icono">${est === "hecha" ? "✅" : t.icono}</div>
         <div class="nodo-texto">
           <b>${t.nombre}</b>
           <small>${est === "hecha" ? "Investigada" : t.costo + " 💡"}${id === estado.meta ? " · 🎯 meta" : ""}</small>
-          ${iconos ? `<span class="nodo-destraba">${iconos}</span>` : ""}
+          ${extra}
         </div>
       </div>`;
   }
 
   $("arbol").innerHTML = `
-    <div class="arbol-lienzo" style="width:${ancho}px;height:${alto}px">
-      ${eras}
-      <svg width="${ancho}" height="${alto}">${lineas}</svg>
-      ${nodos}
+    <nav class="periodos">${botones}</nav>
+    ${per < periodoActual() ? `<p class="ayuda centrado">Estás mirando un período que ya pasó.</p>` : ""}
+    <div class="arbol-scroll">
+      <div class="arbol-lienzo" style="width:${ancho}px;height:${alto}px">
+        ${eras}
+        <svg width="${ancho}" height="${alto}">${lineas}</svg>
+        ${nodos}
+      </div>
     </div>`;
   $("arbol-info").innerHTML = infoTec();
 }
@@ -434,7 +453,7 @@ function infoTec() {
   const est = estadoTec(tecElegida);
   const cosas = destraba(tecElegida);
   const per = PERIODOS[periodoTec(tecElegida)];
-  let html = `<h3>${t.icono} ${t.nombre} <small>· ${per.icono} ${per.nombre}, ${ERAS_TEC[columnaTec(tecElegida)] || ""}</small></h3><p>${t.desc}</p>`;
+  let html = `<h3>${t.icono} ${t.nombre} <small>· ${per.icono} ${per.nombre}, ${per.eras[columnaTec(tecElegida)] || ""}</small></h3><p>${t.desc}</p>`;
   if (cosas.length) html += `<p>Destraba: ${cosas.map((c) => `${c.icono} ${c.nombre}`).join(", ")}</p>`;
   if (t.requiere) html += `<p><small>Requiere: ${t.requiere.map((r) => `${tiene(r) ? "✅" : "❌"} ${TECNOLOGIAS[r].nombre}`).join(" · ")}</small></p>`;
   if (est === "hecha") return html + `<p class="bien">✅ Ya la tenés.</p>` + ciencia;
@@ -609,9 +628,12 @@ document.addEventListener("click", (ev) => {
       demoler(loteElegido); break;
     case "investigar": investigar(d.tech); break;
     case "meta": elegirMeta(d.tech || null); break;
-    case "ver-arbol": cambiarVista("arbol"); return;
+    case "ver-arbol": periodoVisto = null; cambiarVista("arbol"); return;
+    case "ver-periodo": periodoVisto = +d.periodo === periodoActual() ? null : +d.periodo; tecElegida = null; dibujarArbol(); return;
     case "avanzar-periodo": {
       if (!avanzarPeriodo()) break;
+      periodoVisto = null;
+      tecElegida = null;
       const per = PERIODOS[periodoActual()];
       trasAccion();
       abrirModal(`<h2>${per.icono} ¡Comienza ${articulo(periodoActual())} ${per.nombre}!</h2><p>${per.desc}</p>
