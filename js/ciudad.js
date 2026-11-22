@@ -154,7 +154,7 @@ function panelTecnologias() {
 
 function panelEjercito() {
   let html = `<p>🛡️ Defensa de Roma: <b>${Math.round(poderDefensa())}</b>
-    <small>(soldados + habitantes${cuenta("muralla") ? ` + muralla +${bonusMuralla() * 100}%` : ""}${tiene("disciplina") ? " + disciplina" : ""})</small></p>
+    <small>(soldados + habitantes${cuenta("muralla") ? ` + muralla +${bonusMuralla() * 100}%` : ""}${efecto("defensa") ? ` + tecnologías +${Math.round(efecto("defensa") * 100)}%` : ""})</small></p>
     <p>👥 Habitantes libres para alistar: <b>${libres()}</b></p><div class="lista">`;
   for (const tipo in UNIDADES) {
     const u = UNIDADES[tipo];
@@ -167,7 +167,7 @@ function panelEjercito() {
         <div class="item-texto">
           <b>${u.nombre}</b> <span class="cantidad">× ${estado.ejercito[tipo]}</span><br>
           <small>⚔️ Ataque ${u.ataque} · 🛡️ Defensa ${u.defensa}${u.desc ? " · " + u.desc : ""}</small><br>
-          <small>Cuesta: ${textoCosto(u.costo)}</small>
+          <small>Cuesta: ${textoCosto(costoUnidad(tipo))}</small>
           ${p1.ok ? "" : `<br><small class="motivo">${p1.motivo}</small>`}
         </div>
         <div class="botones">
@@ -277,35 +277,74 @@ function infoCasilla() {
 
 // ---------- Árbol de tecnologías ----------
 
-const ARBOL = { anchoCol: 200, anchoNodo: 168, altoNodo: 70, altoFila: 88, arriba: 34 };
+const ARBOL = { anchoCol: 200, anchoNodo: 168, altoNodo: 64, altoFila: 78, arriba: 34 };
 
-// Calcula dónde va cada tecnología: columna según la época y fila
-// ordenada para que las flechas se crucen lo menos posible.
+// Todas las flechas del árbol: [de, a]
+function flechasArbol() {
+  const f = [];
+  for (const id in TECNOLOGIAS) for (const r of TECNOLOGIAS[id].requiere || []) f.push([r, id]);
+  return f;
+}
+
+// Cuántas flechas se cruzan con este orden (fila de cada tecnología)
+function crucesArbol(fila) {
+  const f = flechasArbol();
+  let n = 0;
+  for (let i = 0; i < f.length; i++) {
+    for (let j = i + 1; j < f.length; j++) {
+      const [a, b] = f[i], [c, d] = f[j];
+      if (columnaTec(a) !== columnaTec(c) || columnaTec(b) !== columnaTec(d)) continue;
+      if ((fila[a] - fila[c]) * (fila[b] - fila[d]) < 0) n++;
+    }
+  }
+  return n;
+}
+
+let disposicionGuardada = null;
+
+// Calcula dónde va cada tecnología: columna según la época y fila elegida
+// para que las ramas no se crucen. Prueba varias veces acomodando cada
+// tecnología a la altura promedio de sus vecinas y se queda con el mejor orden.
 function disposicionArbol() {
+  if (disposicionGuardada) return disposicionGuardada;
   const columnas = [];
   for (const id in TECNOLOGIAS) {
     const c = columnaTec(id);
     (columnas[c] = columnas[c] || []).push(id);
   }
   const maxFilas = Math.max(...columnas.map((c) => c.length));
+  const hijos = {};
+  for (const [r, id] of flechasArbol()) (hijos[r] = hijos[r] || []).push(id);
+
   const fila = {};
-  columnas.forEach((ids, c) => {
-    if (c > 0) {
-      // Cada una cerca de la altura promedio de las que requiere
-      const prom = (id) => {
-        const r = TECNOLOGIAS[id].requiere;
-        return r.reduce((s, x) => s + fila[x], 0) / r.length;
-      };
-      ids.sort((a, b) => prom(a) - prom(b));
-    }
+  const ubicar = (ids) => {
     const corrida = (maxFilas - ids.length) / 2;
     ids.forEach((id, i) => (fila[id] = corrida + i));
-  });
-  const pos = {};
-  for (const id in fila) {
-    pos[id] = { x: columnaTec(id) * ARBOL.anchoCol + 16, y: ARBOL.arriba + fila[id] * ARBOL.altoFila };
+  };
+  const promedio = (id, vecinas) =>
+    vecinas && vecinas.length ? vecinas.reduce((s, x) => s + fila[x], 0) / vecinas.length : fila[id];
+  const ordenar = (ids, vecinasDe) => {
+    const valor = {};
+    ids.forEach((id) => (valor[id] = promedio(id, vecinasDe(id))));
+    ids.sort((a, b) => valor[a] - valor[b]);   // si empatan, queda el orden de los datos
+    ubicar(ids);
+  };
+
+  columnas.forEach(ubicar);
+  let mejor = null, menosCruces = Infinity;
+  for (let vuelta = 0; vuelta < 8 && menosCruces > 0; vuelta++) {
+    for (let c = 1; c < columnas.length; c++) ordenar(columnas[c], (id) => TECNOLOGIAS[id].requiere);
+    const n = crucesArbol(fila);
+    if (n < menosCruces) { menosCruces = n; mejor = { ...fila }; }
+    for (let c = columnas.length - 2; c >= 0; c--) ordenar(columnas[c], (id) => hijos[id]);
   }
-  return { pos, columnas: columnas.length, alto: ARBOL.arriba + maxFilas * ARBOL.altoFila };
+
+  const pos = {};
+  for (const id in mejor) {
+    pos[id] = { x: columnaTec(id) * ARBOL.anchoCol + 16, y: ARBOL.arriba + mejor[id] * ARBOL.altoFila };
+  }
+  disposicionGuardada = { pos, columnas: columnas.length, alto: ARBOL.arriba + maxFilas * ARBOL.altoFila, cruces: menosCruces };
+  return disposicionGuardada;
 }
 
 // Qué edificios y tropas destraba una tecnología

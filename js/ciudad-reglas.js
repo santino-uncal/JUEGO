@@ -114,6 +114,46 @@ function anotar(texto, clase = "") {
 }
 
 // Edificios terminados de un tipo (o en obra, si incluirObras)
+// ---------- Efectos de las tecnologías ----------
+
+// Suma un efecto simple (impuestos, ataque, crecimiento...) de todas las tecnologías que tenés
+function efecto(clave) {
+  let total = 0;
+  for (const id in estado.techs) {
+    const e = TECNOLOGIAS[id] && TECNOLOGIAS[id].efecto;
+    if (e && e[clave]) total += e[clave];
+  }
+  return total;
+}
+
+// Producción extra de un edificio por tecnologías
+function mejoraEdificio(tipo, recurso) {
+  let total = 0;
+  for (const id in estado.techs) {
+    const m = TECNOLOGIAS[id] && TECNOLOGIAS[id].efecto && TECNOLOGIAS[id].efecto.mejora;
+    if (m && m[tipo] && m[tipo][recurso]) total += m[tipo][recurso];
+  }
+  return total;
+}
+
+// Lugar extra para vivir que da un edificio por tecnologías
+function capacidadExtra(tipo) {
+  let total = 0;
+  for (const id in estado.techs) {
+    const c = TECNOLOGIAS[id] && TECNOLOGIAS[id].efecto && TECNOLOGIAS[id].efecto.capacidad;
+    if (c && c[tipo]) total += c[tipo];
+  }
+  return total;
+}
+
+// Lo que cuesta un soldado (con descuentos)
+function costoUnidad(tipo) {
+  const desc = Math.min(0.75, efecto("descuentoTropas"));
+  const c = {};
+  for (const r in UNIDADES[tipo].costo) c[r] = Math.round(UNIDADES[tipo].costo[r] * (1 - desc));
+  return c;
+}
+
 function cuenta(tipo, incluirObras = false) {
   return estado.lotes.filter((l) => l && l.tipo === tipo && (incluirObras || l.falta === 0)).length;
 }
@@ -126,7 +166,7 @@ function soldados() {
 
 function capacidad() {
   let c = 0;
-  for (const l of estado.lotes) if (l && l.falta === 0) c += EDIFICIOS[l.tipo].capacidad || 0;
+  for (const l of estado.lotes) if (l && l.falta === 0) c += (EDIFICIOS[l.tipo].capacidad || 0) + capacidadExtra(l.tipo);
   return c;
 }
 
@@ -172,22 +212,19 @@ function balance() {
   for (const l of estado.lotes) {
     if (!l || l.falta > 0) continue;
     const ed = EDIFICIOS[l.tipo];
-    if (!ed.produce) continue;
     const factor = ed.trabajadores ? efi : 1;
-    for (const r in ed.produce) {
-      let valor = ed.produce[r];
-      if (l.tipo === "granja" && tiene("agricultura")) valor += 2;
-      if (l.tipo === "biblioteca" && tiene("matematicas")) valor += 2;
+    for (const r in b) {
+      const valor = ((ed.produce && ed.produce[r]) || 0) + mejoraEdificio(l.tipo, r);
       b[r] += valor * factor;
     }
   }
   // Impuestos: cada 3 habitantes pagan 1 de oro
-  b.oro += Math.floor(estado.habitantes / 3) * (tiene("derecho") ? 1.5 : 1);
+  b.oro += Math.floor(estado.habitantes / 3) * (1 + efecto("impuestos"));
   // Tributos de pueblos conquistados
   for (const id in estado.enemigos) {
     if (estado.enemigos[id].vivo) continue;
     const t = ENEMIGOS[id].tributo;
-    for (const r in t) b[r] += t[r];
+    for (const r in t) b[r] += t[r] * (1 + efecto("tributo"));
   }
   // Lo que come la gente: medio por habitante, uno por soldado
   b.comida -= Math.ceil(estado.habitantes / 2) + soldados();
@@ -289,38 +326,39 @@ function puedeEntrenar(tipo, n = 1) {
   if (u.requiere && !tiene(u.requiere)) return { ok: false, motivo: `Necesitás ${TECNOLOGIAS[u.requiere].nombre}.` };
   if (cuenta(u.edificio) === 0) return { ok: false, motivo: `Necesitás un ${EDIFICIOS[u.edificio].nombre} terminado.` };
   if (libres() < n) return { ok: false, motivo: "No hay habitantes libres para alistar." };
-  if (!alcanza(multiplicar(u.costo, n))) return { ok: false, motivo: "No te alcanzan los recursos." };
+  if (!alcanza(multiplicar(costoUnidad(tipo), n))) return { ok: false, motivo: "No te alcanzan los recursos." };
   return { ok: true };
 }
 
 function entrenar(tipo, n = 1) {
   if (!puedeEntrenar(tipo, n).ok) return false;
-  pagar(multiplicar(UNIDADES[tipo].costo, n));
+  pagar(multiplicar(costoUnidad(tipo), n));
   estado.habitantes -= n;            // el habitante pasa a ser soldado
   estado.ejercito[tipo] += n;
   anotar(`Entrenás ${n} ${UNIDADES[tipo].nombre.toLowerCase()}.`);
   return true;
 }
 
-const bonusEjercito = () => (tiene("disciplina") ? 1.25 : 1);
+const bonusAtaque = () => 1 + efecto("ataque");
+const bonusDefensa = () => 1 + efecto("defensa");
 
 function bonusMuralla() {
   if (cuenta("muralla") === 0) return 0;
-  return tiene("fortificacion") ? 1 : 0.5;
+  return 0.5 + efecto("muralla");
 }
 
 // Fuerza para defender Roma: soldados + los habitantes que agarran palos
 function poderDefensa() {
   let p = 0;
   for (const u in estado.ejercito) p += estado.ejercito[u] * UNIDADES[u].defensa;
-  p = p * bonusEjercito() + 2 + estado.habitantes * 0.3;
+  p = p * bonusDefensa() + 2 + estado.habitantes * 0.3;
   return p * (1 + bonusMuralla());
 }
 
 function poderAtaque(envio) {
   let p = 0;
   for (const u in envio) p += (envio[u] || 0) * UNIDADES[u].ataque;
-  return p * bonusEjercito();
+  return p * bonusAtaque();
 }
 
 // Defensa de una ciudad enemiga (si su ejército salió a marchar, queda menos gente)
@@ -466,7 +504,7 @@ function terminarTurno() {
   } else if (b.comida >= 0) {
     // 3) Crecimiento: si hay comida y lugar, llega gente
     const lugar = capacidad() - estado.habitantes - soldados();
-    const llegan = Math.min(lugar, 1 + Math.floor(cuenta("casa") / 2));
+    const llegan = Math.min(lugar, 1 + Math.floor(cuenta("casa") / 2) + efecto("crecimiento"));
     if (llegan > 0) estado.habitantes += llegan;
   }
 
