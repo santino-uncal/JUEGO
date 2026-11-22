@@ -85,21 +85,22 @@ const UNIDADES = {
 };
 
 // Pueblos vecinos.
+// x, y: dónde está su ciudad en el mapa (columna y fila, empezando en 0).
 // fuerza: tamaño de su ejército al empezar. crece: cuánto suma por turno.
 // muro: bonus de sus murallas al defenderse (0.5 = +50%).
 // primerAtaque: turno en que llegan por primera vez a Roma. cada: turnos entre ataques.
 // botin: lo que ganás al conquistarlos. tributo: lo que te pagan cada turno después.
 const ENEMIGOS = {
-  sabinos:  { nombre: "Sabinos",  ciudad: "Cures",    icono: "🐑", fuerza: 5,  crece: 0.9, muro: 0,
+  sabinos:  { nombre: "Sabinos",  ciudad: "Cures",    icono: "🐑", x: 8, y: 3, fuerza: 5,  crece: 0.9, muro: 0,
               primerAtaque: 10, cada: 9, botin: { comida: 40, oro: 30 }, tributo: { comida: 3, oro: 2 },
               desc: "Pastores de las montañas. Son pocos, pero atrevidos." },
-  etruscos: { nombre: "Etruscos", ciudad: "Veyes",    icono: "🏺", fuerza: 12, crece: 1.2, muro: 0.5,
+  etruscos: { nombre: "Etruscos", ciudad: "Veyes",    icono: "🏺", x: 4, y: 3, fuerza: 12, crece: 1.2, muro: 0.5,
               primerAtaque: 18, cada: 8, botin: { oro: 80, piedra: 40 }, tributo: { oro: 5, piedra: 2 },
               desc: "Ricos y sabios, con una ciudad amurallada." },
-  samnitas: { nombre: "Samnitas", ciudad: "Bovianum", icono: "🐺", fuerza: 18, crece: 1.8, muro: 0.25,
+  samnitas: { nombre: "Samnitas", ciudad: "Bovianum", icono: "🐺", x: 9, y: 7, fuerza: 18, crece: 1.8, muro: 0.25,
               primerAtaque: 26, cada: 7, botin: { oro: 100, madera: 60 }, tributo: { oro: 5, madera: 4 },
               desc: "Guerreros duros de los Apeninos." },
-  galos:    { nombre: "Galos senones", ciudad: "Sena Gallica", icono: "🐗", fuerza: 25, crece: 2.4, muro: 0,
+  galos:    { nombre: "Galos senones", ciudad: "Sena Gallica", icono: "🐗", x: 5, y: 0, fuerza: 25, crece: 2.4, muro: 0,
               primerAtaque: 34, cada: 6, botin: { oro: 150, comida: 80 }, tributo: { oro: 8, comida: 4 },
               desc: "Bárbaros feroces del norte. Saquean todo a su paso." },
 };
@@ -122,3 +123,41 @@ const EVENTOS_CIUDAD = [
   { texto: "Campesinos de la zona se mudan a Roma: +3 habitantes.", habitantes: 3 },
   { texto: "Una fiebre recorre la ciudad: -2 habitantes.", habitantes: -2 },
 ];
+
+// Mapa de la zona (Italia, simplificada). Cada letra es una casilla:
+//   ~ mar   . llanura   f bosque   h colinas   m montaña
+// Al empezar solo ves las casillas pegadas a Roma; el resto se descubre explorando.
+const MAPA = {
+  filas: [
+    "mmmm..ff..mmm",
+    "~mh..ff...h~~",
+    "~~hf..hmm..~~",
+    "~~.f..hmh..~~",
+    "~~~..f.mm.h~~",
+    "~~~~...hm..~~",
+    "~~~~~..mh...~",
+    "~~~~~~.hm...~",
+    "~~~~~~~.hf..~",
+  ],
+  roma: { x: 6, y: 5 },
+  terrenos: {
+    "~": { nombre: "Mar",      icono: "🌊" },
+    ".": { nombre: "Llanura",  icono: "" },
+    "f": { nombre: "Bosque",   icono: "🌲" },
+    "h": { nombre: "Colinas",  icono: "⛰️" },
+    "m": { nombre: "Montañas", icono: "🏔️" },
+  },
+};
+
+// Explorar: un habitante libre sale de viaje y vuelve con lo que vio.
+// Tarda 1 turno por cada 2 casillas de distancia a Roma.
+// probHallazgo: chance de que traiga algo de lo que encontró en el camino.
+const EXPLORACION = {
+  probHallazgo: 0.3,
+  hallazgos: [
+    { texto: "encontró un bosque con frutos", efecto: { comida: 15 } },
+    { texto: "volvió con troncos de un bosque caído", efecto: { madera: 15 } },
+    { texto: "encontró unas ruinas con monedas viejas", efecto: { oro: 20 } },
+    { texto: "aprendió costumbres de pastores del camino", efecto: { ciencia: 10 } },
+  ],
+};

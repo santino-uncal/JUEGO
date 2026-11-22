@@ -18,8 +18,18 @@
   <main>
     <section>
       <div id="alertas"></div>
-      <div id="ciudad"></div>
-      <p class="ayuda centrado">Tocá un terreno vacío para construir. Tocá un edificio para ver qué hace.</p>
+      <nav class="vistas">
+        <button data-vista="ciudad">🏛️ Ciudad</button>
+        <button data-vista="mapa">🗺️ Mapa</button>
+      </nav>
+      <div id="vista-ciudad">
+        <div id="ciudad"></div>
+        <p class="ayuda centrado">Tocá un terreno vacío para construir. Tocá un edificio para ver qué hace.</p>
+      </div>
+      <div id="vista-mapa" class="oculto">
+        <div id="mapa"></div>
+        <div id="mapa-info" class="caja"></div>
+      </div>
     </section>
 
     <aside id="panel">
@@ -48,6 +58,7 @@
           <li>Con <b>📣 Incitar inmigración</b> pagás oro y llega gente nueva (una vez por turno, si hay lugar en las casas).</li>
           <li>Con el <b>conocimiento 💡</b> investigás tecnologías que desbloquean edificios y tropas mejores.</li>
           <li>Con un <b>Cuartel</b> entrenás soldados. Cada soldado es un habitante menos y come 1 de comida por turno.</li>
+          <li>En el <b>🗺️ Mapa</b> solo ves lo que exploraste. Tocá una zona oscura pegada a lo conocido y apretá <b>🧭 Explorar</b>: un habitante libre sale de viaje y, cuando vuelve, descubre esa zona. Solo podés atacar a los pueblos que ya descubriste.</li>
           <li>Los <b>pueblos vecinos</b> crecen y cada tanto marchan sobre Roma: te avisan 2 turnos antes.</li>
           <li>Si te ganan, <b>saquean Roma</b>. Al tercer saqueo, perdés el trono.</li>
           <li>Podés <b>atacarlos</b> (una vez por turno). Si los conquistás, te pagan tributo para siempre.</li>
