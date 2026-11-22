@@ -20,7 +20,7 @@ function partidaNueva() {
     rec: { ...INICIO.recursos },
     habitantes: INICIO.habitantes,
     lotes, techs: {}, ejercito, enemigos,
-    saqueos: 0, atacoEsteTurno: false,
+    saqueos: 0, atacoEsteTurno: false, periodo: 0,
     log: [], terminado: false, resultado: null,
   };
   prepararMapa(nueva);
@@ -117,10 +117,15 @@ function anotar(texto, clase = "") {
 // ---------- Efectos de las tecnologías ----------
 
 // Suma un efecto simple (impuestos, ataque, crecimiento...) de todas las tecnologías que tenés
+// (también suma el bonus de los períodos a los que ya llegaste)
 function efecto(clave) {
   let total = 0;
   for (const id in estado.techs) {
     const e = TECNOLOGIAS[id] && TECNOLOGIAS[id].efecto;
+    if (e && e[clave]) total += e[clave];
+  }
+  for (let i = 0; i <= periodoActual(); i++) {
+    const e = PERIODOS[i].efecto;
     if (e && e[clave]) total += e[clave];
   }
   return total;
@@ -267,6 +272,8 @@ function demoler(lote) {
 function puedeInvestigar(id) {
   const t = TECNOLOGIAS[id];
   if (tiene(id)) return { ok: false, motivo: "Ya la tenés." };
+  const per = periodoTec(id);
+  if (per > periodoActual()) return { ok: false, motivo: `Solo se puede investigar en ${articulo(per)} ${PERIODOS[per].nombre}.` };
   const faltan = (t.requiere || []).filter((r) => !tiene(r));
   if (faltan.length) return { ok: false, motivo: "Primero: " + faltan.map((r) => TECNOLOGIAS[r].nombre).join(" y ") + "." };
   if (estado.rec.ciencia < t.costo) return { ok: false, motivo: "Te falta conocimiento." };
@@ -317,6 +324,58 @@ function avanzarMeta() {
     investigar(listas[0]);
     if (!estado.meta) anotar(`🎯 ¡Llegaste a tu meta: ${TECNOLOGIAS[meta].nombre}!`, "bien");
   }
+}
+
+// ---------- Períodos: Monarquía, República, Imperio ----------
+
+// Partidas viejas no tienen período guardado: arrancan en la Monarquía
+const periodoActual = () => estado.periodo || 0;
+const articulo = (i) => (PERIODOS[i].nombre.endsWith("a") ? "la" : "el");   // "la República", "el Imperio"
+
+// A qué período pertenece una tecnología (según su columna en el árbol)
+function periodoTec(id) {
+  const c = columnaTec(id);
+  const i = PERIODOS.findIndex((p) => p.columnas.includes(c));
+  return i < 0 ? PERIODOS.length - 1 : i;
+}
+
+// Lista de requisitos para pasar al próximo período: [{ texto, ok }]
+function requisitosPeriodo() {
+  const sig = PERIODOS[periodoActual() + 1];
+  if (!sig) return [];
+  const r = sig.requisitos || {};
+  const lista = [];
+  if (r.tecnologias) {
+    const n = Object.keys(TECNOLOGIAS).filter((id) => tiene(id) && periodoTec(id) === periodoActual()).length;
+    lista.push({ texto: `${r.tecnologias} tecnologías de ${articulo(periodoActual())} ${PERIODOS[periodoActual()].nombre} (tenés ${n})`, ok: n >= r.tecnologias });
+  }
+  if (r.habitantes) {
+    lista.push({ texto: `${r.habitantes} habitantes (tenés ${estado.habitantes})`, ok: estado.habitantes >= r.habitantes });
+  }
+  if (r.conquistas) {
+    const n = Object.values(estado.enemigos).filter((e) => !e.vivo).length;
+    lista.push({ texto: `Conquistar ${r.conquistas} pueblos vecinos (llevás ${n})`, ok: n >= r.conquistas });
+  }
+  if (r.costo) {
+    const txt = Object.entries(r.costo).map(([k, v]) => `${v} ${RECURSOS[k].icono}`).join(" ");
+    lista.push({ texto: `Pagar ${txt}`, ok: alcanza(r.costo) });
+  }
+  return lista;
+}
+
+function puedeAvanzarPeriodo() {
+  if (!PERIODOS[periodoActual() + 1]) return false;
+  return requisitosPeriodo().every((r) => r.ok);
+}
+
+function avanzarPeriodo() {
+  if (!puedeAvanzarPeriodo()) return false;
+  const sig = PERIODOS[periodoActual() + 1];
+  if (sig.requisitos && sig.requisitos.costo) pagar(sig.requisitos.costo);
+  estado.periodo = periodoActual() + 1;
+  anotar(`${sig.icono} ¡Comienza ${articulo(estado.periodo)} ${sig.nombre}! ${sig.desc} Ahora sos ${sig.titulo}.`, "bien");
+  avanzarMeta();
+  return true;
 }
 
 // ---------- Ejército ----------

@@ -133,9 +133,12 @@ function panelConstruir() {
 function panelTecnologias() {
   let html = `<p>Tenés <b>${Math.floor(estado.rec.ciencia)} 💡</b> de conocimiento (${signo(balance().ciencia)} por turno).</p>
     ${estado.meta ? `<p>🎯 Meta: <b>${TECNOLOGIAS[estado.meta].nombre}</b> <small>(se investiga sola cuando te alcance)</small></p>` : ""}
+    ${tarjetaPeriodo()}
     <button data-accion="ver-arbol" class="ancho">🌳 Ver el árbol de tecnologías</button><div class="lista">`;
+  let futuras = 0;
   for (const id in TECNOLOGIAS) {
     const t = TECNOLOGIAS[id];
+    if (periodoTec(id) > periodoActual()) { futuras++; continue; }
     const p = puedeInvestigar(id);
     const hecha = tiene(id);
     html += `
@@ -149,6 +152,7 @@ function panelTecnologias() {
         ${hecha ? "" : `<button data-accion="investigar" data-tech="${id}" ${p.ok ? "" : "disabled"}>Investigar</button>`}
       </div>`;
   }
+  if (futuras) html += `<p class="ayuda">🔒 Hay ${futuras} tecnologías más que se destraban en los próximos períodos.</p>`;
   return html + "</div>";
 }
 
@@ -277,7 +281,7 @@ function infoCasilla() {
 
 // ---------- Árbol de tecnologías ----------
 
-const ARBOL = { anchoCol: 200, anchoNodo: 168, altoNodo: 64, altoFila: 78, arriba: 34 };
+const ARBOL = { anchoCol: 200, anchoNodo: 168, altoNodo: 64, altoFila: 78, arriba: 64 };
 
 // Todas las flechas del árbol: [de, a]
 function flechasArbol() {
@@ -357,6 +361,7 @@ function destraba(id) {
 
 function estadoTec(id) {
   if (tiene(id)) return "hecha";
+  if (periodoTec(id) > periodoActual()) return "futuro";
   if ((TECNOLOGIAS[id].requiere || []).every(tiene)) return puedeInvestigar(id).ok ? "alcanzable" : "disponible";
   return "bloqueada";
 }
@@ -366,7 +371,15 @@ function dibujarArbol() {
   const camino = estado.meta ? faltanPara(estado.meta) : [];
   const ancho = columnas * ARBOL.anchoCol;
 
+  // Franjas de los períodos (Monarquía, República, Imperio) y nombre de cada época
   let eras = "";
+  PERIODOS.forEach((per, i) => {
+    const desde = Math.min(...per.columnas), hasta = Math.max(...per.columnas);
+    const futuro = i > periodoActual();
+    const clase = futuro ? "futuro" : i === periodoActual() ? "actual" : "pasado";
+    eras += `<div class="franja-periodo ${clase}" style="left:${desde * ARBOL.anchoCol}px;width:${(hasta - desde + 1) * ARBOL.anchoCol}px">
+      <div class="nombre-periodo">${futuro ? "🔒" : per.icono} ${per.nombre}${i === periodoActual() ? " <small>(ahora)</small>" : ""}</div></div>`;
+  });
   for (let c = 0; c < columnas; c++) {
     eras += `<div class="era" style="left:${c * ARBOL.anchoCol}px;width:${ARBOL.anchoCol}px">${ERAS_TEC[c] || "Época " + (c + 1)}</div>`;
   }
@@ -392,7 +405,7 @@ function dibujarArbol() {
     const iconos = destraba(id).map((d) => d.icono).join("");
     nodos += `
       <div class="${clases}" data-tech="${id}" style="left:${pos[id].x}px;top:${pos[id].y}px;width:${ARBOL.anchoNodo}px;height:${ARBOL.altoNodo}px">
-        <div class="nodo-icono">${est === "hecha" ? "✅" : t.icono}</div>
+        <div class="nodo-icono">${est === "hecha" ? "✅" : est === "futuro" ? "🔒" : t.icono}</div>
         <div class="nodo-texto">
           <b>${t.nombre}</b>
           <small>${est === "hecha" ? "Investigada" : t.costo + " 💡"}${id === estado.meta ? " · 🎯 meta" : ""}</small>
@@ -414,13 +427,14 @@ function infoTec() {
   const ciencia = `<p class="ayuda">Tenés <b>${Math.floor(estado.rec.ciencia)} 💡</b> (${signo(balance().ciencia)} por turno).
     ${estado.meta ? `🎯 Meta: <b>${TECNOLOGIAS[estado.meta].nombre}</b>.` : "Sin meta elegida."}</p>`;
   if (!tecElegida) {
-    return `<p class="ayuda">Tocá una tecnología para ver qué da. Podés investigarla ya o ponerla como <b>🎯 meta</b>:
+    return `${tarjetaPeriodo()}<p class="ayuda">Tocá una tecnología para ver qué da. Podés investigarla ya o ponerla como <b>🎯 meta</b>:
       las del camino se investigan solas apenas te alcance el conocimiento.</p>${ciencia}`;
   }
   const t = TECNOLOGIAS[tecElegida];
   const est = estadoTec(tecElegida);
   const cosas = destraba(tecElegida);
-  let html = `<h3>${t.icono} ${t.nombre} <small>· ${ERAS_TEC[columnaTec(tecElegida)] || ""}</small></h3><p>${t.desc}</p>`;
+  const per = PERIODOS[periodoTec(tecElegida)];
+  let html = `<h3>${t.icono} ${t.nombre} <small>· ${per.icono} ${per.nombre}, ${ERAS_TEC[columnaTec(tecElegida)] || ""}</small></h3><p>${t.desc}</p>`;
   if (cosas.length) html += `<p>Destraba: ${cosas.map((c) => `${c.icono} ${c.nombre}`).join(", ")}</p>`;
   if (t.requiere) html += `<p><small>Requiere: ${t.requiere.map((r) => `${tiene(r) ? "✅" : "❌"} ${TECNOLOGIAS[r].nombre}`).join(" · ")}</small></p>`;
   if (est === "hecha") return html + `<p class="bien">✅ Ya la tenés.</p>` + ciencia;
@@ -441,6 +455,20 @@ function infoTec() {
   return html + ciencia;
 }
 
+// Período actual y qué falta para pasar al siguiente
+function tarjetaPeriodo() {
+  const act = PERIODOS[periodoActual()];
+  const sig = PERIODOS[periodoActual() + 1];
+  let html = `<div class="tarjeta-periodo"><b>${act.icono} ${act.nombre}</b> <small>· sos ${act.titulo}</small>`;
+  if (!sig) return html + `<br><small>Llegaste al último período. ¡Roma es un imperio!</small></div>`;
+  const reqs = requisitosPeriodo();
+  html += `<p>Para pasar a ${articulo(periodoActual() + 1)} <b>${sig.icono} ${sig.nombre}</b> necesitás:</p><ul class="requisitos">`;
+  html += reqs.map((r) => `<li>${r.ok ? "✅" : "⬜"} ${r.texto}</li>`).join("");
+  html += `</ul>${sig.bonus ? `<p><small>Además te da: ${sig.bonus}</small></p>` : ""}
+    <button data-accion="avanzar-periodo" class="ancho" ${puedeAvanzarPeriodo() && !estado.terminado ? "" : "disabled"}>${sig.icono} Proclamar ${articulo(periodoActual() + 1)} ${sig.nombre}</button></div>`;
+  return html;
+}
+
 function cambiarVista(v) {
   vistaActual = v;
   document.querySelectorAll(".vistas button").forEach((b) => b.classList.toggle("activa", b.dataset.vista === v));
@@ -454,6 +482,9 @@ function dibujarLog() {
 }
 
 function dibujarTodo() {
+  const per = PERIODOS[periodoActual()];
+  $("titulo").textContent = `${per.icono} ${per.titulo}`;
+  document.title = `Imperium – ${per.titulo}`;
   dibujarRecursos();
   dibujarCiudad();
   dibujarMapa();
@@ -526,7 +557,7 @@ function actualizarComparacion(id) {
 
 function mostrarFin() {
   if (estado.resultado === "victoria") {
-    abrirModal(`<h2>¡Ave, Rey de Roma! 🏆</h2><p>Sometiste a todos los pueblos vecinos en ${estado.turno} años. Roma domina Italia.</p>
+    abrirModal(`<h2>¡Ave, ${PERIODOS[periodoActual()].titulo}! 🏆</h2><p>Sometiste a todos los pueblos vecinos en ${estado.turno} años. Roma domina Italia.</p>
       <button data-accion="nueva">Jugar de nuevo</button>`);
   } else {
     abrirModal(`<h2>Tu reinado terminó 💀</h2><p>Roma fue saqueada ${MAX_SAQUEOS} veces. El pueblo te echó del trono en el año ${estado.turno}.</p>
@@ -579,6 +610,15 @@ document.addEventListener("click", (ev) => {
     case "investigar": investigar(d.tech); break;
     case "meta": elegirMeta(d.tech || null); break;
     case "ver-arbol": cambiarVista("arbol"); return;
+    case "avanzar-periodo": {
+      if (!avanzarPeriodo()) break;
+      const per = PERIODOS[periodoActual()];
+      trasAccion();
+      abrirModal(`<h2>${per.icono} ¡Comienza ${articulo(periodoActual())} ${per.nombre}!</h2><p>${per.desc}</p>
+        <p>Ahora sos <b>${per.titulo}</b>. ${per.bonus || ""}</p><p>Ya podés investigar las tecnologías de este período.</p>
+        <button data-accion="cerrar">¡Ave!</button>`);
+      return;
+    }
     case "entrenar": entrenar(d.unidad, +d.n); break;
     case "preparar": prepararAtaque(d.enemigo); return;
     case "atacar": {

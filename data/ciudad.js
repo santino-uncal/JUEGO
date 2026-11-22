@@ -145,7 +145,27 @@ const TECNOLOGIAS = {
 };
 
 // Nombres de las épocas del árbol de tecnologías (una por columna, de izquierda a derecha).
-const ERAS_TEC = ["Fundación", "Reino", "República", "Expansión", "Imperio"];
+const ERAS_TEC = ["Fundación", "Los reyes", "Primeros cónsules", "Expansión", "Los césares"];
+
+// Los tres períodos de Roma. Cada uno abarca algunas columnas del árbol:
+// las tecnologías de un período no se pueden investigar hasta llegar a él.
+// Para pasar al siguiente hay que cumplir los requisitos y pagar el costo:
+//   tecnologias: cuántas tecnologías del período actual tenés que tener
+//   habitantes:  cuánta gente tiene que vivir en Roma
+//   conquistas:  cuántos pueblos vecinos tenés que haber conquistado
+// efecto: bonus que da el período mientras estés en él o después (igual que en las tecnologías).
+const PERIODOS = [
+  { id: "monarquia", nombre: "Monarquía", icono: "👑", titulo: "Rey de Roma", columnas: [0, 1],
+    desc: "Roma es gobernada por un rey." },
+  { id: "republica", nombre: "República", icono: "🏛️", titulo: "Cónsul de Roma", columnas: [2, 3],
+    desc: "El pueblo echa al último rey y Roma la gobiernan cónsules elegidos y el Senado.",
+    requisitos: { tecnologias: 6, habitantes: 15, costo: { oro: 80 } },
+    efecto: { impuestos: 0.25 }, bonus: "+25% de oro de los impuestos." },
+  { id: "imperio", nombre: "Imperio", icono: "🦅", titulo: "Emperador de Roma", columnas: [4],
+    desc: "Un general victorioso se corona emperador. Roma domina el Mediterráneo.",
+    requisitos: { tecnologias: 5, conquistas: 2, costo: { oro: 200 } },
+    efecto: { ataque: 0.1, defensa: 0.1, tributo: 0.5 }, bonus: "Tu ejército pelea +10% mejor y los tributos suben +50%." },
+];
 
 // Tropas. ataque: fuerza al atacar. defensa: fuerza al defender Roma.
 // Cada soldado ocupa 1 lugar de vivienda y come 1 de comida por turno.

@@ -169,3 +169,24 @@ main > section { min-width: 0; }  /* para que el árbol se deslice solo él y no
 #arbol-info { margin-top: 10px; }
 #arbol-info h3 { margin: 0 0 6px; }
 button.ancho { width: 100%; margin-bottom: 8px; }
+
+/* Períodos: Monarquía, República, Imperio */
+.franja-periodo {
+  position: absolute; top: 0; height: 100%;
+  border-radius: 8px;
+  border-left: 3px solid #b08a3e;
+}
+.franja-periodo:first-child { border-left: none; }
+.franja-periodo.actual { background: rgba(212,160,23,.12); }
+.franja-periodo.futuro { background: repeating-linear-gradient(135deg, rgba(59,47,34,.10) 0 10px, rgba(59,47,34,.04) 10px 20px); }
+.nombre-periodo {
+  text-align: center; font-weight: bold; font-size: 1rem; color: #7b1e1e;
+  padding: 4px 0; border-bottom: 2px solid #c9ad74; margin: 0 6px;
+}
+.franja-periodo.futuro .nombre-periodo { color: #7a6a55; }
+.era { top: 34px; height: auto; border-right: none; }
+.nodo-tec.futuro { background: #e4dac4; border-style: dashed; opacity: .7; }
+.tarjeta-periodo { background: #fff6e0; border: 2px solid #d4a017; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+.tarjeta-periodo p { margin: 6px 0; }
+.requisitos { list-style: none; padding: 0; margin: 4px 0; }
+.requisitos li { margin: 3px 0; }
