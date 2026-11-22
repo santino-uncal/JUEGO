@@ -1,0 +1,74 @@
+/* Estilos del modo "Rey de Roma" (se suman a estilo.css) */
+
+main { grid-template-columns: 1fr 400px; align-items: start; }
+@media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+
+.stats { gap: 14px; font-size: .95rem; }
+.stats small.neg { color: #ff9b8a; }
+.centrado { text-align: center; justify-content: center; }
+
+/* Ciudad */
+#ciudad {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  padding: 16px;
+  background: radial-gradient(circle at 50% 45%, #a8c879, #7fa458);
+  border: 4px solid #d4a017;
+  border-radius: 12px;
+}
+.lote {
+  aspect-ratio: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: #f1e3bf;
+  border: 3px solid #c9ad74;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: transform .1s, box-shadow .1s;
+  box-shadow: 0 3px 0 #9c8456;
+}
+.lote:hover { transform: translateY(-2px); box-shadow: 0 5px 0 #9c8456; }
+.lote .icono { font-size: clamp(1.6rem, 4vw, 2.8rem); line-height: 1.1; }
+.lote .nombre { font-size: .8rem; font-weight: bold; margin-top: 4px; }
+.lote .falta-turnos { font-size: .75rem; color: #7a6a55; }
+.lote.vacio { background: rgba(255,255,255,.18); border: 3px dashed rgba(255,255,255,.6); box-shadow: none; color: #fff; }
+.lote.vacio .icono { opacity: .7; }
+.lote.obra { background: #e8d7a8; border-style: dashed; }
+.lote.regia { background: #ffe9a8; border-color: #d4a017; }
+.lote.elegido { outline: 4px solid #7b1e1e; outline-offset: 2px; }
+
+#alertas { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.alerta { background: #fff1e0; border-left: 6px solid #c0392b; border-radius: 6px; padding: 8px 12px; }
+
+/* Pestañas del panel */
+.pestanias { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.pestanias button { padding: 8px 4px; font-size: .85rem; background: #c9ad74; color: #3b2f22; }
+.pestanias button.activa { background: #7b1e1e; color: #fbe9c6; }
+#contenido { max-height: 62vh; overflow-y: auto; }
+#contenido h3 { margin-top: 0; }
+
+.lista { display: flex; flex-direction: column; gap: 8px; }
+.item { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #e0d0b0; border-radius: 8px; background: #fff; }
+.item-icono { font-size: 1.8rem; width: 40px; text-align: center; }
+.item-texto { flex: 1; line-height: 1.35; }
+.item.bloqueado { opacity: .6; }
+.item.hecha { background: #eef7e8; }
+.item .botones { display: flex; flex-direction: column; gap: 4px; }
+.item button { padding: 6px 10px; }
+.motivo { color: #b02a2a; }
+.falta { color: #b02a2a; font-weight: bold; }
+.cantidad { color: #7b1e1e; font-weight: bold; }
+.bien { color: #22783a; }
+.mal { color: #b02a2a; }
+
+/* Ventana de ataque / fin */
+#modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10;
+}
+.fila-envio { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 6px 0; text-align: left; }
+.fila-envio input { width: 70px; font-size: 1rem; padding: 4px; }
+button.claro { background: #c9ad74; color: #3b2f22; }

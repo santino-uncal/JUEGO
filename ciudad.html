@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Imperium – Rey de Roma</title>
+  <link rel="stylesheet" href="css/estilo.css">
+  <link rel="stylesheet" href="css/ciudad.css">
+</head>
+<body>
+  <header>
+    <a href="index.html" class="volver" title="Volver al menú">⬅</a>
+    <h1>👑 Rey de Roma</h1>
+    <div class="stats" id="recursos"></div>
+    <button id="btn-nueva" class="secundario">Nueva partida</button>
+  </header>
+
+  <main>
+    <section>
+      <div id="alertas"></div>
+      <div id="ciudad"></div>
+      <p class="ayuda centrado">Tocá un terreno vacío para construir. Tocá un edificio para ver qué hace.</p>
+    </section>
+
+    <aside id="panel">
+      <nav class="pestanias">
+        <button data-pestania="construir">🏗️ Construir</button>
+        <button data-pestania="tecnologias">💡 Tecnologías</button>
+        <button data-pestania="ejercito">⚔️ Ejército</button>
+        <button data-pestania="vecinos">🗺️ Vecinos</button>
+      </nav>
+      <div id="contenido" class="caja"></div>
+
+      <button id="btn-turno" class="grande">Terminar turno ➜</button>
+
+      <div class="caja">
+        <h3>Crónica</h3>
+        <ul id="log"></ul>
+      </div>
+
+      <details class="caja">
+        <summary>¿Cómo se juega?</summary>
+        <ul class="reglas">
+          <li>Sos el <b>rey de Roma</b>. Empezás solo con tu palacio (👑) y un puñado de habitantes.</li>
+          <li><b>Construí</b> en los terrenos vacíos: granjas para comer, aserraderos para madera, casas para que llegue más gente.</li>
+          <li>Casi todos los edificios necesitan <b>habitantes libres</b> que trabajen ahí. Sin gente, no producen.</li>
+          <li>Con el <b>conocimiento 💡</b> investigás tecnologías que desbloquean edificios y tropas mejores.</li>
+          <li>Con un <b>Cuartel</b> entrenás soldados. Cada soldado es un habitante menos y come 1 de comida por turno.</li>
+          <li>Los <b>pueblos vecinos</b> crecen y cada tanto marchan sobre Roma: te avisan 2 turnos antes.</li>
+          <li>Si te ganan, <b>saquean Roma</b>. Al tercer saqueo, perdés el trono.</li>
+          <li>Podés <b>atacarlos</b> (una vez por turno). Si los conquistás, te pagan tributo para siempre.</li>
+          <li>Truco: si atacás a un pueblo mientras su ejército marcha hacia Roma, su ciudad está casi vacía.</li>
+          <li><b>Ganás</b> si conquistás a los cuatro pueblos vecinos.</li>
+        </ul>
+      </details>
+    </aside>
+  </main>
+
+  <div id="modal" class="oculto">
+    <div class="cartel-caja" id="modal-caja"></div>
+  </div>
+
+  <script src="data/ciudad.js"></script>
+  <script src="js/ciudad-reglas.js"></script>
+  <script src="js/ciudad.js"></script>
+</body>
+</html>
