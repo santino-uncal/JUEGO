@@ -302,6 +302,28 @@ function defenderRoma(id) {
   }
 }
 
+
+// ---------- Inmigración ----------
+
+const lugarLibre = () => capacidad() - estado.habitantes - soldados();
+
+function puedeInmigracion() {
+  if (estado.inmigroEsteTurno) return { ok: false, motivo: "Ya lo hiciste este turno." };
+  if (lugarLibre() <= 0) return { ok: false, motivo: "No hay lugar: construí casas." };
+  if (!alcanza(INMIGRACION.costo)) return { ok: false, motivo: "No te alcanza el oro." };
+  return { ok: true };
+}
+
+function incitarInmigracion() {
+  if (!puedeInmigracion().ok) return false;
+  pagar(INMIGRACION.costo);
+  const llegan = Math.min(INMIGRACION.habitantes, lugarLibre());
+  estado.habitantes += llegan;
+  estado.inmigroEsteTurno = true;
+  anotar(`📣 Tus pregoneros prometen tierras y trabajo: llegan ${llegan} habitante(s) nuevos a Roma.`, "bien");
+  return true;
+}
+
 // ---------- Fin de turno ----------
 
 function terminarTurno() {
@@ -354,6 +376,7 @@ function terminarTurno() {
     }
   }
   estado.atacoEsteTurno = false;
+  estado.inmigroEsteTurno = false;
   if (revisarFin()) return;
 
   anotar(`— Año ${estado.turno} de tu reinado —`, "turno");

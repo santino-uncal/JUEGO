@@ -107,6 +107,9 @@ const ENEMIGOS = {
 // Cuántas veces pueden saquear Roma antes de que caiga tu reinado
 const MAX_SAQUEOS = 3;
 
+// Botón "Incitar inmigración": pagás oro y llega gente nueva (una vez por turno, si hay lugar)
+const INMIGRACION = { costo: { oro: 20 }, habitantes: 3 };
+
 // Eventos al azar al empezar cada turno.
 // efecto: recursos que suman o restan. habitantes: gente que llega o se va.
 const EVENTOS_CIUDAD = [

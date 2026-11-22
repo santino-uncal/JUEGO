@@ -213,7 +213,19 @@ function dibujarTodo() {
   dibujarPanel();
   dibujarLog();
   $("btn-turno").disabled = estado.terminado;
+
+  // Botón de inmigración: muestra el precio y, si no se puede, por qué
+  const inm = puedeInmigracion();
+  const boton = $("btn-inmigracion");
+  boton.disabled = estado.terminado || !inm.ok;
+  boton.innerHTML = `📣 Incitar inmigración <small>(${INMIGRACION.costo.oro} 💰 → +${INMIGRACION.habitantes} 👥)</small>` +
+    (inm.ok ? "" : `<br><small>${inm.motivo}</small>`);
 }
+
+$("btn-inmigracion").addEventListener("click", () => {
+  incitarInmigracion();
+  trasAccion();
+});
 
 // ---------- Ventanas (ataque y fin de partida) ----------
 
