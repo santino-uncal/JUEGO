@@ -6,6 +6,7 @@ let loteElegido = null;
 let pestania = "construir";
 let vistaActual = "ciudad";     // "ciudad" o "mapa"
 let casillaElegida = null;      // { x, y } en el mapa
+let tecElegida = null;          // tecnología tocada en el árbol
 
 const $ = (id) => document.getElementById(id);
 
@@ -130,7 +131,9 @@ function panelConstruir() {
 }
 
 function panelTecnologias() {
-  let html = `<p>Tenés <b>${Math.floor(estado.rec.ciencia)} 💡</b> de conocimiento (${signo(balance().ciencia)} por turno).</p><div class="lista">`;
+  let html = `<p>Tenés <b>${Math.floor(estado.rec.ciencia)} 💡</b> de conocimiento (${signo(balance().ciencia)} por turno).</p>
+    ${estado.meta ? `<p>🎯 Meta: <b>${TECNOLOGIAS[estado.meta].nombre}</b> <small>(se investiga sola cuando te alcance)</small></p>` : ""}
+    <button data-accion="ver-arbol" class="ancho">🌳 Ver el árbol de tecnologías</button><div class="lista">`;
   for (const id in TECNOLOGIAS) {
     const t = TECNOLOGIAS[id];
     const p = puedeInvestigar(id);
@@ -272,11 +275,139 @@ function infoCasilla() {
   return `<h3>${ter.icono} ${ter.nombre}</h3><p class="ayuda">Acá no vive nadie.</p>${pie}`;
 }
 
+// ---------- Árbol de tecnologías ----------
+
+const ARBOL = { anchoCol: 200, anchoNodo: 168, altoNodo: 70, altoFila: 88, arriba: 34 };
+
+// Calcula dónde va cada tecnología: columna según la época y fila
+// ordenada para que las flechas se crucen lo menos posible.
+function disposicionArbol() {
+  const columnas = [];
+  for (const id in TECNOLOGIAS) {
+    const c = columnaTec(id);
+    (columnas[c] = columnas[c] || []).push(id);
+  }
+  const maxFilas = Math.max(...columnas.map((c) => c.length));
+  const fila = {};
+  columnas.forEach((ids, c) => {
+    if (c > 0) {
+      // Cada una cerca de la altura promedio de las que requiere
+      const prom = (id) => {
+        const r = TECNOLOGIAS[id].requiere;
+        return r.reduce((s, x) => s + fila[x], 0) / r.length;
+      };
+      ids.sort((a, b) => prom(a) - prom(b));
+    }
+    const corrida = (maxFilas - ids.length) / 2;
+    ids.forEach((id, i) => (fila[id] = corrida + i));
+  });
+  const pos = {};
+  for (const id in fila) {
+    pos[id] = { x: columnaTec(id) * ARBOL.anchoCol + 16, y: ARBOL.arriba + fila[id] * ARBOL.altoFila };
+  }
+  return { pos, columnas: columnas.length, alto: ARBOL.arriba + maxFilas * ARBOL.altoFila };
+}
+
+// Qué edificios y tropas destraba una tecnología
+function destraba(id) {
+  const cosas = [];
+  for (const t in EDIFICIOS) if (EDIFICIOS[t].requiere === id) cosas.push(EDIFICIOS[t]);
+  for (const t in UNIDADES) if (UNIDADES[t].requiere === id) cosas.push(UNIDADES[t]);
+  return cosas;
+}
+
+function estadoTec(id) {
+  if (tiene(id)) return "hecha";
+  if ((TECNOLOGIAS[id].requiere || []).every(tiene)) return puedeInvestigar(id).ok ? "alcanzable" : "disponible";
+  return "bloqueada";
+}
+
+function dibujarArbol() {
+  const { pos, columnas, alto } = disposicionArbol();
+  const camino = estado.meta ? faltanPara(estado.meta) : [];
+  const ancho = columnas * ARBOL.anchoCol;
+
+  let eras = "";
+  for (let c = 0; c < columnas; c++) {
+    eras += `<div class="era" style="left:${c * ARBOL.anchoCol}px;width:${ARBOL.anchoCol}px">${ERAS_TEC[c] || "Época " + (c + 1)}</div>`;
+  }
+
+  let lineas = "";
+  for (const id in TECNOLOGIAS) {
+    for (const r of TECNOLOGIAS[id].requiere || []) {
+      const a = pos[r], b = pos[id];
+      const x1 = a.x + ARBOL.anchoNodo, y1 = a.y + ARBOL.altoNodo / 2;
+      const x2 = b.x, y2 = b.y + ARBOL.altoNodo / 2;
+      const medio = (x1 + x2) / 2;
+      const clase = tiene(id) ? "hecha" : camino.includes(id) ? "camino" : tiene(r) ? "abierta" : "";
+      lineas += `<path class="${clase}" d="M${x1},${y1} C${medio},${y1} ${medio},${y2} ${x2},${y2}" />`;
+    }
+  }
+
+  let nodos = "";
+  for (const id in TECNOLOGIAS) {
+    const t = TECNOLOGIAS[id];
+    const est = estadoTec(id);
+    const enCamino = camino.includes(id);
+    const clases = ["nodo-tec", est, enCamino ? "en-camino" : "", id === estado.meta ? "meta" : "", id === tecElegida ? "elegida" : ""].join(" ");
+    const iconos = destraba(id).map((d) => d.icono).join("");
+    nodos += `
+      <div class="${clases}" data-tech="${id}" style="left:${pos[id].x}px;top:${pos[id].y}px;width:${ARBOL.anchoNodo}px;height:${ARBOL.altoNodo}px">
+        <div class="nodo-icono">${est === "hecha" ? "✅" : t.icono}</div>
+        <div class="nodo-texto">
+          <b>${t.nombre}</b>
+          <small>${est === "hecha" ? "Investigada" : t.costo + " 💡"}${id === estado.meta ? " · 🎯 meta" : ""}</small>
+          ${iconos ? `<span class="nodo-destraba">${iconos}</span>` : ""}
+        </div>
+      </div>`;
+  }
+
+  $("arbol").innerHTML = `
+    <div class="arbol-lienzo" style="width:${ancho}px;height:${alto}px">
+      ${eras}
+      <svg width="${ancho}" height="${alto}">${lineas}</svg>
+      ${nodos}
+    </div>`;
+  $("arbol-info").innerHTML = infoTec();
+}
+
+function infoTec() {
+  const ciencia = `<p class="ayuda">Tenés <b>${Math.floor(estado.rec.ciencia)} 💡</b> (${signo(balance().ciencia)} por turno).
+    ${estado.meta ? `🎯 Meta: <b>${TECNOLOGIAS[estado.meta].nombre}</b>.` : "Sin meta elegida."}</p>`;
+  if (!tecElegida) {
+    return `<p class="ayuda">Tocá una tecnología para ver qué da. Podés investigarla ya o ponerla como <b>🎯 meta</b>:
+      las del camino se investigan solas apenas te alcance el conocimiento.</p>${ciencia}`;
+  }
+  const t = TECNOLOGIAS[tecElegida];
+  const est = estadoTec(tecElegida);
+  const cosas = destraba(tecElegida);
+  let html = `<h3>${t.icono} ${t.nombre} <small>· ${ERAS_TEC[columnaTec(tecElegida)] || ""}</small></h3><p>${t.desc}</p>`;
+  if (cosas.length) html += `<p>Destraba: ${cosas.map((c) => `${c.icono} ${c.nombre}`).join(", ")}</p>`;
+  if (t.requiere) html += `<p><small>Requiere: ${t.requiere.map((r) => `${tiene(r) ? "✅" : "❌"} ${TECNOLOGIAS[r].nombre}`).join(" · ")}</small></p>`;
+  if (est === "hecha") return html + `<p class="bien">✅ Ya la tenés.</p>` + ciencia;
+
+  const camino = faltanPara(tecElegida);
+  const total = camino.reduce((s, id) => s + TECNOLOGIAS[id].costo, 0);
+  if (camino.length > 1) {
+    html += `<p><small>Para llegar hay que investigar ${camino.length} tecnologías: ${camino.map((id) => TECNOLOGIAS[id].nombre).join(" → ")}. En total: <b>${total} 💡</b>.</small></p>`;
+  }
+  const p = puedeInvestigar(tecElegida);
+  const esMeta = estado.meta === tecElegida;
+  html += `<div class="fila">
+    <button data-accion="investigar" data-tech="${tecElegida}" ${p.ok ? "" : "disabled"}>💡 Investigar ya (${t.costo} 💡)</button>
+    ${esMeta ? `<button data-accion="meta" data-tech="" class="claro">Quitar meta</button>`
+             : `<button data-accion="meta" data-tech="${tecElegida}">🎯 Poner como meta</button>`}
+  </div>`;
+  if (!p.ok) html += `<p class="motivo"><small>${p.motivo}</small></p>`;
+  return html + ciencia;
+}
+
 function cambiarVista(v) {
   vistaActual = v;
   document.querySelectorAll(".vistas button").forEach((b) => b.classList.toggle("activa", b.dataset.vista === v));
   $("vista-ciudad").classList.toggle("oculto", v !== "ciudad");
   $("vista-mapa").classList.toggle("oculto", v !== "mapa");
+  $("vista-arbol").classList.toggle("oculto", v !== "arbol");
 }
 
 function dibujarLog() {
@@ -287,6 +418,7 @@ function dibujarTodo() {
   dibujarRecursos();
   dibujarCiudad();
   dibujarMapa();
+  dibujarArbol();
   cambiarVista(vistaActual);
   dibujarPanel();
   dibujarLog();
@@ -387,6 +519,13 @@ document.addEventListener("click", (ev) => {
     dibujarMapa();
     return;
   }
+  // Tecnología del árbol
+  const nodo = ev.target.closest(".nodo-tec");
+  if (nodo) {
+    tecElegida = tecElegida === nodo.dataset.tech ? null : nodo.dataset.tech;
+    dibujarArbol();
+    return;
+  }
   const btn = ev.target.closest("button[data-accion], button[data-pestania], button[data-vista]");
   if (!btn) return;
   if (btn.dataset.pestania) { pestania = btn.dataset.pestania; dibujarPanel(); return; }
@@ -399,6 +538,8 @@ document.addEventListener("click", (ev) => {
       if (!confirm("¿Demoler este edificio? No se devuelve lo que costó.")) return;
       demoler(loteElegido); break;
     case "investigar": investigar(d.tech); break;
+    case "meta": elegirMeta(d.tech || null); break;
+    case "ver-arbol": cambiarVista("arbol"); return;
     case "entrenar": entrenar(d.unidad, +d.n); break;
     case "preparar": prepararAtaque(d.enemigo); return;
     case "atacar": {

@@ -121,3 +121,51 @@ header .stats { flex: 1 1 420px; }
 .rotulo.mio { background: #22783a; color: #fff; }
 #mapa-info { margin-top: 10px; }
 #mapa-info h3 { margin: 0 0 6px; }
+
+/* Árbol de tecnologías */
+.vistas { grid-template-columns: repeat(3, 1fr); }
+#arbol {
+  overflow-x: auto;
+  padding: 10px;
+  background: linear-gradient(#f6ecd4, #ead9b0);
+  border: 4px solid #d4a017;
+  border-radius: 12px;
+}
+main > section { min-width: 0; }  /* para que el árbol se deslice solo él y no estire la página */
+.arbol-lienzo { position: relative; margin: 0 auto; }
+.arbol-lienzo svg { position: absolute; left: 0; top: 0; pointer-events: none; }
+.arbol-lienzo path { fill: none; stroke: #b9a57e; stroke-width: 3; }
+.arbol-lienzo path.abierta { stroke: #7b1e1e; }
+.arbol-lienzo path.hecha { stroke: #2e7d4f; }
+.arbol-lienzo path.camino { stroke: #d4a017; stroke-width: 4; stroke-dasharray: 8 5; }
+.era {
+  position: absolute; top: 0; height: 100%;
+  text-align: center; font-weight: bold; font-size: .8rem; letter-spacing: .08em;
+  text-transform: uppercase; color: #7a6a55;
+  border-right: 1px dashed #c9ad74;
+}
+.nodo-tec {
+  position: absolute; box-sizing: border-box;
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px;
+  background: #fff; border: 3px solid #c9ad74; border-radius: 10px;
+  cursor: pointer; z-index: 1;
+  box-shadow: 0 3px 0 #9c8456;
+  transition: transform .1s;
+}
+.nodo-tec:hover { transform: translateY(-2px); }
+.nodo-icono { font-size: 1.6rem; }
+.nodo-texto { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.nodo-texto b { font-size: .85rem; }
+.nodo-texto small { font-size: .72rem; color: #7a6a55; }
+.nodo-destraba { font-size: .85rem; }
+.nodo-tec.hecha { background: #e3f3dc; border-color: #2e7d4f; }
+.nodo-tec.alcanzable { border-color: #7b1e1e; background: #fff6e0; }
+.nodo-tec.disponible { border-color: #7b1e1e; }
+.nodo-tec.bloqueada { background: #e9dfca; opacity: .75; }
+.nodo-tec.en-camino { border-color: #d4a017; box-shadow: 0 3px 0 #9c8456, 0 0 0 3px rgba(212,160,23,.35); opacity: 1; }
+.nodo-tec.meta { background: #ffe9a8; }
+.nodo-tec.elegida { outline: 3px solid #7b1e1e; outline-offset: 2px; }
+#arbol-info { margin-top: 10px; }
+#arbol-info h3 { margin: 0 0 6px; }
+button.ancho { width: 100%; margin-bottom: 8px; }

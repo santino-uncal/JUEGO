@@ -241,7 +241,45 @@ function investigar(id) {
   estado.rec.ciencia -= TECNOLOGIAS[id].costo;
   estado.techs[id] = true;
   anotar(`💡 Descubrís ${TECNOLOGIAS[id].nombre}. ${TECNOLOGIAS[id].desc}`, "bien");
+  if (estado.meta && tiene(estado.meta)) estado.meta = null;
   return true;
+}
+
+// Columna (época) de cada tecnología en el árbol: 0 si no requiere nada,
+// si no, una más que la más avanzada de las que requiere.
+function columnaTec(id) {
+  const req = TECNOLOGIAS[id].requiere || [];
+  return req.length ? 1 + Math.max(...req.map(columnaTec)) : 0;
+}
+
+// Todo lo que falta investigar para llegar a `meta` (incluida ella), en orden
+function faltanPara(meta) {
+  const lista = [];
+  const visitar = (id) => {
+    if (tiene(id) || lista.includes(id)) return;
+    (TECNOLOGIAS[id].requiere || []).forEach(visitar);
+    lista.push(id);
+  };
+  visitar(meta);
+  return lista;
+}
+
+// Meta de investigación: apenas alcanza el conocimiento, se investiga sola
+// la próxima tecnología del camino (la más barata que ya se pueda).
+function elegirMeta(id) {
+  estado.meta = id && !tiene(id) ? id : null;
+  avanzarMeta();
+}
+
+function avanzarMeta() {
+  while (estado.meta) {
+    const meta = estado.meta;
+    const listas = faltanPara(meta).filter((t) => puedeInvestigar(t).ok);
+    if (!listas.length) return;
+    listas.sort((a, b) => TECNOLOGIAS[a].costo - TECNOLOGIAS[b].costo);
+    investigar(listas[0]);
+    if (!estado.meta) anotar(`🎯 ¡Llegaste a tu meta: ${TECNOLOGIAS[meta].nombre}!`, "bien");
+  }
 }
 
 // ---------- Ejército ----------
@@ -412,6 +450,7 @@ function terminarTurno() {
 
   // 1) Producción
   for (const r in b) estado.rec[r] += b[r];
+  avanzarMeta();
 
   // 2) Hambre
   if (estado.rec.comida < 0) {

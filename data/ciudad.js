@@ -72,6 +72,10 @@ const TECNOLOGIAS = {
   fortificacion:{ nombre: "Fortificaciones", icono: "🏰", costo: 100, desc: "La muralla da +100% en vez de +50%.", requiere: ["ingenieria"] },
 };
 
+// Nombres de las épocas del árbol de tecnologías (una por columna, de izquierda a derecha).
+// La columna de cada tecnología se calcula sola según lo que requiere.
+const ERAS_TEC = ["Fundación", "Reino", "Expansión", "Imperio"];
+
 // Tropas. ataque: fuerza al atacar. defensa: fuerza al defender Roma.
 // Cada soldado ocupa 1 lugar de vivienda y come 1 de comida por turno.
 const UNIDADES = {
