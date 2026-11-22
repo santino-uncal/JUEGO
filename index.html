@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Imperium</title>
-  <link rel="stylesheet" href="css/estilo.css">
+  <!-- Se cargan con la hora en la dirección para que el navegador nunca use copias viejas de los archivos -->
+  <script>
+    for (const f of ["css/estilo.css"]) document.write(`<link rel="stylesheet" href="${f}?v=${Date.now()}">`);
+  </script>
 </head>
 <body class="menu">
   <h1 class="menu-titulo">🏛️ Imperium</h1>

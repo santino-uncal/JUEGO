@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Imperium – Rey de Roma</title>
-  <link rel="stylesheet" href="css/estilo.css">
-  <link rel="stylesheet" href="css/ciudad.css">
+  <!-- Se cargan con la hora en la dirección para que el navegador nunca use copias viejas de los archivos -->
+  <script>
+    for (const f of ["css/estilo.css", "css/ciudad.css"]) document.write(`<link rel="stylesheet" href="${f}?v=${Date.now()}">`);
+  </script>
 </head>
 <body>
   <header>
@@ -79,8 +81,8 @@
     <div class="cartel-caja" id="modal-caja"></div>
   </div>
 
-  <script src="data/ciudad.js"></script>
-  <script src="js/ciudad-reglas.js"></script>
-  <script src="js/ciudad.js"></script>
+  <script>
+    for (const f of ["data/ciudad.js", "js/ciudad-reglas.js", "js/ciudad.js"]) document.write(`<script src="${f}?v=${Date.now()}"><\/script>`);
+  </script>
 </body>
 </html>
