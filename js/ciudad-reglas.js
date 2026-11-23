@@ -233,6 +233,43 @@ function cambiarApoyo(n) {
   return real ? ` (${real > 0 ? "+" : ""}${real} 😊 apoyo)` : "";
 }
 
+// ---------- Acciones del gobierno ----------
+
+// Lo que recibís con una acción (lo fijo más lo que depende de los habitantes)
+function ganaAccion(id) {
+  const a = ACCIONES[id];
+  const g = { ...(a.da || {}) };
+  for (const r in a.porHabitante || {}) g[r] = (g[r] || 0) + a.porHabitante[r] * estado.habitantes;
+  return g;
+}
+
+// Turno a partir del cual se puede volver a hacer
+const accionLista = (id) => (estado.acciones && estado.acciones[id]) || 0;
+
+function puedeAccion(id) {
+  const a = ACCIONES[id];
+  if (a.requiere && cuenta(a.requiere) === 0) return { ok: false, motivo: `Necesitás ${articuloEd(a.requiere)} ${EDIFICIOS[a.requiere].nombre} terminado.` };
+  const faltan = accionLista(id) - estado.turno;
+  if (faltan > 0) return { ok: false, motivo: `Podés repetirla en ${faltan} turno${faltan > 1 ? "s" : ""}.` };
+  if (a.costo && !alcanza(a.costo)) return { ok: false, motivo: "No te alcanzan los recursos." };
+  return { ok: true };
+}
+
+const articuloEd = (tipo) => (EDIFICIOS[tipo].nombre.endsWith("a") ? "una" : "un");
+
+function hacerAccion(id) {
+  if (!puedeAccion(id).ok) return false;
+  const a = ACCIONES[id];
+  if (a.costo) pagar(a.costo);
+  const g = ganaAccion(id);
+  for (const r in g) estado.rec[r] += g[r];
+  estado.acciones = estado.acciones || {};
+  estado.acciones[id] = estado.turno + a.espera;
+  const premio = Object.entries(g).map(([r, v]) => `+${v} ${RECURSOS[r].icono}`).join(" ");
+  anotar(`${a.icono} ${a.nombre}.${premio ? " " + premio + "." : ""}${cambiarApoyo(a.apoyo)}`, a.apoyo >= 0 ? "bien" : "mal");
+  return true;
+}
+
 // ---------- Producción ----------
 
 // Devuelve lo que entra y sale por turno, recurso por recurso

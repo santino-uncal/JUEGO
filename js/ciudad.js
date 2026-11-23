@@ -109,7 +109,7 @@ function dibujarCiudad() {
 
 function dibujarPanel() {
   document.querySelectorAll(".pestanias button").forEach((b) => b.classList.toggle("activa", b.dataset.pestania === pestania));
-  const fn = { construir: panelConstruir, ejercito: panelEjercito, vecinos: panelVecinos }[pestania];
+  const fn = { construir: panelConstruir, acciones: panelAcciones, ejercito: panelEjercito, vecinos: panelVecinos }[pestania];
   $("contenido").innerHTML = fn();
 }
 
@@ -141,6 +141,34 @@ function panelConstruir() {
           ${p.ok ? "" : `<br><small class="motivo">${p.motivo}</small>`}
         </div>
         <button data-accion="construir" data-tipo="${tipo}" ${p.ok ? "" : "disabled"}>Construir</button>
+      </div>`;
+  }
+  return html + "</div>";
+}
+
+function panelAcciones() {
+  const ap = apoyo();
+  let html = `<p>😊 Apoyo popular: <b>${ap}</b> de 100 · todo rinde <b>${Math.round(productividad() * 100)}%</b></p>
+    <p class="ayuda">Ganarte al pueblo cuesta recursos; exprimirlo te da recursos pero baja el apoyo. Cada acción tarda unos turnos en poder repetirse.</p>
+    <div class="lista">`;
+  for (const id in ACCIONES) {
+    const a = ACCIONES[id];
+    const p = puedeAccion(id);
+    const bloqueado = a.requiere && cuenta(a.requiere) === 0;
+    const gana = Object.entries(ganaAccion(id)).map(([r, v]) => `+${v} ${RECURSOS[r].icono}`).join(" ");
+    const partes = [];
+    if (a.costo) partes.push(`Cuesta: ${textoCosto(a.costo)}`);
+    if (gana) partes.push(`Da: ${gana}`);
+    html += `
+      <div class="item ${bloqueado ? "bloqueado" : ""}">
+        <div class="item-icono">${bloqueado ? "🔒" : a.icono}</div>
+        <div class="item-texto">
+          <b>${a.nombre}</b> <small class="${a.apoyo >= 0 ? "bien" : "mal"}">${a.apoyo >= 0 ? "+" : ""}${a.apoyo} 😊</small><br>
+          <small>${a.desc}</small><br>
+          <small>${partes.join(" · ") || "Gratis"} · se repite cada ${a.espera} turnos</small>
+          ${p.ok ? "" : `<br><small class="motivo">${p.motivo}</small>`}
+        </div>
+        <button data-accion="gobierno" data-id="${id}" ${p.ok && !estado.terminado ? "" : "disabled"}>Hacer</button>
       </div>`;
   }
   return html + "</div>";
@@ -673,6 +701,7 @@ document.addEventListener("click", (ev) => {
       return;
     }
     case "entrenar": entrenar(d.unidad, +d.n); break;
+    case "gobierno": hacerAccion(d.id); break;
     case "preparar": prepararAtaque(d.enemigo); return;
     case "atacar": {
       const r = atacarEnemigo(d.enemigo, leerEnvio());

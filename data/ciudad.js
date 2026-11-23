@@ -248,6 +248,32 @@ const APOYO = {
   },
 };
 
+// Acciones del gobierno (pestaña 🎭 Acciones): ganás o perdés apoyo.
+//   costo:   lo que pagás
+//   da:      lo que recibís
+//   porHabitante: recursos extra por cada habitante (por ejemplo, un impuesto especial)
+//   apoyo:   cuánto sube (+) o baja (-) el apoyo
+//   espera:  turnos hasta poder repetirla
+//   requiere: edificio terminado que hace falta (opcional)
+const ACCIONES = {
+  pan:       { nombre: "Repartir pan", icono: "🍞", desc: "Regalás trigo de los graneros a los pobres de Roma.",
+               costo: { comida: 25 }, apoyo: 8, espera: 3 },
+  fiesta:    { nombre: "Fiesta en las calles", icono: "🎉", desc: "Música, vino y banquetes pagados por el rey.",
+               costo: { oro: 35, comida: 10 }, apoyo: 12, espera: 4 },
+  ofrenda:   { nombre: "Ofrenda a Júpiter", icono: "🐂", desc: "Un gran sacrificio en el templo: el pueblo siente que los dioses están con Roma.",
+               costo: { oro: 20, comida: 15 }, apoyo: 10, espera: 4, requiere: "templo" },
+  discurso:  { nombre: "Discurso en el Foro", icono: "🗣️", desc: "Hablás ante el pueblo y prometés días mejores.",
+               apoyo: 6, espera: 3, requiere: "foro" },
+  juegos:    { nombre: "Juegos de gladiadores", icono: "🏟️", desc: "Días de espectáculos gratis en el anfiteatro.",
+               costo: { oro: 60 }, apoyo: 20, espera: 5, requiere: "anfiteatro" },
+  impuesto:  { nombre: "Impuesto especial", icono: "💸", desc: "Cobrás un impuesto extra de golpe: 2 de oro por habitante. A nadie le gusta.",
+               porHabitante: { oro: 2 }, apoyo: -12, espera: 4 },
+  requisar:  { nombre: "Requisar cosechas", icono: "🌾", desc: "Tus soldados se llevan parte de la cosecha de los campesinos.",
+               da: { comida: 40 }, apoyo: -10, espera: 4 },
+  forzados:  { nombre: "Trabajos forzados", icono: "⛓️", desc: "Obligás al pueblo a cortar árboles y picar piedra sin paga.",
+               da: { madera: 30, piedra: 20 }, apoyo: -12, espera: 4 },
+};
+
 // Botón "Incitar inmigración": pagás oro y llega gente nueva (una vez por turno, si hay lugar)
 const INMIGRACION = { costo: { oro: 20 }, habitantes: 3 };
 
