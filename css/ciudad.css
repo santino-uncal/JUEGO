@@ -191,3 +191,6 @@ button.ancho { width: 100%; margin-bottom: 8px; }
 
 /* Íconos dibujados (troncos, piedra): del tamaño de un emoji */
 img.ico { width: 1.35em; height: 1.35em; vertical-align: -0.3em; }
+
+/* Botones para pasar de una ciudad a otra */
+#ciudades:empty { display: none; }

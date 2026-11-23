@@ -28,6 +28,8 @@ const INICIO = {
 const EDIFICIOS = {
   regia:      { nombre: "Regia", icono: "👑", desc: "El palacio del rey. Corazón de Roma.",
                 produce: { comida: 3, oro: 2, ciencia: 3 }, capacidad: 10, unico: true, fijo: true },
+  plaza:      { nombre: "Plaza", icono: "⛲", desc: "El centro de una ciudad que fundaste.",
+                produce: { comida: 2, oro: 1 }, capacidad: 5, fijo: true },
   casa:       { nombre: "Casas", icono: "🏠", desc: "Lugar para que viva más gente.",
                 costo: { madera: 15 }, turnos: 1, capacidad: 5 },
   granja:     { nombre: "Granja", icono: "🌾", desc: "Produce comida para el pueblo y el ejército.",
@@ -272,6 +274,27 @@ const ACCIONES = {
                da: { comida: 40 }, apoyo: -10, espera: 4 },
   forzados:  { nombre: "Trabajos forzados", icono: "⛓️", desc: "Obligás al pueblo a cortar árboles y picar piedra sin paga.",
                da: { madera: 30, piedra: 20 }, apoyo: -12, espera: 4 },
+};
+
+// Fundar ciudades nuevas (desde el 🗺️ Mapa, en una casilla ya explorada).
+// Los recursos y los habitantes se comparten entre todas tus ciudades.
+//   costo:     lo que cuesta la primera ciudad
+//   aumento:   cada ciudad siguiente cuesta un 50% más que la primera (0.5)
+//   colonos:   habitantes libres que hacen falta para fundarla
+//   lotes:     terrenos de la ciudad nueva (filas de 5)
+//   lotePlaza: dónde está su plaza
+//   distancia: tiene que quedar al menos esta distancia de otra ciudad (2 = una casilla en el medio)
+//   prohibidos: terrenos donde no se puede fundar (~ mar, m montaña)
+//   nombres:   los nombres de las ciudades, en orden (también marca cuántas se pueden fundar)
+const FUNDACION = {
+  costo: { comida: 40, madera: 60, oro: 40 },
+  aumento: 0.5,
+  colonos: 4,
+  lotes: 10,
+  lotePlaza: 2,
+  distancia: 2,
+  prohibidos: ["~", "m"],
+  nombres: ["Ostia", "Tibur", "Antium", "Ardea", "Lavinium", "Praeneste", "Tusculum", "Gabii"],
 };
 
 // Botón "Incitar inmigración": pagás oro y llega gente nueva (una vez por turno, si hay lugar)

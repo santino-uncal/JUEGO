@@ -3,6 +3,7 @@
 
 const CLAVE_GUARDADO = "imperium_ciudad";
 let loteElegido = null;
+let ciudadVista = 0;           // ciudad que se está mirando: 0 = Roma, 1... = las fundadas
 let pestania = "construir";
 let vistaActual = "ciudad";     // "ciudad" o "mapa"
 let casillaElegida = null;      // { x, y } en el mapa
@@ -19,6 +20,7 @@ function cargar() {
       for (const id in d.techs) if (!TECNOLOGIAS[id]) delete d.techs[id];
       if (d.meta && !TECNOLOGIAS[d.meta]) d.meta = null;
       if (d.apoyo === undefined) d.apoyo = APOYO.inicio;
+      d.colonias = d.colonias || [];
       // Ya no se pierde por saqueos: las partidas que habían terminado así siguen
       if (d.resultado === "derrota") { d.terminado = false; d.resultado = null; }
       prepararMapa(d);
@@ -70,9 +72,15 @@ function dibujarRecursos() {
 }
 
 function dibujarCiudad() {
+  // Botones para pasar de una ciudad a otra (solo si fundaste alguna)
+  if (!lotesDe(ciudadVista)) ciudadVista = 0;
+  const nombres = ["Roma", ...estado.colonias.map((col) => col.nombre)];
+  $("ciudades").innerHTML = nombres.length < 2 ? "" : nombres.map((n, i) =>
+    `<button data-accion="ver-ciudad" data-ciudad="${i}" class="${i === ciudadVista ? "activa" : ""}">${i === 0 ? "👑" : "⛲"} ${n}</button>`).join("");
+
   const c = $("ciudad");
   c.innerHTML = "";
-  estado.lotes.forEach((l, i) => {
+  lotesDe(ciudadVista).forEach((l, i) => {
     const div = document.createElement("div");
     div.className = "lote";
     if (i === loteElegido) div.classList.add("elegido");
@@ -85,7 +93,7 @@ function dibujarCiudad() {
         div.classList.add("obra");
         div.innerHTML = `<span class="icono">🚧</span><span class="nombre">${ed.nombre}</span><span class="falta-turnos">${l.falta} turno${l.falta > 1 ? "s" : ""}</span>`;
       } else {
-        if (l.tipo === "regia") div.classList.add("regia");
+        if (ed.fijo) div.classList.add("regia");
         div.innerHTML = `<span class="icono">${ed.icono}</span><span class="nombre">${ed.nombre}</span>`;
       }
     }
@@ -115,7 +123,7 @@ function dibujarPanel() {
 
 function panelConstruir() {
   if (loteElegido === null) return `<p class="ayuda">Tocá un terreno de la ciudad para construir o ver un edificio.</p>`;
-  const l = estado.lotes[loteElegido];
+  const l = lotesDe(ciudadVista)[loteElegido];
   if (l) {
     const ed = EDIFICIOS[l.tipo];
     let html = `<h3>${ed.icono} ${ed.nombre}</h3><p>${ed.desc}</p>`;
@@ -260,13 +268,15 @@ function dibujarMapa() {
       const lugar = lugarEn(x, y);
       let contenido = MAPA.terrenos[t].icono;
       let extra = "";
+      const col = coloniaEn(x, y);
       if (lugar === "roma") { contenido = "👑"; extra = `<span class="rotulo">Roma</span>`; }
+      else if (col) { contenido = "⛲"; extra = `<span class="rotulo mio">${estado.colonias[col - 1].nombre}</span>`; }
       else if (lugar) {
         const vivo = estado.enemigos[lugar].vivo;
         contenido = vivo ? ENEMIGOS[lugar].icono : "🦅";
         extra = `<span class="rotulo ${vivo ? "enemigo" : "mio"}">${ENEMIGOS[lugar].ciudad}</span>`;
       }
-      html += `<div class="casilla t-${t === "~" ? "mar" : t === "." ? "llano" : t}${lugar ? " ciudad-mapa" : ""}${elegida}" data-x="${x}" data-y="${y}">${contenido}${extra}</div>`;
+      html += `<div class="casilla t-${t === "~" ? "mar" : t === "." ? "llano" : t}${lugar || col ? " ciudad-mapa" : ""}${elegida}" data-x="${x}" data-y="${y}">${contenido}${extra}</div>`;
     }
   }
   m.innerHTML = html;
@@ -293,8 +303,19 @@ function infoCasilla() {
   const lugar = lugarEn(x, y);
   if (lugar === "roma") return `<h3>👑 Roma</h3><p>Tu ciudad. Desde acá salen tus exploradores y tus ejércitos.</p>${pie}`;
   if (lugar) return `<div class="lista">${tarjetaEnemigo(lugar)}</div>${pie}`;
+  const col = coloniaEn(x, y);
+  if (col) {
+    return `<h3>⛲ ${estado.colonias[col - 1].nombre}</h3><p>Una ciudad fundada por Roma. Comparte con Roma los recursos y los habitantes.</p>
+      <button data-accion="ver-ciudad" data-ciudad="${col}">🏛️ Ver la ciudad</button>${pie}`;
+  }
   const ter = MAPA.terrenos[terreno(x, y)];
-  return `<h3>${ter.icono} ${ter.nombre}</h3><p class="ayuda">Acá no vive nadie.</p>${pie}`;
+  const p = puedeFundar(x, y);
+  const prohibido = FUNDACION.prohibidos.includes(terreno(x, y));
+  return `<h3>${ter.icono} ${ter.nombre}</h3><p class="ayuda">Acá no vive nadie.</p>
+    ${prohibido ? "" : `<p>🏘️ Podés fundar una ciudad nueva: ${FUNDACION.lotes} terrenos más para construir.<br>
+      <small>Cuesta: ${textoCosto(costoFundar())} y necesita ${FUNDACION.colonos} 👥 habitantes libres.</small></p>
+      ${p.ok ? "" : `<p class="motivo"><small>${p.motivo}</small></p>`}
+      <button data-accion="fundar" ${p.ok && !estado.terminado ? "" : "disabled"}>🏘️ Fundar ${FUNDACION.nombres[estado.colonias.length] || "ciudad"}</button>`}${pie}`;
 }
 
 // ---------- Árbol de tecnologías ----------
@@ -681,10 +702,22 @@ document.addEventListener("click", (ev) => {
   const d = btn.dataset;
   switch (d.accion) {
     case "explorar": if (casillaElegida) explorar(casillaElegida.x, casillaElegida.y); break;
-    case "construir": construir(loteElegido, d.tipo); break;
-    case "demoler":
-      if (!confirm("¿Demoler este edificio? No se devuelve lo que costó.")) return;
-      demoler(loteElegido); break;
+    case "construir": construir(ciudadVista, loteElegido, d.tipo); break;
+    case "fundar": {
+      if (!casillaElegida) break;
+      const n = fundarCiudad(casillaElegida.x, casillaElegida.y);
+      if (n) { ciudadVista = n; loteElegido = null; cambiarVista("ciudad"); }
+      break;
+    }
+    case "ver-ciudad": ciudadVista = +d.ciudad; loteElegido = null; cambiarVista("ciudad"); break;
+    case "demoler": {
+      // Cartel propio del juego (las ventanitas del navegador pueden estar bloqueadas)
+      const ed = EDIFICIOS[lotesDe(ciudadVista)[loteElegido].tipo];
+      abrirModal(`<h2>🔨 ¿Demoler ${ed.icono} ${ed.nombre}?</h2><p>No se devuelve lo que costó. Los que trabajaban ahí quedan libres.</p>
+        <div class="fila centrado"><button data-accion="demoler-si">🔨 Sí, demoler</button><button data-accion="cerrar" class="claro">Cancelar</button></div>`);
+      return;
+    }
+    case "demoler-si": demoler(ciudadVista, loteElegido); loteElegido = null; cerrarModal(); break;
     case "investigar": investigar(d.tech); break;
     case "meta": elegirMeta(d.tech || null); break;
     case "ver-arbol": periodoVisto = null; cambiarVista("arbol"); return;
@@ -723,11 +756,13 @@ $("btn-turno").addEventListener("click", () => {
 });
 
 $("btn-nueva").addEventListener("click", () => {
-  if (confirm("¿Empezar una partida nueva? Se pierde la actual.")) empezarDeNuevo();
+  abrirModal(`<h2>¿Empezar una partida nueva?</h2><p>Se pierde la actual.</p>
+    <div class="fila centrado"><button data-accion="nueva">Sí, empezar de nuevo</button><button data-accion="cerrar" class="claro">Cancelar</button></div>`);
 });
 
 function empezarDeNuevo() {
   estado = partidaNueva();
+  ciudadVista = 0;
   loteElegido = null;
   pestania = "construir";
   anotar("Año 753 a.C. Rómulo te deja una colina y un puñado de gente. ¡Hacé grande a Roma!", "turno");

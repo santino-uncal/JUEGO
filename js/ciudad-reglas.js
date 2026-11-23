@@ -20,6 +20,7 @@ function partidaNueva() {
     rec: { ...INICIO.recursos },
     habitantes: INICIO.habitantes,
     lotes, techs: {}, ejercito, enemigos,
+    colonias: [],
     saqueos: 0, atacoEsteTurno: false, periodo: 0, apoyo: APOYO.inicio,
     log: [], terminado: false, resultado: null,
   };
@@ -160,7 +161,7 @@ function costoUnidad(tipo) {
 }
 
 function cuenta(tipo, incluirObras = false) {
-  return estado.lotes.filter((l) => l && l.tipo === tipo && (incluirObras || l.falta === 0)).length;
+  return todosLotes().filter((l) => l && l.tipo === tipo && (incluirObras || l.falta === 0)).length;
 }
 
 function soldados() {
@@ -171,14 +172,14 @@ function soldados() {
 
 function capacidad() {
   let c = 0;
-  for (const l of estado.lotes) if (l && l.falta === 0) c += (EDIFICIOS[l.tipo].capacidad || 0) + capacidadExtra(l.tipo);
+  for (const l of todosLotes()) if (l && l.falta === 0) c += (EDIFICIOS[l.tipo].capacidad || 0) + capacidadExtra(l.tipo);
   return c;
 }
 
 // Habitantes que necesitan todos los edificios (también los que están en obra)
 function trabajosOcupados() {
   let n = 0;
-  for (const l of estado.lotes) if (l) n += EDIFICIOS[l.tipo].trabajadores || 0;
+  for (const l of todosLotes()) if (l) n += EDIFICIOS[l.tipo].trabajadores || 0;
   return n;
 }
 
@@ -217,7 +218,7 @@ const apoyo = () => (estado.apoyo === undefined ? APOYO.inicio : estado.apoyo);
 // El apoyo al que vuelve Roma con el tiempo: la base más lo que dan los edificios y tecnologías
 function apoyoBase() {
   let b = APOYO.base + efecto("apoyo");
-  for (const l of estado.lotes) if (l && l.falta === 0) b += APOYO.edificios[l.tipo] || 0;
+  for (const l of todosLotes()) if (l && l.falta === 0) b += APOYO.edificios[l.tipo] || 0;
   return limitarApoyo(b);
 }
 
@@ -276,7 +277,7 @@ function hacerAccion(id) {
 function balance() {
   const b = { comida: 0, madera: 0, piedra: 0, oro: 0, ciencia: 0 };
   const efi = eficiencia() * productividad();
-  for (const l of estado.lotes) {
+  for (const l of todosLotes()) {
     if (!l || l.falta > 0) continue;
     const ed = EDIFICIOS[l.tipo];
     const factor = ed.trabajadores ? efi : productividad();
@@ -312,21 +313,70 @@ function puedeConstruir(tipo) {
   return { ok: true };
 }
 
-function construir(lote, tipo) {
-  if (estado.lotes[lote] || !puedeConstruir(tipo).ok) return false;
+// ciudad: 0 = Roma, 1 en adelante = las ciudades que fundaste
+function construir(ciudad, lote, tipo) {
+  const lotes = lotesDe(ciudad);
+  if (!lotes || lotes[lote] || !puedeConstruir(tipo).ok) return false;
   const ed = EDIFICIOS[tipo];
   pagar(ed.costo);
-  estado.lotes[lote] = { tipo, falta: ed.turnos };
-  anotar(`🚧 Empieza la obra: ${ed.nombre} (${ed.turnos} turno${ed.turnos > 1 ? "s" : ""}).`);
+  lotes[lote] = { tipo, falta: ed.turnos };
+  anotar(`🚧 Empieza la obra en ${nombreCiudad(ciudad)}: ${ed.nombre} (${ed.turnos} turno${ed.turnos > 1 ? "s" : ""}).`);
   return true;
 }
 
-function demoler(lote) {
-  const l = estado.lotes[lote];
+function demoler(ciudad, lote) {
+  const lotes = lotesDe(ciudad);
+  const l = lotes && lotes[lote];
   if (!l || EDIFICIOS[l.tipo].fijo) return false;
-  estado.lotes[lote] = null;
-  anotar(`Demolés: ${EDIFICIOS[l.tipo].nombre}.`);
+  lotes[lote] = null;
+  anotar(`🔨 Demolés en ${nombreCiudad(ciudad)}: ${EDIFICIOS[l.tipo].nombre}.`);
   return true;
+}
+
+// ---------- Ciudades nuevas ----------
+
+// Todos los terrenos de todas tus ciudades (Roma y las que fundaste)
+const todosLotes = () => estado.lotes.concat(...(estado.colonias || []).map((c) => c.lotes));
+// Terrenos de una ciudad: 0 = Roma, 1 en adelante = las fundadas
+const lotesDe = (i) => (i === 0 ? estado.lotes : estado.colonias[i - 1] && estado.colonias[i - 1].lotes);
+const nombreCiudad = (i) => (i === 0 ? "Roma" : estado.colonias[i - 1].nombre);
+
+// Número de la ciudad fundada en esa casilla (1, 2...) o 0 si no hay ninguna
+function coloniaEn(x, y) {
+  return (estado.colonias || []).findIndex((c) => c.x === x && c.y === y) + 1;
+}
+
+// Cada ciudad nueva cuesta más que la anterior
+function costoFundar() {
+  const n = (estado.colonias || []).length;
+  const c = {};
+  for (const r in FUNDACION.costo) c[r] = Math.round(FUNDACION.costo[r] * (1 + FUNDACION.aumento * n));
+  return c;
+}
+
+function puedeFundar(x, y) {
+  if (!vista(x, y)) return { ok: false, motivo: "Primero explorá esta zona." };
+  if (FUNDACION.prohibidos.includes(terreno(x, y))) return { ok: false, motivo: `No se puede fundar una ciudad en ${MAPA.terrenos[terreno(x, y)].nombre.toLowerCase()}.` };
+  if (estado.colonias.length >= FUNDACION.nombres.length) return { ok: false, motivo: "Ya fundaste todas las ciudades posibles." };
+  const otras = [MAPA.roma, ...Object.values(ENEMIGOS), ...estado.colonias];
+  if (otras.some((o) => distancia(x, y, o.x, o.y) < FUNDACION.distancia)) {
+    return { ok: false, motivo: "Está muy pegada a otra ciudad: dejá al menos una casilla en el medio." };
+  }
+  if (FUNDACION.colonos > libres()) return { ok: false, motivo: `Necesitás ${FUNDACION.colonos} habitantes libres que se muden (tenés ${libres()}).` };
+  if (!alcanza(costoFundar())) return { ok: false, motivo: "No te alcanzan los recursos." };
+  return { ok: true };
+}
+
+function fundarCiudad(x, y) {
+  if (!puedeFundar(x, y).ok) return 0;
+  pagar(costoFundar());
+  const nombre = FUNDACION.nombres[estado.colonias.length];
+  const lotes = Array(FUNDACION.lotes).fill(null);
+  lotes[FUNDACION.lotePlaza] = { tipo: "plaza", falta: 0 };
+  estado.colonias.push({ nombre, x, y, lotes });
+  revelar(x, y, 1);
+  anotar(`🏘️ ¡${FUNDACION.colonos} familias romanas fundan ${nombre}! Ya podés construir en sus terrenos.`, "bien");
+  return estado.colonias.length;
 }
 
 // ---------- Tecnologías ----------
@@ -641,7 +691,7 @@ function terminarTurno() {
   }
 
   // 4) Obras (las que le gustan al pueblo suben el apoyo al terminarse)
-  for (const l of estado.lotes) {
+  for (const l of todosLotes()) {
     if (l && l.falta > 0) {
       l.falta--;
       if (l.falta === 0) anotar(`✅ Terminó la obra: ${EDIFICIOS[l.tipo].nombre}.${cambiarApoyo(APOYO.edificios[l.tipo])}`, "bien");
