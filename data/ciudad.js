@@ -114,7 +114,7 @@ const TECNOLOGIAS = {
   senado:      { nombre: "Senado",       icono: "👴", periodo: "monarquia", fila: 5.8, costo: 70, desc: "Los ancianos aconsejan al rey: desbloquea el Foro.", requiere: ["filosofia"] },
 
   // Reyes etruscos
-  hierro:      { nombre: "Hierro",       icono: "⚒️", periodo: "monarquia", fila: 0.8, costo: 85, desc: "Desbloquea Herrería y Legionarios.", requiere: ["equitacion", "bronce"] },
+  hierro:      { nombre: "Hierro",       icono: "⚒️", periodo: "monarquia", fila: 0.8, costo: 70, desc: "Desbloquea Herrería y Legionarios.", requiere: ["equitacion", "bronce"] },
 
   // Fin de la monarquía
   democracia:  { nombre: "Democracia",   icono: "🗳️", periodo: "monarquia", fila: 4, costo: 100, desc: "El pueblo quiere elegir a sus gobernantes. Te permite proclamar la República.",
