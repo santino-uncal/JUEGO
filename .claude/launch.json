@@ -4,22 +4,8 @@
     {
       "name": "juego",
       "runtimeExecutable": "py",
-      "runtimeArgs": ["-m", "http.server", "8123"],
+      "runtimeArgs": ["-c", "import os, http.server as h; h.test(HandlerClass=h.SimpleHTTPRequestHandler, port=int(os.environ.get('PORT', 8123)))"],
       "port": 8123
-    },
-    {
-      "name": "juego-2",
-      "runtimeExecutable": "py",
-      "runtimeArgs": ["-m", "http.server", "8125"],
-      "port": 8125,
-      "autoPort": false
-    },
-    {
-      "name": "juego-3",
-      "runtimeExecutable": "py",
-      "runtimeArgs": ["-m", "http.server", "8127"],
-      "port": 8127,
-      "autoPort": false
     }
   ]
 }
