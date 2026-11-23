@@ -133,8 +133,8 @@ const TECNOLOGIAS = {
   navegacion:  { nombre: "Navegación",   icono: "⛵", periodo: "republica", fila: 1, costo: 110, desc: "Desbloquea el Puerto.", requiere: ["vias", "construccion"] },
   tacticas:    { nombre: "Tácticas",     icono: "🎖️", periodo: "republica", fila: 3, costo: 120, desc: "Flanqueos y emboscadas: tus tropas atacan +15% mejor.", requiere: ["disciplina", "arqueria"],
                  efecto: { ataque: 0.15 } },
-  fortificacion:{ nombre: "Fortificaciones", icono: "🏰", periodo: "republica", fila: 5, costo: 130, desc: "La muralla protege el doble: +100% en vez de +50%.", requiere: ["ingenieria"],
-                 efecto: { muralla: 0.5 } },
+  fortificacion:{ nombre: "Fortificaciones", icono: "🏰", periodo: "republica", fila: 5, costo: 130, desc: "La muralla protege el doble: +100% en vez de +50%. El pueblo se siente seguro: +10 de apoyo.", requiere: ["ingenieria"],
+                 efecto: { muralla: 0.5, apoyo: 10 } },
   arquitectura:{ nombre: "Arquitectura", icono: "📏", periodo: "republica", fila: 6, costo: 140, desc: "Arcos y bóvedas: desbloquea el Anfiteatro y cada cantera da +2 de piedra.", requiere: ["ingenieria"],
                  efecto: { mejora: { cantera: { piedra: 2 } } } },
   calendario:  { nombre: "Calendario",   icono: "🗓️", periodo: "republica", fila: 7, costo: 130, desc: "Saber cuándo sembrar: cada granja +1 de comida y la Regia +2 de conocimiento.", requiere: ["astronomia"],
@@ -222,8 +222,29 @@ const ENEMIGOS = {
               desc: "Bárbaros feroces del norte. Saquean todo a su paso." },
 };
 
-// Cuántas veces pueden saquear Roma antes de que caiga tu reinado
-const MAX_SAQUEOS = 3;
+// Apoyo popular 😊 (de 0 a 100). Con mucho apoyo la gente trabaja con ganas y todo rinde más;
+// con poco apoyo, rinde menos.
+//   minimo / maximo: con 0 de apoyo los edificios e impuestos rinden "minimo" (0.7 = 70%),
+//                    con 100 rinden "maximo" (1.3 = 130%). Con 50 rinden normal.
+//   base: el apoyo al que vuelve Roma con el tiempo. Cada turno el apoyo se acerca "vuelve" puntos a su base.
+//   edificios: cuánto sube la base mientras el edificio esté en pie (y lo suman de golpe al terminarse).
+//   sucesos: cuánto suma o resta cada cosa que pasa.
+// Las tecnologías con efecto "apoyo" también suben la base (por ejemplo, Fortificaciones).
+const APOYO = {
+  inicio: 50,
+  base: 50,
+  vuelve: 2,
+  minimo: 0.7,
+  maximo: 1.3,
+  edificios: { muralla: 15, templo: 5, acueducto: 5, anfiteatro: 10, foro: 5 },
+  sucesos: {
+    saqueo: -25,      // te saquean Roma
+    rechazo: 10,      // rechazás un ataque a Roma
+    conquista: 15,    // conquistás un pueblo
+    derrota: -10,     // perdés un ataque contra otro pueblo
+    hambre: -3,       // cada turno sin comida
+  },
+};
 
 // Botón "Incitar inmigración": pagás oro y llega gente nueva (una vez por turno, si hay lugar)
 const INMIGRACION = { costo: { oro: 20 }, habitantes: 3 };

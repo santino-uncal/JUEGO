@@ -18,6 +18,9 @@ function cargar() {
     if (d && d.lotes && d.lotes.length === INICIO.lotes) {
       for (const id in d.techs) if (!TECNOLOGIAS[id]) delete d.techs[id];
       if (d.meta && !TECNOLOGIAS[d.meta]) d.meta = null;
+      if (d.apoyo === undefined) d.apoyo = APOYO.inicio;
+      // Ya no se pierde por saqueos: las partidas que habían terminado así siguen
+      if (d.resultado === "derrota") { d.terminado = false; d.resultado = null; }
       prepararMapa(d);
       return d;
     }
@@ -37,6 +40,8 @@ function textoProduce(ed) {
   const partes = [];
   if (ed.produce) for (const r in ed.produce) partes.push(`+${ed.produce[r]} ${RECURSOS[r].icono}`);
   if (ed.capacidad) partes.push(`+${ed.capacidad} 🏠 lugar`);
+  const tipo = Object.keys(EDIFICIOS).find((k) => EDIFICIOS[k] === ed);
+  if (APOYO.edificios[tipo]) partes.push(`+${APOYO.edificios[tipo]} 😊 apoyo`);
   return partes.join(" · ");
 }
 
@@ -55,7 +60,12 @@ function dibujarRecursos() {
   html += `<span title="Habitantes / lugar para vivir. Libres: los que no trabajan en ningún edificio.">👥 <b>${estado.habitantes + soldados()}</b>/${cap} <small>(${libres()} libres)</small></span>`;
   html += `<span title="Tu ejército: ${soldados()} soldados. Fuerza de ataque si salen todos: ${Math.round(poderAtaque(estado.ejercito))}">⚔️ <b>${soldados()}</b> <small>ataque ${Math.round(poderAtaque(estado.ejercito))}</small></span>`;
   html += `<span title="Defensa de Roma">🛡️ <b>${Math.round(poderDefensa())}</b></span>`;
-  html += `<span title="Saqueos sufridos">🔥 <b>${estado.saqueos}</b>/${MAX_SAQUEOS}</span>`;
+  const ap = apoyo();
+  const cara = ap >= 75 ? "😄" : ap >= 50 ? "🙂" : ap >= 25 ? "😟" : "😠";
+  const prod = Math.round((productividad() - 1) * 100);
+  const base = apoyoBase();
+  const tendencia = base > ap ? " ↑" : base < ap ? " ↓" : "";
+  html += `<span title="Apoyo popular (0 a 100). Cambia cuánto rinden los edificios y los impuestos: ahora ${prod >= 0 ? "+" : ""}${prod}%. Con el tiempo vuelve a ${base}. Lo suben la muralla, templos y grandes obras, rechazar ataques y conquistar; lo bajan saqueos, derrotas y hambre.">${cara} <b>${ap}</b>${tendencia} <small class="${prod < 0 ? "neg" : ""}">${prod >= 0 ? "+" : ""}${prod}%</small></span>`;
   $("recursos").innerHTML = html;
 }
 
@@ -590,13 +600,8 @@ function actualizarComparacion(id) {
 }
 
 function mostrarFin() {
-  if (estado.resultado === "victoria") {
-    abrirModal(`<h2>¡Ave, ${PERIODOS[periodoActual()].titulo}! 🏆</h2><p>Sometiste a todos los pueblos vecinos en ${estado.turno} años. Roma domina Italia.</p>
-      <button data-accion="nueva">Jugar de nuevo</button>`);
-  } else {
-    abrirModal(`<h2>Tu reinado terminó 💀</h2><p>Roma fue saqueada ${MAX_SAQUEOS} veces. El pueblo te echó del trono en el año ${estado.turno}.</p>
-      <button data-accion="nueva">Jugar de nuevo</button>`);
-  }
+  abrirModal(`<h2>¡Ave, ${PERIODOS[periodoActual()].titulo}! 🏆</h2><p>Sometiste a todos los pueblos vecinos en ${estado.turno} años. Roma domina Italia.</p>
+    <button data-accion="nueva">Jugar de nuevo</button>`);
 }
 
 // ---------- Clics ----------

@@ -20,7 +20,7 @@ function partidaNueva() {
     rec: { ...INICIO.recursos },
     habitantes: INICIO.habitantes,
     lotes, techs: {}, ejercito, enemigos,
-    saqueos: 0, atacoEsteTurno: false, periodo: 0,
+    saqueos: 0, atacoEsteTurno: false, periodo: 0, apoyo: APOYO.inicio,
     log: [], terminado: false, resultado: null,
   };
   prepararMapa(nueva);
@@ -208,23 +208,48 @@ function multiplicar(costo, n) {
   return c;
 }
 
+// ---------- Apoyo popular ----------
+
+const limitarApoyo = (x) => Math.max(0, Math.min(100, Math.round(x)));
+// Partidas guardadas de antes del apoyo arrancan con el apoyo inicial
+const apoyo = () => (estado.apoyo === undefined ? APOYO.inicio : estado.apoyo);
+
+// El apoyo al que vuelve Roma con el tiempo: la base más lo que dan los edificios y tecnologías
+function apoyoBase() {
+  let b = APOYO.base + efecto("apoyo");
+  for (const l of estado.lotes) if (l && l.falta === 0) b += APOYO.edificios[l.tipo] || 0;
+  return limitarApoyo(b);
+}
+
+// Cuánto rinde todo según el apoyo: 1 = normal, 1.2 = +20%
+const productividad = () => APOYO.minimo + (APOYO.maximo - APOYO.minimo) * apoyo() / 100;
+
+// Suma o resta apoyo y lo cuenta en la crónica
+function cambiarApoyo(n) {
+  if (!n) return "";
+  const antes = apoyo();
+  estado.apoyo = limitarApoyo(antes + n);
+  const real = estado.apoyo - antes;
+  return real ? ` (${real > 0 ? "+" : ""}${real} 😊 apoyo)` : "";
+}
+
 // ---------- Producción ----------
 
 // Devuelve lo que entra y sale por turno, recurso por recurso
 function balance() {
   const b = { comida: 0, madera: 0, piedra: 0, oro: 0, ciencia: 0 };
-  const efi = eficiencia();
+  const efi = eficiencia() * productividad();
   for (const l of estado.lotes) {
     if (!l || l.falta > 0) continue;
     const ed = EDIFICIOS[l.tipo];
-    const factor = ed.trabajadores ? efi : 1;
+    const factor = ed.trabajadores ? efi : productividad();
     for (const r in b) {
       const valor = ((ed.produce && ed.produce[r]) || 0) + mejoraEdificio(l.tipo, r);
       b[r] += valor * factor;
     }
   }
   // Impuestos: cada 3 habitantes pagan 1 de oro
-  b.oro += Math.floor(estado.habitantes / 3) * (1 + efecto("impuestos"));
+  b.oro += Math.floor(estado.habitantes / 3) * (1 + efecto("impuestos")) * productividad();
   // Tributos de pueblos conquistados
   for (const id in estado.enemigos) {
     if (estado.enemigos[id].vivo) continue;
@@ -484,11 +509,11 @@ function atacarEnemigo(id, envio) {
     e.marcha = null;
     for (const rec in datos.botin) estado.rec[rec] += datos.botin[rec];
     const botin = Object.entries(datos.botin).map(([rec, v]) => `${v} ${RECURSOS[rec].icono}`).join(", ");
-    anotar(`🏆 ¡Conquistaste ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se rinden. Botín: ${botin}. Ahora te pagan tributo.`, "bien");
+    anotar(`🏆 ¡Conquistaste ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se rinden. Botín: ${botin}. Ahora te pagan tributo.${cambiarApoyo(APOYO.sucesos.conquista)}`, "bien");
   } else {
     muertos = aplicarBajas(grupo, 0.75);
     e.fuerza = Math.max(1, e.fuerza * (1 - r.perdidaGanador * 0.8));
-    anotar(`💀 Derrota frente a ${datos.ciudad}. Volvieron ${enviados - muertos} de ${enviados} soldados.`, "mal");
+    anotar(`💀 Derrota frente a ${datos.ciudad}. Volvieron ${enviados - muertos} de ${enviados} soldados.${cambiarApoyo(APOYO.sucesos.derrota)}`, "mal");
   }
   for (const u in grupo) estado.ejercito[u] += grupo[u];
   revisarFin();
@@ -506,7 +531,7 @@ function defenderRoma(id) {
   if (r.ganaA) {
     const muertos = aplicarBajas(estado.ejercito, r.perdidaGanador * 0.7);
     e.fuerza = Math.max(1, e.fuerza - atacantes * 0.8);
-    anotar(`🛡️ ¡Rechazaste a los ${datos.nombre.toLowerCase()}! Perdiste ${muertos} soldado(s).`, "bien");
+    anotar(`🛡️ ¡Rechazaste a los ${datos.nombre.toLowerCase()}! Perdiste ${muertos} soldado(s).${cambiarApoyo(APOYO.sucesos.rechazo)}`, "bien");
   } else {
     aplicarBajas(estado.ejercito, 0.5);
     e.fuerza = Math.max(1, e.fuerza - atacantes * 0.3);
@@ -521,7 +546,7 @@ function defenderRoma(id) {
       quemado = ` Incendiaron: ${EDIFICIOS[estado.lotes[i].tipo].nombre}.`;
       estado.lotes[i] = null;
     }
-    anotar(`🔥 ¡Los ${datos.nombre.toLowerCase()} saquearon Roma! Te robaron la mitad de todo y murieron ${perdidos} habitantes.${quemado} (Saqueos: ${estado.saqueos}/${MAX_SAQUEOS})`, "mal");
+    anotar(`🔥 ¡Los ${datos.nombre.toLowerCase()} saquearon Roma! Te robaron la mitad de todo y murieron ${perdidos} habitantes.${quemado} El pueblo pierde la confianza en vos${cambiarApoyo(APOYO.sucesos.saqueo)}.`, "mal");
   }
 }
 
@@ -560,13 +585,16 @@ function terminarTurno() {
   // 2) Hambre
   if (estado.rec.comida < 0) {
     estado.rec.comida = 0;
+    const enojo = cambiarApoyo(APOYO.sucesos.hambre);
     if (soldados() > 0) {
       const tipos = Object.keys(estado.ejercito).filter((u) => estado.ejercito[u] > 0);
       estado.ejercito[tipos[0]]--;
-      anotar("🍂 ¡No hay comida! Un soldado deserta.", "mal");
+      anotar(`🍂 ¡No hay comida! Un soldado deserta.${enojo}`, "mal");
     } else if (estado.habitantes > 1) {
       estado.habitantes--;
-      anotar("🍂 ¡No hay comida! Un habitante se va de Roma.", "mal");
+      anotar(`🍂 ¡No hay comida! Un habitante se va de Roma.${enojo}`, "mal");
+    } else {
+      anotar(`🍂 ¡No hay comida! El pueblo pasa hambre.${enojo}`, "mal");
     }
   } else if (b.comida >= 0) {
     // 3) Crecimiento: si hay comida y lugar, llega gente
@@ -575,13 +603,18 @@ function terminarTurno() {
     if (llegan > 0) estado.habitantes += llegan;
   }
 
-  // 4) Obras
+  // 4) Obras (las que le gustan al pueblo suben el apoyo al terminarse)
   for (const l of estado.lotes) {
     if (l && l.falta > 0) {
       l.falta--;
-      if (l.falta === 0) anotar(`✅ Terminó la obra: ${EDIFICIOS[l.tipo].nombre}.`, "bien");
+      if (l.falta === 0) anotar(`✅ Terminó la obra: ${EDIFICIOS[l.tipo].nombre}.${cambiarApoyo(APOYO.edificios[l.tipo])}`, "bien");
     }
   }
+
+  // 4b) Con el tiempo el apoyo vuelve de a poco a su nivel normal
+  const base = apoyoBase();
+  if (apoyo() < base) estado.apoyo = Math.min(base, apoyo() + APOYO.vuelve);
+  else if (apoyo() > base) estado.apoyo = Math.max(base, apoyo() - APOYO.vuelve);
 
   // 5) Enemigos: crecen, marchan y atacan
   estado.turno++;
@@ -627,11 +660,6 @@ function terminarTurno() {
 
 function revisarFin() {
   if (estado.terminado) return true;
-  if (estado.saqueos >= MAX_SAQUEOS) {
-    estado.terminado = true;
-    estado.resultado = "derrota";
-    return true;
-  }
   if (Object.values(estado.enemigos).every((e) => !e.vivo)) {
     estado.terminado = true;
     estado.resultado = "victoria";
