@@ -15,7 +15,12 @@ function guardar() { localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(estado)
 function cargar() {
   try {
     const d = JSON.parse(localStorage.getItem(CLAVE_GUARDADO));
-    if (d && d.lotes && d.lotes.length === INICIO.lotes) { prepararMapa(d); return d; }
+    if (d && d.lotes && d.lotes.length === INICIO.lotes) {
+      for (const id in d.techs) if (!TECNOLOGIAS[id]) delete d.techs[id];
+      if (d.meta && !TECNOLOGIAS[d.meta]) d.meta = null;
+      prepararMapa(d);
+      return d;
+    }
   } catch (e) { /* partida rota: se empieza de cero */ }
   return null;
 }
@@ -355,11 +360,20 @@ function disposicionArbol(per) {
     for (let c = columnas.length - 2; c >= 0; c--) ordenar(columnas[c], hijos);
   }
 
+  // Si el período tiene filas fijas en los datos, se usan esas
+  let filas = maxFilas;
+  if (tecsDe(per).every((id) => TECNOLOGIAS[id].fila !== undefined)) {
+    mejor = {};
+    for (const id of tecsDe(per)) mejor[id] = TECNOLOGIAS[id].fila;
+    filas = 1 + Math.max(...Object.values(mejor));
+    menosCruces = crucesArbol(mejor, flechas);
+  }
+
   const pos = {};
   for (const id in mejor) {
     pos[id] = { x: columnaTec(id) * ARBOL.anchoCol + 16, y: ARBOL.arriba + mejor[id] * ARBOL.altoFila };
   }
-  disposicionesGuardadas[per] = { pos, flechas, columnas: columnas.length, alto: ARBOL.arriba + maxFilas * ARBOL.altoFila, cruces: menosCruces };
+  disposicionesGuardadas[per] = { pos, flechas, columnas: columnas.length, alto: ARBOL.arriba + filas * ARBOL.altoFila, cruces: menosCruces };
   return disposicionesGuardadas[per];
 }
 
