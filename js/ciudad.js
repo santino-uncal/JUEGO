@@ -109,7 +109,7 @@ function dibujarCiudad() {
 
 function dibujarPanel() {
   document.querySelectorAll(".pestanias button").forEach((b) => b.classList.toggle("activa", b.dataset.pestania === pestania));
-  const fn = { construir: panelConstruir, tecnologias: panelTecnologias, ejercito: panelEjercito, vecinos: panelVecinos }[pestania];
+  const fn = { construir: panelConstruir, ejercito: panelEjercito, vecinos: panelVecinos }[pestania];
   $("contenido").innerHTML = fn();
 }
 
@@ -143,32 +143,6 @@ function panelConstruir() {
         <button data-accion="construir" data-tipo="${tipo}" ${p.ok ? "" : "disabled"}>Construir</button>
       </div>`;
   }
-  return html + "</div>";
-}
-
-function panelTecnologias() {
-  let html = `<p>Tenés <b>${Math.floor(estado.rec.ciencia)} 💡</b> de conocimiento (${signo(balance().ciencia)} por turno).</p>
-    ${estado.meta ? `<p>🎯 Meta: <b>${TECNOLOGIAS[estado.meta].nombre}</b> <small>(se investiga sola cuando te alcance)</small></p>` : ""}
-    ${tarjetaPeriodo()}
-    <button data-accion="ver-arbol" class="ancho">🌳 Ver el árbol de tecnologías</button><div class="lista">`;
-  let futuras = 0;
-  for (const id in TECNOLOGIAS) {
-    const t = TECNOLOGIAS[id];
-    if (periodoTec(id) > periodoActual()) { futuras++; continue; }
-    const p = puedeInvestigar(id);
-    const hecha = tiene(id);
-    html += `
-      <div class="item ${hecha ? "hecha" : ""}">
-        <div class="item-icono">${hecha ? "✅" : t.icono}</div>
-        <div class="item-texto">
-          <b>${t.nombre}</b> ${hecha ? "" : `<small>· ${t.costo} 💡</small>`}<br>
-          <small>${t.desc}</small>
-          ${!hecha && !p.ok ? `<br><small class="motivo">${p.motivo}</small>` : ""}
-        </div>
-        ${hecha ? "" : `<button data-accion="investigar" data-tech="${id}" ${p.ok ? "" : "disabled"}>Investigar</button>`}
-      </div>`;
-  }
-  if (futuras) html += `<p class="ayuda">🔒 Hay ${futuras} tecnologías más que se destraban en los próximos períodos.</p>`;
   return html + "</div>";
 }
 
