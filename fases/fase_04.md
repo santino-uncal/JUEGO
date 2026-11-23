@@ -39,5 +39,5 @@
 ## Pendiente / próximos pasos
 - Pensar si vuelve a haber derrota, por ejemplo una revuelta si el apoyo llega a 0.
 - Jugar partidas reales y ajustar el apoyo, las acciones y la dificultad en general.
-- Ordenar a mano el árbol del Imperium y quizás sumarle tecnologías.
+- Ordenar a mano el árbol del Imperio y quizás sumarle tecnologías.
 - Pensar qué pasa al llegar al Imperio: más enemigos o nuevas metas.
