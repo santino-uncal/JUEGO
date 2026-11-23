@@ -87,38 +87,41 @@ const TECNOLOGIAS = {
   // ===== Monarquía =====
   // fila: altura fija en el árbol (0 = arriba). Si un período no la tiene, se acomoda solo.
   // Fundación
-  agricultura: { nombre: "Agricultura",  icono: "🌱", periodo: "monarquia", fila: 0.5, costo: 15, desc: "Arado de hierro: cada granja da +2 de comida.",
+  agricultura: { nombre: "Agricultura",  icono: "🌱", periodo: "monarquia", fila: 0, costo: 15, desc: "Arado de hierro: cada granja da +2 de comida.",
                  efecto: { mejora: { granja: { comida: 2 } } } },
-  mineria:     { nombre: "Minería",      icono: "⛰️", periodo: "monarquia", fila: 2, costo: 15, desc: "Desbloquea la Cantera." },
-  alfareria:   { nombre: "Alfarería",    icono: "🏺", periodo: "monarquia", fila: 4, costo: 15, desc: "Vasijas para guardar y vender: desbloquea el Mercado y cada casa da +2 de lugar.",
+  mineria:     { nombre: "Minería",      icono: "⛰️", periodo: "monarquia", fila: 1.2, costo: 15, desc: "Desbloquea la Cantera." },
+  alfareria:   { nombre: "Alfarería",    icono: "🏺", periodo: "monarquia", fila: 3, costo: 15, desc: "Vasijas para guardar y vender: desbloquea el Mercado y cada casa da +2 de lugar.",
                  efecto: { capacidad: { casa: 2 } } },
-  escritura:   { nombre: "Escritura",    icono: "✍️", periodo: "monarquia", fila: 7, costo: 15, desc: "Desbloquea la Biblioteca." },
+  escritura:   { nombre: "Escritura",    icono: "✍️", periodo: "monarquia", fila: 6.5, costo: 15, desc: "Desbloquea la Biblioteca." },
 
   // Primeros reyes
-  equitacion:  { nombre: "Equitación",   icono: "🐴", periodo: "monarquia", fila: 0, costo: 70, desc: "Desbloquea Establo y Caballería.", requiere: ["agricultura"] },
-  riego:       { nombre: "Riego",        icono: "💧", periodo: "monarquia", fila: 1, costo: 45, desc: "Canales desde el Tíber: cada granja da +2 de comida más.", requiere: ["agricultura"],
+  riego:       { nombre: "Riego",        icono: "💧", periodo: "monarquia", fila: 0, costo: 45, desc: "Canales desde el Tíber: cada granja da +2 de comida más.", requiere: ["agricultura"],
                  efecto: { mejora: { granja: { comida: 2 } } } },
-  bronce:      { nombre: "Bronce",       icono: "🔱", periodo: "monarquia", fila: 2.5, costo: 20, desc: "Desbloquea Lanceros.", requiere: ["mineria"] },
-  albanileria: { nombre: "Albañilería",  icono: "🧱", periodo: "monarquia", fila: 4, costo: 20, desc: "Desbloquea Templo y Muralla.", requiere: ["alfareria"] },
-  matematicas: { nombre: "Matemáticas",  icono: "📐", periodo: "monarquia", fila: 6, costo: 60, desc: "Cada biblioteca da +2 de conocimiento.", requiere: ["escritura"],
+  bronce:      { nombre: "Bronce",       icono: "🔱", periodo: "monarquia", fila: 1.2, costo: 20, desc: "Desbloquea Lanceros.", requiere: ["mineria"] },
+  albanileria: { nombre: "Albañilería",  icono: "🧱", periodo: "monarquia", fila: 3, costo: 20, desc: "Desbloquea Templo y Muralla.", requiere: ["alfareria"] },
+  matematicas: { nombre: "Matemáticas",  icono: "📐", periodo: "monarquia", fila: 5, costo: 60, desc: "Cada biblioteca da +2 de conocimiento.", requiere: ["escritura"],
                  efecto: { mejora: { biblioteca: { ciencia: 2 } } } },
-  filosofia:   { nombre: "Filosofía",    icono: "🦉", periodo: "monarquia", fila: 7, costo: 50, desc: "Los sabios debaten en la Regia: +2 de conocimiento por turno.", requiere: ["escritura"],
+  filosofia:   { nombre: "Filosofía",    icono: "🦉", periodo: "monarquia", fila: 6.5, costo: 50, desc: "Los sabios debaten en la Regia: +2 de conocimiento por turno.", requiere: ["escritura"],
                  efecto: { mejora: { regia: { ciencia: 2 } } } },
 
-  // Reyes etruscos
-  hierro:      { nombre: "Hierro",       icono: "⚒️", periodo: "monarquia", fila: 2, costo: 70, desc: "Desbloquea Herrería y Legionarios.", requiere: ["equitacion", "bronce"] },
-  arqueria:    { nombre: "Arquería",     icono: "🏹", periodo: "monarquia", fila: 3, costo: 40, desc: "Desbloquea Arqueros.", requiere: ["bronce"] },
-  construccion:{ nombre: "Construcción", icono: "🔨", periodo: "monarquia", fila: 5, costo: 40, desc: "Vigas y tejas: cada casa da +3 de lugar y cada aserradero +2 de madera.", requiere: ["albanileria", "matematicas"],
+  // Reyes sabinos
+  equitacion:  { nombre: "Equitación",   icono: "🐴", periodo: "monarquia", fila: 0, costo: 70, desc: "Desbloquea Establo y Caballería.", requiere: ["riego"] },
+  construccion:{ nombre: "Construcción", icono: "🔨", periodo: "monarquia", fila: 4, costo: 40, desc: "Vigas y tejas: cada casa da +3 de lugar y cada aserradero +2 de madera.", requiere: ["albanileria", "matematicas"],
                  efecto: { capacidad: { casa: 3 }, mejora: { aserradero: { madera: 2 } } } },
+  senado:      { nombre: "Senado",       icono: "👴", periodo: "monarquia", fila: 5.8, costo: 70, desc: "Los ancianos aconsejan al rey: desbloquea el Foro.", requiere: ["filosofia"] },
+
+  // Reyes etruscos
+  hierro:      { nombre: "Hierro",       icono: "⚒️", periodo: "monarquia", fila: 0.8, costo: 70, desc: "Desbloquea Herrería y Legionarios.", requiere: ["equitacion", "bronce"] },
 
   // Fin de la monarquía
   democracia:  { nombre: "Democracia",   icono: "🗳️", periodo: "monarquia", fila: 4, costo: 120, desc: "El pueblo quiere elegir a sus gobernantes. Te permite proclamar la República.",
-                 requiere: ["hierro", "filosofia"] },
+                 requiere: ["hierro", "construccion", "senado"] },
 
   // ===== República =====
   // Primeros cónsules
   vias:        { nombre: "Vías romanas", icono: "🛣️", periodo: "republica", fila: 0.5, costo: 100, desc: "Caminos de piedra: llega 1 habitante más por turno.", requiere: ["equitacion", "alfareria"],
                  efecto: { crecimiento: 1 } },
+  arqueria:    { nombre: "Arquería",     icono: "🏹", periodo: "republica", fila: 2, costo: 90, desc: "Desbloquea Arqueros.", requiere: ["bronce"] },
   disciplina:  { nombre: "Disciplina",   icono: "🦅", periodo: "republica", fila: 3, costo: 120, desc: "Todo tu ejército pelea +25% mejor.", requiere: ["hierro"],
                  efecto: { ataque: 0.25, defensa: 0.25 } },
   ingenieria:  { nombre: "Ingeniería",   icono: "🏗️", periodo: "republica", fila: 5.5, costo: 110, desc: "Desbloquea Acueducto, Taller y Catapultas.", requiere: ["construccion", "matematicas"] },
@@ -139,7 +142,6 @@ const TECNOLOGIAS = {
                  efecto: { mejora: { cantera: { piedra: 2 } } } },
   calendario:  { nombre: "Calendario",   icono: "🗓️", periodo: "republica", fila: 7, costo: 130, desc: "Saber cuándo sembrar: cada granja +1 de comida y la Regia +2 de conocimiento.", requiere: ["astronomia"],
                  efecto: { mejora: { granja: { comida: 1 }, regia: { ciencia: 2 } } } },
-  senado:      { nombre: "Senado",       icono: "👴", periodo: "republica", fila: 8.5, costo: 150, desc: "Los ancianos aconsejan a los cónsules: desbloquea el Foro.", requiere: ["derecho"] },
 
   // Expansión
   administracion:{ nombre: "Administración", icono: "📋", periodo: "republica", fila: 0, costo: 150, desc: "Gobernadores en cada pueblo: los conquistados pagan el doble de tributo.", requiere: ["moneda"],
@@ -152,7 +154,7 @@ const TECNOLOGIAS = {
 
   // Fin de la república
   principado:  { nombre: "Principado",   icono: "🌿", periodo: "republica", fila: 5.5, costo: 220, desc: "Un general victorioso junta todo el poder en sus manos. Te permite proclamar el Imperio.",
-                 requiere: ["legion", "senado"] },
+                 requiere: ["legion", "derecho"] },
 
   // ===== Imperio =====
   pax:         { nombre: "Pax Romana",   icono: "🕊️", periodo: "imperio", costo: 250, desc: "Paz en los caminos: llegan 2 habitantes más por turno y los tributos suben +50%.", requiere: ["administracion", "rutas"],
@@ -174,7 +176,7 @@ const TECNOLOGIAS = {
 // efecto: bonus que da el período desde que llegás (igual que en las tecnologías).
 const PERIODOS = [
   { id: "monarquia", nombre: "Monarquía", icono: "👑", titulo: "Rey de Roma",
-    eras: ["Fundación", "Primeros reyes", "Reyes etruscos", "Fin de la monarquía"],
+    eras: ["Fundación", "Primeros reyes", "Reyes sabinos", "Reyes etruscos", "Fin de la monarquía"],
     desc: "Roma es gobernada por un rey." },
   { id: "republica", nombre: "República", icono: "🏛️", titulo: "Cónsul de Roma",
     eras: ["Primeros cónsules", "Guerras púnicas", "Expansión", "Fin de la república"],
