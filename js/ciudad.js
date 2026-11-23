@@ -222,72 +222,71 @@ function panelEjercito() {
 
 function panelVecinos() {
   let html = estado.atacoEsteTurno ? `<p class="ayuda">Ya atacaste este turno. Tus tropas descansan.</p>` : "";
-  html += `<div class="lista">`;
-  let ocultos = 0;
-  for (const id in ENEMIGOS) {
-    if (descubierto(id)) html += tarjetaEnemigo(id);
-    else ocultos++;
-  }
-  if (ocultos) {
-    html += `<div class="item bloqueado"><div class="item-icono">❓</div><div class="item-texto">
-      <b>${ocultos} pueblo${ocultos > 1 ? "s" : ""} sin descubrir</b><br>
-      <small>Abrí el 🗺️ Mapa y mandá exploradores para encontrarlos.</small></div></div>`;
-  }
-  return html + "</div>";
+  html += `<p class="ayuda">Cada pueblo tiene su territorio en el 🗺️ Mapa. Declarale la guerra y después tocá en el mapa una zona suya pegada a la tuya para atacarla. Si tomás su capital, se rinde entero.</p>`;
+  return html + `<div class="lista">${Object.keys(ENEMIGOS).map(tarjetaEnemigo).join("")}</div>`;
 }
 
-// Ficha de un pueblo vecino (se usa en la pestaña Vecinos y en el mapa)
+// Ficha de un pueblo (se usa en la pestaña Vecinos y en el mapa)
 function tarjetaEnemigo(id) {
   const d = ENEMIGOS[id];
   const e = estado.enemigos[id];
+  const muestra = `<span class="muestra" style="background:${d.color}"></span>`;
   if (!e.vivo) {
     const trib = Object.entries(d.tributo).map(([r, v]) => `+${v} ${RECURSOS[r].icono}`).join(" ");
     return `<div class="item hecha"><div class="item-icono">🦅</div><div class="item-texto"><b>${d.nombre}</b> – conquistados<br><small>Te pagan ${trib} por turno.</small></div></div>`;
   }
-  const estadoTexto = e.marcha
-    ? `<span class="motivo">⚠️ Su ejército marcha hacia Roma: ¡su ciudad quedó poco defendida!</span>`
-    : `<small>Próximo ataque: en unos ${Math.max(1, e.proximo - estado.turno)} turnos.</small>`;
+  let estadoTexto;
+  if (e.marcha) estadoTexto = `<span class="motivo">⚠️ Su ejército marcha hacia Roma: ¡sus zonas quedaron poco defendidas!</span>`;
+  else if (e.guerra) estadoTexto = `<small class="mal">⚔️ En guerra con Roma.${e.proximo ? ` Próximo ataque: en unos ${Math.max(1, e.proximo - estado.turno)} turnos.` : ""}</small>`;
+  else estadoTexto = `<small>🕊️ En paz con Roma.${e.proximo ? ` Pero te van a atacar en unos ${Math.max(1, e.proximo - estado.turno)} turnos.` : ""}</small>`;
+  const boton = e.guerra
+    ? `<button data-accion="ver-mapa" data-enemigo="${id}">🗺️ Ver</button>`
+    : `<button data-accion="guerra" data-enemigo="${id}" ${estado.terminado ? "disabled" : ""}>⚔️ Declarar guerra</button>`;
   return `
     <div class="item">
       <div class="item-icono">${d.icono}</div>
       <div class="item-texto">
-        <b>${d.nombre}</b> <small>· ${d.ciudad}</small><br>
+        <b>${muestra} ${d.nombre}</b> <small>· capital: ${d.ciudad} · ${zonasDe(id)} zonas</small><br>
         <small>${d.desc}</small><br>
-        <small>Ejército: ~${estimar(e.fuerza)} · Defensa de su ciudad: ~${estimar(defensaEnemiga(id))}${d.muro ? ` (murallas +${d.muro * 100}%)` : ""}</small><br>
+        <small>Ejército: ~${estimar(e.fuerza)} · Defensa de su capital: ~${estimar(defensaEnemiga(id))}${d.muro ? ` (murallas +${d.muro * 100}%)` : ""}</small><br>
         ${estadoTexto}
       </div>
-      <button data-accion="preparar" data-enemigo="${id}" ${estado.atacoEsteTurno || soldados() === 0 ? "disabled" : ""}>Atacar</button>
+      ${boton}
     </div>`;
 }
 
 // ---------- Mapa ----------
 
+const colorDe = (dueno) => (dueno === "roma" ? MAPA.colorRoma : dueno ? ENEMIGOS[dueno].color : MAPA.colorNadie);
+
 function dibujarMapa() {
   const m = $("mapa");
-  m.style.gridTemplateColumns = `repeat(${MAPA_ANCHO}, 1fr)`;
+  m.style.gridTemplateColumns = `repeat(${MAPA_ANCHO}, minmax(0, 1fr))`;
   let html = "";
   for (let y = 0; y < MAPA_ALTO; y++) {
     for (let x = 0; x < MAPA_ANCHO; x++) {
       const elegida = casillaElegida && casillaElegida.x === x && casillaElegida.y === y ? " elegida" : "";
-      const viajando = estado.exploradores.some((ex) => ex.x === x && ex.y === y);
-      if (!vista(x, y)) {
-        const se = puedeExplorar(x, y).ok || viajando ? " explorable" : "";
-        html += `<div class="casilla niebla${se}${elegida}" data-x="${x}" data-y="${y}">${viajando ? "🧭" : ""}</div>`;
-        continue;
-      }
-      const t = terreno(x, y);
+      if (!esTierra(x, y)) { html += `<div class="casilla mar" data-x="${x}" data-y="${y}"></div>`; continue; }
+      const dueno = duenoDe(x, y);
       const lugar = lugarEn(x, y);
-      let contenido = MAPA.terrenos[t].icono;
-      let extra = "";
       const col = coloniaEn(x, y);
-      if (lugar === "roma") { contenido = "👑"; extra = `<span class="rotulo">Roma</span>`; }
-      else if (col) { contenido = "⛲"; extra = `<span class="rotulo mio">${estado.colonias[col - 1].nombre}</span>`; }
+      let contenido = MAPA.terrenos[terreno(x, y)].icono;
+      let extra = "";
+      let clases = "casilla tierra";
+      if (lugar === "roma") { contenido = "👑"; extra = `<span class="rotulo mio">Roma</span>`; clases += " ciudad-mapa"; }
+      else if (col) { contenido = "⛲"; extra = `<span class="rotulo mio">${estado.colonias[col - 1].nombre}</span>`; clases += " ciudad-mapa"; }
       else if (lugar) {
         const vivo = estado.enemigos[lugar].vivo;
         contenido = vivo ? ENEMIGOS[lugar].icono : "🦅";
         extra = `<span class="rotulo ${vivo ? "enemigo" : "mio"}">${ENEMIGOS[lugar].ciudad}</span>`;
+        clases += " ciudad-mapa";
       }
-      html += `<div class="casilla t-${t === "~" ? "mar" : t === "." ? "llano" : t}${lugar || col ? " ciudad-mapa" : ""}${elegida}" data-x="${x}" data-y="${y}">${contenido}${extra}</div>`;
+      if (dueno && dueno !== "roma" && estado.enemigos[dueno].guerra && alcanzable(x, y)) clases += " atacable";
+      // Línea oscura donde cambia el dueño (la frontera)
+      const borde = [[0, -1, "top"], [1, 0, "right"], [0, 1, "bottom"], [-1, 0, "left"]]
+        .filter(([dx, dy]) => esTierra(x + dx, y + dy) && duenoDe(x + dx, y + dy) !== dueno)
+        .map(([, , lado]) => `border-${lado}:2px solid #3b2f22`).join(";");
+      html += `<div class="${clases}${elegida}" style="background:${colorDe(dueno)};${borde}" data-x="${x}" data-y="${y}">${contenido}${extra}</div>`;
     }
   }
   m.innerHTML = html;
@@ -295,38 +294,48 @@ function dibujarMapa() {
 }
 
 function infoCasilla() {
-  const enViaje = estado.exploradores.length;
-  const pie = `<p class="ayuda">🧭 Exploradores de viaje: ${enViaje} · 👥 Habitantes libres: ${libres()}</p>`;
   if (!casillaElegida) {
-    return `<p class="ayuda">Tocá una zona oscura pegada a lo que ya conocés para mandar un explorador. Necesitás un habitante libre.</p>${pie}`;
+    return `<p class="ayuda">Tocá una zona del mapa para ver de quién es. En naranja, el territorio de Roma.
+      Las zonas que titilan son de pueblos en guerra con vos y las podés atacar.</p>`;
   }
   const { x, y } = casillaElegida;
-  if (!vista(x, y)) {
-    const viaje = estado.exploradores.find((ex) => ex.x === x && ex.y === y);
-    if (viaje) return `<h3>🧭 Zona desconocida</h3><p>Tu explorador vuelve en ${viaje.vuelve - estado.turno} turno(s).</p>${pie}`;
-    const p = puedeExplorar(x, y);
-    const t = turnosViaje(x, y);
-    return `<h3>❓ Zona desconocida</h3>
-      <p>Un habitante libre va a explorar y vuelve en <b>${t} turno${t > 1 ? "s" : ""}</b>. Mientras viaja, no trabaja.</p>
-      ${p.ok ? "" : `<p class="motivo">${p.motivo}</p>`}
-      <button data-accion="explorar" ${p.ok ? "" : "disabled"}>🧭 Explorar</button>${pie}`;
-  }
+  if (!esTierra(x, y)) return `<h3>🌊 Mar</h3>`;
+  const ter = MAPA.terrenos[terreno(x, y)];
+  const dueno = duenoDe(x, y);
   const lugar = lugarEn(x, y);
-  if (lugar === "roma") return `<h3>👑 Roma</h3><p>Tu ciudad. Desde acá salen tus exploradores y tus ejércitos.</p>${pie}`;
-  if (lugar) return `<div class="lista">${tarjetaEnemigo(lugar)}</div>${pie}`;
+  if (lugar === "roma") return `<h3>👑 Roma</h3><p>Tu ciudad. Desde acá salen tus ejércitos.</p>`;
   const col = coloniaEn(x, y);
   if (col) {
     return `<h3>⛲ ${estado.colonias[col - 1].nombre}</h3><p>Una ciudad fundada por Roma: puede tener todos los edificios que tiene Roma. Comparte con Roma los recursos y los habitantes.</p>
-      <button data-accion="ver-ciudad" data-ciudad="${col}">🏛️ Ver la ciudad</button>${pie}`;
+      <button data-accion="ver-ciudad" data-ciudad="${col}">🏛️ Ver la ciudad</button>`;
   }
-  const ter = MAPA.terrenos[terreno(x, y)];
-  const p = puedeFundar(x, y);
-  const prohibido = FUNDACION.prohibidos.includes(terreno(x, y));
-  return `<h3>${ter.icono} ${ter.nombre}</h3><p class="ayuda">Acá no vive nadie.</p>
-    ${prohibido ? "" : `<p>🏘️ Podés fundar una ciudad nueva: ${FUNDACION.lotes} terrenos más para construir.<br>
+  if (!dueno) return `<h3>${ter.nombre}</h3><p class="ayuda">Tierra de nadie: acá no vive ningún pueblo.</p>`;
+  if (dueno === "roma") {
+    const p = puedeFundar(x, y);
+    const prohibido = FUNDACION.prohibidos.includes(terreno(x, y));
+    return `<h3>${ter.icono} ${ter.nombre} · territorio romano</h3>
+      ${prohibido ? `<p class="ayuda">No se puede fundar una ciudad en ${ter.nombre.toLowerCase()}.</p>` : `<p>🏘️ Podés fundar una ciudad nueva: ${FUNDACION.lotes} terrenos más para construir.<br>
       <small>Cuesta: ${textoCosto(costoFundar())} y necesita ${FUNDACION.colonos} 👥 habitantes libres.</small></p>
       ${p.ok ? "" : `<p class="motivo"><small>${p.motivo}</small></p>`}
-      <button data-accion="fundar" ${p.ok && !estado.terminado ? "" : "disabled"}>🏘️ Fundar ${FUNDACION.nombres[estado.colonias.length] || "ciudad"}</button>`}${pie}`;
+      <button data-accion="fundar" ${p.ok && !estado.terminado ? "" : "disabled"}>🏘️ Fundar ${FUNDACION.nombres[estado.colonias.length] || "ciudad"}</button>`}`;
+  }
+  // Zona de otro pueblo
+  const d = ENEMIGOS[dueno];
+  const p = puedeAtacarZona(x, y);
+  const capital = lugar === dueno;
+  const titulo = capital ? `${d.icono} ${d.ciudad}, capital de los ${d.nombre.toLowerCase()}` : `${ter.icono} ${ter.nombre} de los ${d.nombre.toLowerCase()}`;
+  const bonus = MAPA.bonusTerreno[terreno(x, y)];
+  const detalle = capital
+    ? `Si la tomás, los ${d.nombre.toLowerCase()} se rinden y <b>todo su territorio</b> pasa a ser tuyo.`
+    : `La defiende parte de su ejército${bonus ? ` (${ter.nombre.toLowerCase()}: +${bonus * 100}% de defensa)` : ""}. Si la ganás, pasa a ser tuya y te llevás algo de botín.`;
+  const enGuerra = estado.enemigos[dueno].guerra;
+  return `<h3>${titulo}</h3>
+    <p>${detalle}<br><small>Defensa: ~${estimar(defensaZona(x, y))}</small></p>
+    ${p.ok || !enGuerra ? "" : `<p class="motivo"><small>${p.motivo}</small></p>`}
+    ${enGuerra
+      ? `<button data-accion="preparar" ${p.ok && !estado.terminado ? "" : "disabled"}>⚔️ Atacar esta zona</button>`
+      : `<p class="ayuda">Estás en paz con ellos. Para atacar, primero declarales la guerra.</p>
+         <button data-accion="guerra" data-enemigo="${dueno}" ${estado.terminado ? "disabled" : ""}>⚔️ Declarar guerra</button>`}`;
 }
 
 // ---------- Árbol de tecnologías ----------
@@ -597,8 +606,10 @@ function abrirModal(html) {
 }
 const cerrarModal = () => $("modal").classList.add("oculto");
 
-function prepararAtaque(id) {
+function prepararAtaque(x, y) {
+  const id = duenoDe(x, y);
   const d = ENEMIGOS[id];
+  const nombre = esCapital(x, y) === id ? d.ciudad : `una zona de los ${d.nombre.toLowerCase()}`;
   let filas = "";
   for (const u in UNIDADES) {
     if (estado.ejercito[u] === 0) continue;
@@ -606,16 +617,16 @@ function prepararAtaque(id) {
       <input type="number" min="0" max="${estado.ejercito[u]}" value="${estado.ejercito[u]}" data-envio="${u}"></label>`;
   }
   abrirModal(`
-    <h2>${d.icono} Atacar ${d.ciudad}</h2>
+    <h2>${d.icono} Atacar ${nombre}</h2>
     <p>¿Cuántos soldados mandás? Los que se quedan siguen defendiendo Roma.</p>
     ${filas}
     <p id="comparacion"></p>
     <div class="fila centrado">
-      <button data-accion="atacar" data-enemigo="${id}">⚔️ ¡A la carga!</button>
+      <button data-accion="atacar" data-x="${x}" data-y="${y}">⚔️ ¡A la carga!</button>
       <button data-accion="cerrar" class="claro">Cancelar</button>
     </div>`);
-  actualizarComparacion(id);
-  document.querySelectorAll("[data-envio]").forEach((inp) => inp.addEventListener("input", () => actualizarComparacion(id)));
+  actualizarComparacion(x, y);
+  document.querySelectorAll("[data-envio]").forEach((inp) => inp.addEventListener("input", () => actualizarComparacion(x, y)));
 }
 
 function leerEnvio() {
@@ -626,10 +637,10 @@ function leerEnvio() {
   return envio;
 }
 
-function actualizarComparacion(id) {
+function actualizarComparacion(x, y) {
   const envio = leerEnvio();
   const mio = poderAtaque(envio);
-  const suyo = defensaEnemiga(id, envio.catapulta || 0);
+  const suyo = defensaZona(x, y, envio.catapulta || 0);
   let consejo;
   if (mio > suyo * 1.3) consejo = `<span class="bien">Tenés clara ventaja.</span>`;
   else if (mio > suyo * 0.9) consejo = `<span>Pelea pareja: puede salir para cualquier lado.</span>`;
@@ -712,7 +723,14 @@ document.addEventListener("click", (ev) => {
   if (btn.dataset.vista) { cambiarVista(btn.dataset.vista); return; }
   const d = btn.dataset;
   switch (d.accion) {
-    case "explorar": if (casillaElegida) explorar(casillaElegida.x, casillaElegida.y); break;
+    case "guerra": declararGuerra(d.enemigo); break;
+    case "ver-mapa": {
+      const e = ENEMIGOS[d.enemigo];
+      casillaElegida = { x: e.x, y: e.y };
+      cambiarVista("mapa");
+      dibujarMapa();
+      return;
+    }
     case "construir": construir(ciudadVista, loteElegido, d.tipo); break;
     case "fundar": {
       if (!casillaElegida) break;
@@ -747,9 +765,9 @@ document.addEventListener("click", (ev) => {
     }
     case "entrenar": entrenar(d.unidad, +d.n); break;
     case "gobierno": hacerAccion(d.id); break;
-    case "preparar": prepararAtaque(d.enemigo); return;
+    case "preparar": if (casillaElegida) prepararAtaque(casillaElegida.x, casillaElegida.y); return;
     case "atacar": {
-      const r = atacarEnemigo(d.enemigo, leerEnvio());
+      const r = atacarZona(+d.x, +d.y, leerEnvio());
       cerrarModal();
       if (r && !estado.terminado) {
         abrirModal(`<h2>${r.gano ? "🏆 ¡Victoria!" : "💀 Derrota"}</h2><p>${estado.log[0].texto}</p><button data-accion="cerrar">Seguir</button>`);

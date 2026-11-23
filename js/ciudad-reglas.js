@@ -11,10 +11,7 @@ function partidaNueva() {
   const ejercito = {};
   for (const u in UNIDADES) ejercito[u] = 0;
   const enemigos = {};
-  for (const id in ENEMIGOS) {
-    const e = ENEMIGOS[id];
-    enemigos[id] = { vivo: true, fuerza: e.fuerza, proximo: e.primerAtaque, cada: e.cada, marcha: null };
-  }
+  for (const id in ENEMIGOS) enemigos[id] = enemigoNuevo(id);
   const nueva = {
     turno: 1,
     rec: { ...INICIO.recursos },
@@ -28,12 +25,52 @@ function partidaNueva() {
   return nueva;
 }
 
-// Agrega el mapa a una partida (también sirve para partidas guardadas de antes del mapa)
+// Estado inicial de un pueblo
+const enemigoNuevo = (id) => ({
+  vivo: true, guerra: false, fuerza: ENEMIGOS[id].fuerza,
+  proximo: ENEMIGOS[id].primerAtaque || null, cada: ENEMIGOS[id].cada, marcha: null,
+});
+
+// Agrega el mapa de Italia a una partida (también arregla las partidas guardadas con el mapa viejo)
 function prepararMapa(partida) {
-  if (partida.visto && partida.exploradores) return;
-  partida.visto = Array(MAPA_ANCHO * MAPA_ALTO).fill(false);
   partida.exploradores = [];
-  revelar(MAPA.roma.x, MAPA.roma.y, 1, partida);
+  delete partida.visto;
+  // Pueblos: se borran los que ya no existen y se agregan los nuevos
+  for (const id in partida.enemigos) if (!ENEMIGOS[id]) delete partida.enemigos[id];
+  for (const id in ENEMIGOS) {
+    const e = partida.enemigos[id] || (partida.enemigos[id] = enemigoNuevo(id));
+    if (e.guerra === undefined) e.guerra = !!e.marcha || (e.proximo !== null && partida.turno >= e.proximo - 2);
+  }
+  if (partida.duenos && partida.duenos.length === MAPA_ANCHO * MAPA_ALTO) return;
+  // De quién es cada casilla al empezar (los pueblos ya conquistados pasan a ser tuyos)
+  partida.duenos = [];
+  for (let y = 0; y < MAPA_ALTO; y++) {
+    for (let x = 0; x < MAPA_ANCHO; x++) {
+      const id = duenoInicial(x, y);
+      partida.duenos.push(id && id !== "roma" && !partida.enemigos[id].vivo ? "roma" : id);
+    }
+  }
+  // Las ciudades fundadas en el mapa viejo se mudan a un lugar libre de tu territorio
+  const puestas = [];
+  for (const c of partida.colonias || []) {
+    const lugar = lugarParaColonia(partida, puestas, c);
+    if (lugar) { c.x = lugar.x; c.y = lugar.y; }
+    puestas.push(c);
+  }
+}
+
+function lugarParaColonia(partida, puestas, cerca) {
+  let mejor = null;
+  for (let y = 0; y < MAPA_ALTO; y++) {
+    for (let x = 0; x < MAPA_ANCHO; x++) {
+      if (partida.duenos[y * MAPA_ANCHO + x] !== "roma" || FUNDACION.prohibidos.includes(terreno(x, y))) continue;
+      const otras = [MAPA.roma, ...Object.values(ENEMIGOS), ...puestas];
+      if (otras.some((o) => distancia(x, y, o.x, o.y) < FUNDACION.distancia)) continue;
+      const d = distancia(x, y, cerca.x, cerca.y);
+      if (!mejor || d < mejor.d) mejor = { x, y, d };
+    }
+  }
+  return mejor;
 }
 
 // ---------- Mapa ----------
@@ -43,64 +80,83 @@ const MAPA_ALTO = MAPA.filas.length;
 const terreno = (x, y) => MAPA.filas[y][x];
 const distancia = (x1, y1, x2, y2) => Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2));
 const dentro = (x, y) => x >= 0 && y >= 0 && x < MAPA_ANCHO && y < MAPA_ALTO;
-const vista = (x, y) => dentro(x, y) && estado.visto[y * MAPA_ANCHO + x];
-const descubierto = (id) => vista(ENEMIGOS[id].x, ENEMIGOS[id].y);
+const esTierra = (x, y) => dentro(x, y) && terreno(x, y) !== "~";
 
-function revelar(x, y, radio, partida = estado) {
-  for (let dy = -radio; dy <= radio; dy++)
-    for (let dx = -radio; dx <= radio; dx++)
-      if (dentro(x + dx, y + dy)) partida.visto[(y + dy) * MAPA_ANCHO + x + dx] = true;
+// Letra del mapa → "roma", el id del pueblo, o null (mar o tierra de nadie)
+function duenoInicial(x, y) {
+  const letra = MAPA.duenos[y][x];
+  if (letra === "R") return "roma";
+  return Object.keys(ENEMIGOS).find((id) => ENEMIGOS[id].letra === letra) || null;
 }
+const duenoDe = (x, y) => (dentro(x, y) ? estado.duenos[y * MAPA_ANCHO + x] : null);
+const esMia = (x, y) => duenoDe(x, y) === "roma";
+const zonasDe = (id) => estado.duenos.filter((d) => d === id).length;
 
-// Qué hay en una casilla: Roma, un pueblo vecino o nada
+const vecinas = (x, y) => {
+  const v = [];
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && dentro(x + dx, y + dy)) v.push({ x: x + dx, y: y + dy });
+  return v;
+};
+const pegadaAMi = (x, y) => vecinas(x, y).some((c) => esMia(c.x, c.y));
+const costera = (x, y) => vecinas(x, y).some((c) => !esTierra(c.x, c.y));
+
+// Qué hay en una casilla: Roma, la capital de un pueblo o nada
 function lugarEn(x, y) {
   if (x === MAPA.roma.x && y === MAPA.roma.y) return "roma";
   for (const id in ENEMIGOS) if (ENEMIGOS[id].x === x && ENEMIGOS[id].y === y) return id;
   return null;
 }
+const esCapital = (x, y) => { const l = lugarEn(x, y); return l && l !== "roma" ? l : null; };
 
-const turnosViaje = (x, y) => Math.max(1, Math.ceil(distancia(x, y, MAPA.roma.x, MAPA.roma.y) / 2));
+// ---------- Guerra y conquista de zonas ----------
 
-function puedeExplorar(x, y) {
-  if (vista(x, y)) return { ok: false, motivo: "Esta zona ya la conocés." };
-  if (estado.exploradores.some((e) => e.x === x && e.y === y)) return { ok: false, motivo: "Ya hay un explorador yendo para allá." };
-  let pegada = false;
-  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (vista(x + dx, y + dy)) pegada = true;
-  if (!pegada) return { ok: false, motivo: "Queda muy lejos: primero explorá las zonas de al lado." };
-  if (libres() < 1) return { ok: false, motivo: "Necesitás un habitante libre para mandar de explorador." };
+function puedeDeclararGuerra(id) {
+  const e = estado.enemigos[id];
+  if (!e.vivo) return { ok: false, motivo: "Ya son tuyos." };
+  if (e.guerra) return { ok: false, motivo: "Ya están en guerra." };
   return { ok: true };
 }
 
-function explorar(x, y) {
-  if (!puedeExplorar(x, y).ok) return false;
-  const t = turnosViaje(x, y);
-  estado.exploradores.push({ x, y, vuelve: estado.turno + t });
-  anotar(`🧭 Un explorador sale de Roma hacia lo desconocido. Vuelve en ${t} turno${t > 1 ? "s" : ""}.`);
+function declararGuerra(id) {
+  if (!puedeDeclararGuerra(id).ok) return false;
+  const e = estado.enemigos[id];
+  e.guerra = true;
+  // Ellos también van a venir a pelear
+  if (!e.proximo || e.proximo < estado.turno + 3) e.proximo = estado.turno + e.cada;
+  anotar(`⚔️ ¡Roma le declara la guerra a los ${ENEMIGOS[id].nombre.toLowerCase()}! Ya podés atacar sus zonas pegadas a tu territorio.`, "mal");
   return true;
 }
 
-// Los exploradores que terminaron su viaje vuelven y cuentan lo que vieron
-function volverExploradores() {
-  const quedan = [];
-  for (const ex of estado.exploradores) {
-    if (estado.turno < ex.vuelve) { quedan.push(ex); continue; }
-    const antes = Object.keys(ENEMIGOS).filter(descubierto);
-    revelar(ex.x, ex.y, 1);
-    let texto = "🧭 Vuelve un explorador y dibuja una parte nueva del mapa.";
-    for (const id in ENEMIGOS) {
-      if (descubierto(id) && !antes.includes(id)) {
-        texto += ` ¡Descubrió a los ${ENEMIGOS[id].nombre.toLowerCase()} en ${ENEMIGOS[id].ciudad}!`;
-      }
-    }
-    if (Math.random() < EXPLORACION.probHallazgo) {
-      const h = EXPLORACION.hallazgos[Math.floor(Math.random() * EXPLORACION.hallazgos.length)];
-      for (const r in h.efecto) estado.rec[r] += h.efecto[r];
-      const premio = Object.entries(h.efecto).map(([r, v]) => `+${v} ${RECURSOS[r].icono}`).join(" ");
-      texto += ` Además ${h.texto}: ${premio}.`;
-    }
-    anotar(texto, "bien");
+// ¿Se puede llegar a esa casilla? Por tierra, si está pegada a tu territorio.
+// Por mar (islas o costas lejanas), si tenés Navegación.
+function alcanzable(x, y) {
+  if (pegadaAMi(x, y)) return true;
+  return tiene(MAPA.tecMar) && costera(x, y);
+}
+
+function puedeAtacarZona(x, y) {
+  const id = duenoDe(x, y);
+  if (!id || id === "roma") return { ok: false, motivo: "Acá no hay a quién atacar." };
+  const e = estado.enemigos[id];
+  if (!e.guerra) return { ok: false, motivo: `No estás en guerra con los ${ENEMIGOS[id].nombre.toLowerCase()}.` };
+  if (!alcanzable(x, y)) {
+    return { ok: false, motivo: costera(x, y) && !tiene(MAPA.tecMar)
+      ? `Queda lejos de tu territorio. Investigá ⛵ ${TECNOLOGIAS[MAPA.tecMar].nombre} para llegar por mar, o ganá las zonas del medio si hay camino por tierra.`
+      : "Queda lejos: primero ganá las zonas que están en el medio." };
   }
-  estado.exploradores = quedan;
+  if (estado.atacoEsteTurno) return { ok: false, motivo: "Ya atacaste este turno. Tus tropas descansan." };
+  if (soldados() === 0) return { ok: false, motivo: "No tenés soldados. Entrenalos en la pestaña ⚔️ Ejército." };
+  return { ok: true };
+}
+
+// Defensa de una zona: la capital la defiende todo el ejército que está en casa (con murallas);
+// las otras zonas, una parte del ejército más la ayuda del terreno.
+function defensaZona(x, y, catapultas = 0) {
+  const id = duenoDe(x, y);
+  if (esCapital(x, y) === id) return defensaEnemiga(id, catapultas);
+  const e = estado.enemigos[id];
+  const enCasa = e.fuerza - (e.marcha ? e.marcha.fuerza : 0);
+  return Math.max(1, enCasa * MAPA.defensaZona) * (1 + (MAPA.bonusTerreno[terreno(x, y)] || 0));
 }
 
 // ---------- Utilidades ----------
@@ -183,8 +239,7 @@ function trabajosOcupados() {
   return n;
 }
 
-// Habitantes que están en Roma (los exploradores andan de viaje)
-const enRoma = () => Math.max(0, estado.habitantes - estado.exploradores.length);
+const enRoma = () => estado.habitantes;
 
 const libres = () => Math.max(0, enRoma() - trabajosOcupados());
 
@@ -356,7 +411,7 @@ function costoFundar() {
 }
 
 function puedeFundar(x, y) {
-  if (!vista(x, y)) return { ok: false, motivo: "Primero explorá esta zona." };
+  if (!esMia(x, y)) return { ok: false, motivo: "Solo podés fundar ciudades en tu territorio." };
   if (FUNDACION.prohibidos.includes(terreno(x, y))) return { ok: false, motivo: `No se puede fundar una ciudad en ${MAPA.terrenos[terreno(x, y)].nombre.toLowerCase()}.` };
   if (estado.colonias.length >= FUNDACION.nombres.length) return { ok: false, motivo: "Ya fundaste todas las ciudades posibles." };
   const otras = [MAPA.roma, ...Object.values(ENEMIGOS), ...estado.colonias];
@@ -375,7 +430,6 @@ function fundarCiudad(x, y) {
   const lotes = Array(FUNDACION.lotes).fill(null);
   lotes[FUNDACION.lotePlaza] = { tipo: "plaza", falta: 0 };
   estado.colonias.push({ nombre, x, y, lotes });
-  revelar(x, y, 1);
   anotar(`🏘️ ¡${FUNDACION.colonos} familias romanas fundan ${nombre}! Ya podés construir en sus terrenos.`, "bien");
   return estado.colonias.length;
 }
@@ -608,11 +662,14 @@ function aplicarBajas(grupo, fraccion) {
   return muertos;
 }
 
-// El jugador ataca a un pueblo vecino. envio = { lanceros: 3, ... }
-function atacarEnemigo(id, envio) {
+// El jugador ataca una zona de otro pueblo. envio = { lanceros: 3, ... }
+// Si es la capital y gana, el pueblo entero se rinde y todo su territorio pasa a ser de Roma.
+function atacarZona(x, y, envio) {
+  if (!puedeAtacarZona(x, y).ok) return null;
+  const id = duenoDe(x, y);
   const e = estado.enemigos[id];
   const datos = ENEMIGOS[id];
-  if (!e.vivo || estado.atacoEsteTurno || !descubierto(id)) return null;
+  const capital = esCapital(x, y) === id;
   const grupo = {};
   let total = 0;
   for (const u in UNIDADES) {
@@ -623,26 +680,39 @@ function atacarEnemigo(id, envio) {
 
   estado.atacoEsteTurno = true;
   for (const u in grupo) estado.ejercito[u] -= grupo[u];
-  const r = choque(poderAtaque(grupo), defensaEnemiga(id, grupo.catapulta));
+  const r = choque(poderAtaque(grupo), defensaZona(x, y, grupo.catapulta));
   const enviados = total;
+  const lugar = capital ? datos.ciudad : `una zona de los ${datos.nombre.toLowerCase()}`;
   let muertos;
 
-  if (r.ganaA) {
+  if (r.ganaA && capital) {
     muertos = aplicarBajas(grupo, r.perdidaGanador);
     e.vivo = false;
+    e.guerra = false;
     e.marcha = null;
+    const zonas = zonasDe(id);
+    estado.duenos = estado.duenos.map((d) => (d === id ? "roma" : d));
     for (const rec in datos.botin) estado.rec[rec] += datos.botin[rec];
-    const botin = Object.entries(datos.botin).map(([rec, v]) => `${v} ${RECURSOS[rec].icono}`).join(", ");
-    anotar(`🏆 ¡Conquistaste ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se rinden. Botín: ${botin}. Ahora te pagan tributo.${cambiarApoyo(APOYO.sucesos.conquista)}`, "bien");
+    anotar(`🏆 ¡Conquistaste ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se rinden y sus ${zonas} zonas pasan a ser de Roma. Botín: ${textoRecursos(datos.botin)}. Ahora te pagan tributo.${cambiarApoyo(APOYO.sucesos.conquista)}`, "bien");
+  } else if (r.ganaA) {
+    muertos = aplicarBajas(grupo, r.perdidaGanador);
+    estado.duenos[y * MAPA_ANCHO + x] = "roma";
+    e.fuerza = Math.max(1, e.fuerza * (1 - MAPA.perdidaZona));
+    const botin = {};
+    for (const rec in datos.botin) botin[rec] = Math.round(datos.botin[rec] * MAPA.botinZona);
+    for (const rec in botin) estado.rec[rec] += botin[rec];
+    anotar(`🚩 ¡Ganaste ${lugar}! Ahora es territorio romano. Botín: ${textoRecursos(botin)}.${cambiarApoyo(APOYO.sucesos.zona)}`, "bien");
   } else {
     muertos = aplicarBajas(grupo, 0.75);
     e.fuerza = Math.max(1, e.fuerza * (1 - r.perdidaGanador * 0.8));
-    anotar(`💀 Derrota frente a ${datos.ciudad}. Volvieron ${enviados - muertos} de ${enviados} soldados.${cambiarApoyo(APOYO.sucesos.derrota)}`, "mal");
+    anotar(`💀 Derrota en ${lugar}. Volvieron ${enviados - muertos} de ${enviados} soldados.${cambiarApoyo(APOYO.sucesos.derrota)}`, "mal");
   }
   for (const u in grupo) estado.ejercito[u] += grupo[u];
   revisarFin();
   return { gano: r.ganaA, enviados, muertos };
 }
+
+const textoRecursos = (rec) => Object.entries(rec).map(([r, v]) => `${v} ${RECURSOS[r].icono}`).join(", ");
 
 // Un pueblo enemigo llega a las puertas de Roma
 function defenderRoma(id) {
@@ -742,7 +812,6 @@ function terminarTurno() {
 
   // 5) Enemigos: crecen, marchan y atacan
   estado.turno++;
-  volverExploradores();
   for (const id in estado.enemigos) {
     const e = estado.enemigos[id];
     if (!e.vivo) continue;
@@ -752,13 +821,11 @@ function terminarTurno() {
       defenderRoma(id);
       e.cada = Math.max(5, e.cada - 1);
       e.proximo = estado.turno + e.cada + Math.floor(azar(-1, 2));
-    } else if (!e.marcha && estado.turno >= e.proximo - 2) {
+    } else if (!e.marcha && e.proximo && estado.turno >= e.proximo - 2) {
+      if (!e.guerra) anotar(`⚔️ ¡Los ${datos.nombre.toLowerCase()} le declaran la guerra a Roma!`, "mal");
+      e.guerra = true;
       e.marcha = { fuerza: Math.round(e.fuerza * 0.6), llega: e.proximo };
       anotar(`⚠️ ¡Los ${datos.nombre.toLowerCase()} marchan hacia Roma! Llegan en ${e.proximo - estado.turno} turnos con unos ${estimar(e.marcha.fuerza)} de fuerza.`, "mal");
-      if (!descubierto(id)) {
-        revelar(datos.x, datos.y, 1);
-        anotar(`👀 Tus vigías siguen las huellas y descubren de dónde vienen: ${datos.ciudad}. Ya aparece en el mapa.`);
-      }
     }
   }
   estado.atacoEsteTurno = false;
