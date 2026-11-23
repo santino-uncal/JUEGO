@@ -124,7 +124,9 @@ header .stats { flex: 1 1 420px; }
 
 /* Árbol de tecnologías */
 .vistas { grid-template-columns: repeat(3, 1fr); }
-.arbol-scroll { overflow-x: auto; }
+.arbol-scroll { overflow-x: auto; cursor: grab; user-select: none; }
+.arbol-scroll.arrastrando { cursor: grabbing; }
+.arbol-scroll.arrastrando .nodo-tec { cursor: grabbing; }
 #arbol {
   padding: 10px;
   background: linear-gradient(#f6ecd4, #ead9b0);

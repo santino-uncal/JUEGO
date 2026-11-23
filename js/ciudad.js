@@ -428,16 +428,20 @@ function dibujarArbol() {
       </div>`;
   }
 
+  // Al redibujar, el árbol se queda donde lo habías dejado
+  const viejo = document.querySelector(".arbol-scroll");
+  const corrido = viejo && viejo.dataset.periodo === String(per) ? viejo.scrollLeft : 0;
   $("arbol").innerHTML = `
     <nav class="periodos">${botones}</nav>
     ${per < periodoActual() ? `<p class="ayuda centrado">Estás mirando un período que ya pasó.</p>` : ""}
-    <div class="arbol-scroll">
+    <div class="arbol-scroll" data-periodo="${per}">
       <div class="arbol-lienzo" style="width:${ancho}px;height:${alto}px">
         ${eras}
         <svg width="${ancho}" height="${alto}">${lineas}</svg>
         ${nodos}
       </div>
     </div>`;
+  document.querySelector(".arbol-scroll").scrollLeft = corrido;
   $("arbol-info").innerHTML = infoTec();
 }
 
@@ -591,6 +595,39 @@ function trasAccion() {
   dibujarTodo();
   if (estado.terminado) mostrarFin();
 }
+
+// ---------- Arrastrar el árbol con el mouse ----------
+// Apretás en cualquier parte del árbol y movés: se corre de costado (y la página para arriba o abajo).
+// Si moviste el mouse, al soltar no cuenta como clic en una tecnología.
+let arrastre = null;
+$("arbol").addEventListener("pointerdown", (ev) => {
+  const caja = ev.target.closest(".arbol-scroll");
+  if (!caja || ev.button !== 0 || ev.pointerType === "touch") return;
+  arrastre = { caja, x: ev.clientX, y: ev.clientY, movido: false };
+  ev.preventDefault();   // que no se seleccione texto
+});
+window.addEventListener("pointermove", (ev) => {
+  if (!arrastre) return;
+  const dx = ev.clientX - arrastre.x, dy = ev.clientY - arrastre.y;
+  if (!arrastre.movido && Math.abs(dx) + Math.abs(dy) < 5) return;
+  arrastre.movido = true;
+  arrastre.caja.classList.add("arrastrando");
+  arrastre.caja.scrollLeft -= dx;
+  window.scrollBy(0, -dy);
+  arrastre.x = ev.clientX;
+  arrastre.y = ev.clientY;
+});
+window.addEventListener("pointerup", () => {
+  if (!arrastre) return;
+  arrastre.caja.classList.remove("arrastrando");
+  if (arrastre.movido) {
+    // el clic que llega justo después de soltar se ignora
+    const tragar = (e) => { e.stopPropagation(); e.preventDefault(); };
+    window.addEventListener("click", tragar, { capture: true, once: true });
+    setTimeout(() => window.removeEventListener("click", tragar, { capture: true }), 100);
+  }
+  arrastre = null;
+});
 
 document.addEventListener("click", (ev) => {
   // Casilla del mapa
