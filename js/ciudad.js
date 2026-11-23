@@ -25,7 +25,7 @@ function cargar() {
   return null;
 }
 
-// "15 🌲 10 💰"
+// "15 madera 10 💰" (con sus íconos)
 function textoCosto(costo) {
   return Object.entries(costo).map(([r, v]) => {
     const falta = (estado.rec[r] || 0) < v;
@@ -53,6 +53,7 @@ function dibujarRecursos() {
   }
   const cap = capacidad();
   html += `<span title="Habitantes / lugar para vivir. Libres: los que no trabajan en ningún edificio.">👥 <b>${estado.habitantes + soldados()}</b>/${cap} <small>(${libres()} libres)</small></span>`;
+  html += `<span title="Tu ejército: ${soldados()} soldados. Fuerza de ataque si salen todos: ${Math.round(poderAtaque(estado.ejercito))}">⚔️ <b>${soldados()}</b> <small>ataque ${Math.round(poderAtaque(estado.ejercito))}</small></span>`;
   html += `<span title="Defensa de Roma">🛡️ <b>${Math.round(poderDefensa())}</b></span>`;
   html += `<span title="Saqueos sufridos">🔥 <b>${estado.saqueos}</b>/${MAX_SAQUEOS}</span>`;
   $("recursos").innerHTML = html;

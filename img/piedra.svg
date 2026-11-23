@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Pila de piedras redondeadas -->
+  <g stroke="#2f2f34" stroke-width="3" stroke-linejoin="round">
+    <path d="M3 58 C2 46 8 38 18 37 C28 36 34 44 34 58 Z" fill="#8d8d96"/>
+    <path d="M28 58 C27 44 36 36 47 37 C58 38 62 48 61 58 Z" fill="#a3a3ad"/>
+    <path d="M14 38 C12 24 20 12 33 12 C46 12 52 24 49 38 C40 43 24 43 14 38 Z" fill="#c2c2cb"/>
+  </g>
+  <g fill="none" stroke="#5c5c64" stroke-width="2.5" stroke-linecap="round">
+    <path d="M30 22 L35 28 L33 34"/>
+    <path d="M44 46 L48 52"/>
+    <path d="M13 46 L17 51"/>
+  </g>
+  <g fill="#ffffff" opacity=".6">
+    <ellipse cx="25" cy="20" rx="6" ry="3" transform="rotate(-25 25 20)"/>
+    <ellipse cx="10" cy="44" rx="4" ry="2" transform="rotate(-30 10 44)"/>
+    <ellipse cx="40" cy="43" rx="4" ry="2" transform="rotate(-20 40 43)"/>
+  </g>
+</svg>

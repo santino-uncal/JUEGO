@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Pila de tres troncos vistos de costado -->
+  <g stroke="#4a2a10" stroke-width="2.5">
+    <rect x="6" y="34" width="44" height="18" rx="4" fill="#9a5b2a"/>
+    <rect x="14" y="14" width="44" height="18" rx="4" fill="#a8672f"/>
+    <ellipse cx="50" cy="43" rx="8" ry="9" fill="#e6b877"/>
+    <ellipse cx="58" cy="23" rx="6" ry="9" fill="#e6b877"/>
+  </g>
+  <g fill="none" stroke="#a8743c" stroke-width="2">
+    <ellipse cx="50" cy="43" rx="4" ry="4.5"/>
+    <ellipse cx="58" cy="23" rx="3" ry="4.5"/>
+  </g>
+  <g stroke="#6e3c16" stroke-width="2" stroke-linecap="round">
+    <line x1="12" y1="40" x2="30" y2="40"/>
+    <line x1="18" y1="46" x2="38" y2="46"/>
+    <line x1="20" y1="20" x2="40" y2="20"/>
+    <line x1="26" y1="26" x2="46" y2="26"/>
+  </g>
+</svg>

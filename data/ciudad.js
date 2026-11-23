@@ -1,10 +1,11 @@
 // Datos del modo "Rey de Roma": edificios, tecnologías, tropas, pueblos vecinos y eventos.
 // Se pueden editar libremente (precios, producción, fuerza de los enemigos) sin tocar el código.
 
+// icono: un emoji, o un dibujo de la carpeta img/ (para lo que no tiene un emoji claro)
 const RECURSOS = {
   comida:  { nombre: "Comida",       icono: "🌾" },
-  madera:  { nombre: "Madera",       icono: "🌲" },
-  piedra:  { nombre: "Piedra",       icono: "⛰️" },
+  madera:  { nombre: "Madera",       icono: '<img class="ico" src="img/troncos.svg" alt="madera">' },
+  piedra:  { nombre: "Piedra",       icono: '<img class="ico" src="img/piedra.svg" alt="piedra">' },
   oro:     { nombre: "Oro",          icono: "💰" },
   ciencia: { nombre: "Conocimiento", icono: "💡" },
 };
