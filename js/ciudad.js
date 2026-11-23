@@ -223,7 +223,15 @@ function panelEjercito() {
 function panelVecinos() {
   let html = estado.atacoEsteTurno ? `<p class="ayuda">Ya atacaste este turno. Tus tropas descansan.</p>` : "";
   html += `<p class="ayuda">Cada pueblo tiene su territorio en el 🗺️ Mapa. Declarale la guerra y después tocá en el mapa una zona suya pegada a la tuya para atacarla. Si tomás su capital, se rinde entero.</p>`;
-  return html + `<div class="lista">${Object.keys(ENEMIGOS).map(tarjetaEnemigo).join("")}</div>`;
+  const conocidos = Object.keys(ENEMIGOS).filter(descubierto);
+  const ocultos = Object.keys(ENEMIGOS).length - conocidos.length;
+  html += `<div class="lista">${conocidos.map(tarjetaEnemigo).join("")}`;
+  if (ocultos) {
+    html += `<div class="item bloqueado"><div class="item-icono">❓</div><div class="item-texto">
+      <b>${ocultos} pueblo${ocultos > 1 ? "s" : ""} sin descubrir</b><br>
+      <small>Abrí el 🗺️ Mapa y mandá exploradores para encontrarlos.</small></div></div>`;
+  }
+  return html + "</div>";
 }
 
 // Ficha de un pueblo (se usa en la pestaña Vecinos y en el mapa)
@@ -266,6 +274,12 @@ function dibujarMapa() {
   for (let y = 0; y < MAPA_ALTO; y++) {
     for (let x = 0; x < MAPA_ANCHO; x++) {
       const elegida = casillaElegida && casillaElegida.x === x && casillaElegida.y === y ? " elegida" : "";
+      if (!vista(x, y)) {
+        const viajando = estado.exploradores.some((ex) => ex.x === x && ex.y === y);
+        const se = puedeExplorar(x, y).ok || viajando ? " explorable" : "";
+        html += `<div class="casilla niebla${se}${elegida}" data-x="${x}" data-y="${y}">${viajando ? "🧭" : ""}</div>`;
+        continue;
+      }
       if (!esTierra(x, y)) { html += `<div class="casilla mar" data-x="${x}" data-y="${y}"></div>`; continue; }
       const dueno = duenoDe(x, y);
       const lugar = lugarEn(x, y);
@@ -284,7 +298,7 @@ function dibujarMapa() {
       if (dueno && dueno !== "roma" && estado.enemigos[dueno].guerra && alcanzable(x, y)) clases += " atacable";
       // Línea oscura donde cambia el dueño (la frontera)
       const borde = [[0, -1, "top"], [1, 0, "right"], [0, 1, "bottom"], [-1, 0, "left"]]
-        .filter(([dx, dy]) => esTierra(x + dx, y + dy) && duenoDe(x + dx, y + dy) !== dueno)
+        .filter(([dx, dy]) => vista(x + dx, y + dy) && esTierra(x + dx, y + dy) && duenoDe(x + dx, y + dy) !== dueno)
         .map(([, , lado]) => `border-${lado}:2px solid #3b2f22`).join(";");
       html += `<div class="${clases}${elegida}" style="background:${colorDe(dueno)};${borde}" data-x="${x}" data-y="${y}">${contenido}${extra}</div>`;
     }
@@ -294,11 +308,27 @@ function dibujarMapa() {
 }
 
 function infoCasilla() {
+  const pie = `<p class="ayuda">🧭 Exploradores de viaje: ${estado.exploradores.length} · 👥 Habitantes libres: ${libres()}</p>`;
+  return infoZona() + pie;
+}
+
+function infoZona() {
   if (!casillaElegida) {
     return `<p class="ayuda">Tocá una zona del mapa para ver de quién es. En naranja, el territorio de Roma.
+      Las zonas oscuras con borde dorado se pueden explorar: un habitante libre va y vuelve contando lo que vio.
       Las zonas que titilan son de pueblos en guerra con vos y las podés atacar.</p>`;
   }
   const { x, y } = casillaElegida;
+  if (!vista(x, y)) {
+    const viaje = estado.exploradores.find((ex) => ex.x === x && ex.y === y);
+    if (viaje) return `<h3>🧭 Zona desconocida</h3><p>Tu explorador vuelve en ${viaje.vuelve - estado.turno} turno(s).</p>`;
+    const p = puedeExplorar(x, y);
+    const t = turnosViaje(x, y);
+    return `<h3>❓ Zona desconocida</h3>
+      <p>Un habitante libre va a explorar y vuelve en <b>${t} turno${t > 1 ? "s" : ""}</b>. Mientras viaja, no trabaja.</p>
+      ${p.ok ? "" : `<p class="motivo">${p.motivo}</p>`}
+      <button data-accion="explorar" ${p.ok && !estado.terminado ? "" : "disabled"}>🧭 Explorar</button>`;
+  }
   if (!esTierra(x, y)) return `<h3>🌊 Mar</h3>`;
   const ter = MAPA.terrenos[terreno(x, y)];
   const dueno = duenoDe(x, y);
@@ -723,6 +753,7 @@ document.addEventListener("click", (ev) => {
   if (btn.dataset.vista) { cambiarVista(btn.dataset.vista); return; }
   const d = btn.dataset;
   switch (d.accion) {
+    case "explorar": if (casillaElegida) explorar(casillaElegida.x, casillaElegida.y); break;
     case "guerra": declararGuerra(d.enemigo); break;
     case "ver-mapa": {
       const e = ENEMIGOS[d.enemigo];

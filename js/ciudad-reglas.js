@@ -33,30 +33,102 @@ const enemigoNuevo = (id) => ({
 
 // Agrega el mapa de Italia a una partida (también arregla las partidas guardadas con el mapa viejo)
 function prepararMapa(partida) {
-  partida.exploradores = [];
-  delete partida.visto;
   // Pueblos: se borran los que ya no existen y se agregan los nuevos
   for (const id in partida.enemigos) if (!ENEMIGOS[id]) delete partida.enemigos[id];
   for (const id in ENEMIGOS) {
     const e = partida.enemigos[id] || (partida.enemigos[id] = enemigoNuevo(id));
     if (e.guerra === undefined) e.guerra = !!e.marcha || (e.proximo !== null && partida.turno >= e.proximo - 2);
   }
-  if (partida.duenos && partida.duenos.length === MAPA_ANCHO * MAPA_ALTO) return;
-  // De quién es cada casilla al empezar (los pueblos ya conquistados pasan a ser tuyos)
-  partida.duenos = [];
-  for (let y = 0; y < MAPA_ALTO; y++) {
-    for (let x = 0; x < MAPA_ANCHO; x++) {
-      const id = duenoInicial(x, y);
-      partida.duenos.push(id && id !== "roma" && !partida.enemigos[id].vivo ? "roma" : id);
+  if (!partida.duenos || partida.duenos.length !== MAPA_ANCHO * MAPA_ALTO) {
+    // De quién es cada casilla al empezar (los pueblos ya conquistados pasan a ser tuyos)
+    partida.duenos = [];
+    for (let y = 0; y < MAPA_ALTO; y++) {
+      for (let x = 0; x < MAPA_ANCHO; x++) {
+        const id = duenoInicial(x, y);
+        partida.duenos.push(id && id !== "roma" && !partida.enemigos[id].vivo ? "roma" : id);
+      }
+    }
+    // Las ciudades fundadas en el mapa viejo se mudan a un lugar libre de tu territorio
+    const puestas = [];
+    for (const c of partida.colonias || []) {
+      const lugar = lugarParaColonia(partida, puestas, c);
+      if (lugar) { c.x = lugar.x; c.y = lugar.y; }
+      puestas.push(c);
     }
   }
-  // Las ciudades fundadas en el mapa viejo se mudan a un lugar libre de tu territorio
-  const puestas = [];
-  for (const c of partida.colonias || []) {
-    const lugar = lugarParaColonia(partida, puestas, c);
-    if (lugar) { c.x = lugar.x; c.y = lugar.y; }
-    puestas.push(c);
+  // Niebla: al empezar solo conocés tu territorio y lo que está pegado a él
+  if (!partida.visto || partida.visto.length !== MAPA_ANCHO * MAPA_ALTO) {
+    partida.visto = Array(MAPA_ANCHO * MAPA_ALTO).fill(false);
+    partida.exploradores = [];
+    revelarTerritorio(partida);
   }
+  partida.exploradores = partida.exploradores || [];
+}
+
+// Muestra tus zonas y las que están pegadas a ellas
+function revelarTerritorio(partida = estado) {
+  for (let y = 0; y < MAPA_ALTO; y++)
+    for (let x = 0; x < MAPA_ANCHO; x++)
+      if (partida.duenos[y * MAPA_ANCHO + x] === "roma") revelar(x, y, 1, partida);
+}
+
+function revelar(x, y, radio, partida = estado) {
+  for (let dy = -radio; dy <= radio; dy++)
+    for (let dx = -radio; dx <= radio; dx++)
+      if (dentro(x + dx, y + dy)) partida.visto[(y + dy) * MAPA_ANCHO + x + dx] = true;
+}
+
+const vista = (x, y) => dentro(x, y) && estado.visto[y * MAPA_ANCHO + x];
+// Un pueblo está descubierto si ya viste alguna de sus zonas
+const descubierto = (id) => estado.duenos.some((d, i) => d === id && estado.visto[i]);
+
+// ---------- Exploración ----------
+
+// Cuánto tarda un explorador: 1 turno por cada 2 casillas desde la zona tuya más cercana
+function turnosViaje(x, y) {
+  let d = Infinity;
+  estado.duenos.forEach((dueno, i) => {
+    if (dueno === "roma") d = Math.min(d, distancia(x, y, i % MAPA_ANCHO, Math.floor(i / MAPA_ANCHO)));
+  });
+  return Math.max(1, Math.ceil(d / 2));
+}
+
+function puedeExplorar(x, y) {
+  if (vista(x, y)) return { ok: false, motivo: "Esta zona ya la conocés." };
+  if (estado.exploradores.some((e) => e.x === x && e.y === y)) return { ok: false, motivo: "Ya hay un explorador yendo para allá." };
+  if (!vecinas(x, y).some((c) => vista(c.x, c.y))) return { ok: false, motivo: "Queda muy lejos: primero explorá las zonas de al lado." };
+  if (libres() < 1) return { ok: false, motivo: "Necesitás un habitante libre para mandar de explorador." };
+  return { ok: true };
+}
+
+function explorar(x, y) {
+  if (!puedeExplorar(x, y).ok) return false;
+  const t = turnosViaje(x, y);
+  estado.exploradores.push({ x, y, vuelve: estado.turno + t });
+  anotar(`🧭 Un explorador sale hacia lo desconocido. Vuelve en ${t} turno${t > 1 ? "s" : ""}.`);
+  return true;
+}
+
+// Los exploradores que terminaron su viaje vuelven y cuentan lo que vieron
+function volverExploradores() {
+  const quedan = [];
+  for (const ex of estado.exploradores) {
+    if (estado.turno < ex.vuelve) { quedan.push(ex); continue; }
+    const antes = Object.keys(ENEMIGOS).filter(descubierto);
+    revelar(ex.x, ex.y, 1);
+    let texto = "🧭 Vuelve un explorador y dibuja una parte nueva del mapa.";
+    for (const id in ENEMIGOS) {
+      if (descubierto(id) && !antes.includes(id)) texto += ` ¡Descubrió las tierras de los ${ENEMIGOS[id].nombre.toLowerCase()}!`;
+    }
+    if (Math.random() < EXPLORACION.probHallazgo) {
+      const h = EXPLORACION.hallazgos[Math.floor(Math.random() * EXPLORACION.hallazgos.length)];
+      for (const r in h.efecto) estado.rec[r] += h.efecto[r];
+      const premio = Object.entries(h.efecto).map(([r, v]) => `+${v} ${RECURSOS[r].icono}`).join(" ");
+      texto += ` Además ${h.texto}: ${premio}.`;
+    }
+    anotar(texto, "bien");
+  }
+  estado.exploradores = quedan;
 }
 
 function lugarParaColonia(partida, puestas, cerca) {
@@ -114,6 +186,7 @@ function puedeDeclararGuerra(id) {
   const e = estado.enemigos[id];
   if (!e.vivo) return { ok: false, motivo: "Ya son tuyos." };
   if (e.guerra) return { ok: false, motivo: "Ya están en guerra." };
+  if (!descubierto(id)) return { ok: false, motivo: "Todavía no los descubriste." };
   return { ok: true };
 }
 
@@ -138,6 +211,7 @@ function puedeAtacarZona(x, y) {
   const id = duenoDe(x, y);
   if (!id || id === "roma") return { ok: false, motivo: "Acá no hay a quién atacar." };
   const e = estado.enemigos[id];
+  if (!vista(x, y)) return { ok: false, motivo: "Primero explorá esta zona." };
   if (!e.guerra) return { ok: false, motivo: `No estás en guerra con los ${ENEMIGOS[id].nombre.toLowerCase()}.` };
   if (!alcanzable(x, y)) {
     return { ok: false, motivo: costera(x, y) && !tiene(MAPA.tecMar)
@@ -239,7 +313,8 @@ function trabajosOcupados() {
   return n;
 }
 
-const enRoma = () => estado.habitantes;
+// Habitantes que están en Roma (los exploradores andan de viaje)
+const enRoma = () => Math.max(0, estado.habitantes - estado.exploradores.length);
 
 const libres = () => Math.max(0, enRoma() - trabajosOcupados());
 
@@ -692,11 +767,13 @@ function atacarZona(x, y, envio) {
     e.marcha = null;
     const zonas = zonasDe(id);
     estado.duenos = estado.duenos.map((d) => (d === id ? "roma" : d));
+    revelarTerritorio();
     for (const rec in datos.botin) estado.rec[rec] += datos.botin[rec];
     anotar(`🏆 ¡Conquistaste ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se rinden y sus ${zonas} zonas pasan a ser de Roma. Botín: ${textoRecursos(datos.botin)}. Ahora te pagan tributo.${cambiarApoyo(APOYO.sucesos.conquista)}`, "bien");
   } else if (r.ganaA) {
     muertos = aplicarBajas(grupo, r.perdidaGanador);
     estado.duenos[y * MAPA_ANCHO + x] = "roma";
+    revelar(x, y, 1);
     e.fuerza = Math.max(1, e.fuerza * (1 - MAPA.perdidaZona));
     const botin = {};
     for (const rec in datos.botin) botin[rec] = Math.round(datos.botin[rec] * MAPA.botinZona);
@@ -812,6 +889,7 @@ function terminarTurno() {
 
   // 5) Enemigos: crecen, marchan y atacan
   estado.turno++;
+  volverExploradores();
   for (const id in estado.enemigos) {
     const e = estado.enemigos[id];
     if (!e.vivo) continue;
@@ -826,6 +904,10 @@ function terminarTurno() {
       e.guerra = true;
       e.marcha = { fuerza: Math.round(e.fuerza * 0.6), llega: e.proximo };
       anotar(`⚠️ ¡Los ${datos.nombre.toLowerCase()} marchan hacia Roma! Llegan en ${e.proximo - estado.turno} turnos con unos ${estimar(e.marcha.fuerza)} de fuerza.`, "mal");
+      if (!vista(datos.x, datos.y)) {
+        revelar(datos.x, datos.y, 1);
+        anotar(`👀 Tus vigías siguen las huellas y descubren de dónde vienen: ${datos.ciudad}. Ya aparece en el mapa.`);
+      }
     }
   }
   estado.atacoEsteTurno = false;

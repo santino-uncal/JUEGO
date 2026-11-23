@@ -105,6 +105,8 @@ header .stats { flex: 1 1 420px; }
   box-sizing: border-box;
 }
 .casilla.mar { background: #9fd3ea; cursor: default; }
+.casilla.niebla { background: #2a231b; color: #fff; }
+.casilla.niebla.explorable { background: #4a3d2e; box-shadow: inset 0 0 0 2px #d4a017; }
 .casilla.tierra:hover { filter: brightness(1.15); }
 .casilla.atacable { animation: titila 1.4s ease-in-out infinite; }
 @keyframes titila { 50% { filter: brightness(1.35) saturate(.7); } }

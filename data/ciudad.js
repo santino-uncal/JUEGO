@@ -298,6 +298,19 @@ const ACCIONES = {
                da: { madera: 30, piedra: 20 }, apoyo: -12, espera: 4 },
 };
 
+// Explorar: un habitante libre sale de viaje y vuelve con lo que vio.
+// Tarda 1 turno por cada 2 casillas de distancia a tu territorio.
+// probHallazgo: chance de que traiga algo de lo que encontró en el camino.
+const EXPLORACION = {
+  probHallazgo: 0.3,
+  hallazgos: [
+    { texto: "encontró un bosque con frutos", efecto: { comida: 15 } },
+    { texto: "volvió con troncos de un bosque caído", efecto: { madera: 15 } },
+    { texto: "encontró unas ruinas con monedas viejas", efecto: { oro: 20 } },
+    { texto: "aprendió costumbres de pastores del camino", efecto: { ciencia: 10 } },
+  ],
+};
+
 // Fundar ciudades nuevas (desde el 🗺️ Mapa, en una casilla de tu territorio).
 // Los recursos y los habitantes se comparten entre todas tus ciudades.
 //   costo:     lo que cuesta la primera ciudad
