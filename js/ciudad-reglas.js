@@ -303,11 +303,12 @@ function balance() {
 // ---------- Construir ----------
 
 // Dice si se puede construir y, si no, por qué
-function puedeConstruir(tipo) {
+// ciudad: en cuál se quiere construir (los edificios únicos son uno por ciudad)
+function puedeConstruir(tipo, ciudad = 0) {
   const ed = EDIFICIOS[tipo];
   if (ed.fijo) return { ok: false, motivo: "No se puede construir." };
   if (ed.requiere && !tiene(ed.requiere)) return { ok: false, motivo: `Necesitás investigar ${TECNOLOGIAS[ed.requiere].nombre}.` };
-  if (ed.unico && cuenta(tipo, true) > 0) return { ok: false, motivo: "Ya tenés uno." };
+  if (ed.unico && (lotesDe(ciudad) || []).some((l) => l && l.tipo === tipo)) return { ok: false, motivo: `Ya hay uno en ${nombreCiudad(ciudad)}.` };
   if ((ed.trabajadores || 0) > libres()) return { ok: false, motivo: `Necesita ${ed.trabajadores} habitantes libres (tenés ${libres()}).` };
   if (!alcanza(ed.costo)) return { ok: false, motivo: "No te alcanzan los recursos." };
   return { ok: true };
@@ -316,7 +317,7 @@ function puedeConstruir(tipo) {
 // ciudad: 0 = Roma, 1 en adelante = las ciudades que fundaste
 function construir(ciudad, lote, tipo) {
   const lotes = lotesDe(ciudad);
-  if (!lotes || lotes[lote] || !puedeConstruir(tipo).ok) return false;
+  if (!lotes || lotes[lote] || !puedeConstruir(tipo, ciudad).ok) return false;
   const ed = EDIFICIOS[tipo];
   pagar(ed.costo);
   lotes[lote] = { tipo, falta: ed.turnos };
@@ -377,6 +378,41 @@ function fundarCiudad(x, y) {
   revelar(x, y, 1);
   anotar(`🏘️ ¡${FUNDACION.colonos} familias romanas fundan ${nombre}! Ya podés construir en sus terrenos.`, "bien");
   return estado.colonias.length;
+}
+
+// ---------- Niveles de las ciudades ----------
+
+// Con cuántos terrenos empieza una ciudad, su nivel (1, 2...) y hasta qué nivel puede llegar.
+// El nivel sale de cuántos terrenos tiene: así las partidas guardadas de antes andan solas.
+const lotesIniciales = (i) => (i === 0 ? INICIO.lotes : FUNDACION.lotes);
+const nivelCiudad = (i) => 1 + Math.round((lotesDe(i).length - lotesIniciales(i)) / NIVELES.terrenos);
+const nivelMaximo = (i) => (i === 0 ? NIVELES.maximo.roma : NIVELES.maximo.ciudad);
+const gente = () => estado.habitantes + soldados();
+const genteParaNivel = (nivel) => nivel * NIVELES.habitantes;
+
+// Lo que cuesta pasar al nivel siguiente: cada nivel sale más caro
+function costoNivel(i) {
+  const factor = 1 + NIVELES.aumento * (nivelCiudad(i) - 1);
+  const c = {};
+  for (const r in NIVELES.costo) c[r] = Math.round(NIVELES.costo[r] * factor);
+  return c;
+}
+
+function puedeSubirNivel(i) {
+  if (!lotesDe(i)) return { ok: false, motivo: "Esa ciudad no existe." };
+  if (nivelCiudad(i) >= nivelMaximo(i)) return { ok: false, motivo: `${nombreCiudad(i)} ya está en su nivel más alto.` };
+  const falta = genteParaNivel(nivelCiudad(i) + 1);
+  if (gente() < falta) return { ok: false, motivo: `Tu reino necesita ${falta} habitantes (tenés ${gente()}).` };
+  if (!alcanza(costoNivel(i))) return { ok: false, motivo: "No te alcanzan los recursos." };
+  return { ok: true };
+}
+
+function subirNivel(i) {
+  if (!puedeSubirNivel(i).ok) return false;
+  pagar(costoNivel(i));
+  for (let k = 0; k < NIVELES.terrenos; k++) lotesDe(i).push(null);
+  anotar(`🏗️ ¡${nombreCiudad(i)} crece y pasa a nivel ${nivelCiudad(i)}! Suma ${NIVELES.terrenos} terrenos nuevos.`, "bien");
+  return true;
 }
 
 // ---------- Tecnologías ----------
@@ -521,8 +557,9 @@ function entrenar(tipo, n = 1) {
 const bonusAtaque = () => 1 + efecto("ataque");
 const bonusDefensa = () => 1 + efecto("defensa");
 
+// Solo cuenta la muralla de Roma (es la ciudad que atacan los enemigos)
 function bonusMuralla() {
-  if (cuenta("muralla") === 0) return 0;
+  if (!estado.lotes.some((l) => l && l.tipo === "muralla" && l.falta === 0)) return 0;
   return 0.5 + efecto("muralla");
 }
 

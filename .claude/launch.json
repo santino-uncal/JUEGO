@@ -13,6 +13,13 @@
       "runtimeArgs": ["-m", "http.server", "8125"],
       "port": 8125,
       "autoPort": false
+    },
+    {
+      "name": "juego-3",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-m", "http.server", "8127"],
+      "port": 8127,
+      "autoPort": false
     }
   ]
 }

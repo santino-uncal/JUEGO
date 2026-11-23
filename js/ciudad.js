@@ -16,7 +16,7 @@ function guardar() { localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(estado)
 function cargar() {
   try {
     const d = JSON.parse(localStorage.getItem(CLAVE_GUARDADO));
-    if (d && d.lotes && d.lotes.length === INICIO.lotes) {
+    if (d && d.lotes && d.lotes.length >= INICIO.lotes) {
       for (const id in d.techs) if (!TECNOLOGIAS[id]) delete d.techs[id];
       if (d.meta && !TECNOLOGIAS[d.meta]) d.meta = null;
       if (d.apoyo === undefined) d.apoyo = APOYO.inicio;
@@ -78,6 +78,17 @@ function dibujarCiudad() {
   $("ciudades").innerHTML = nombres.length < 2 ? "" : nombres.map((n, i) =>
     `<button data-accion="ver-ciudad" data-ciudad="${i}" class="${i === ciudadVista ? "activa" : ""}">${i === 0 ? "👑" : "⛲"} ${n}</button>`).join("");
 
+  // Nivel de la ciudad y botón para agrandarla
+  const nivel = nivelCiudad(ciudadVista);
+  const maximo = nivelMaximo(ciudadVista);
+  const pn = puedeSubirNivel(ciudadVista);
+  $("nivel-ciudad").innerHTML = `<span>${ciudadVista === 0 ? "👑" : "⛲"} <b>${nombreCiudad(ciudadVista)}</b> · nivel <b>${nivel}</b> de ${maximo}
+      · ${lotesDe(ciudadVista).length} terrenos</span>` +
+    (nivel >= maximo ? `<small>Llegó a su tamaño máximo.</small>` :
+      `<button data-accion="subir-nivel" ${pn.ok && !estado.terminado ? "" : "disabled"}>⬆️ Agrandar a nivel ${nivel + 1}
+        <small>(+${NIVELES.terrenos} terrenos · ${textoCosto(costoNivel(ciudadVista))} · 👥 ${genteParaNivel(nivel + 1)})</small></button>` +
+      (pn.ok ? "" : `<small class="motivo">${pn.motivo}</small>`));
+
   const c = $("ciudad");
   c.innerHTML = "";
   lotesDe(ciudadVista).forEach((l, i) => {
@@ -137,7 +148,7 @@ function panelConstruir() {
   for (const tipo in EDIFICIOS) {
     const ed = EDIFICIOS[tipo];
     if (ed.fijo) continue;
-    const p = puedeConstruir(tipo);
+    const p = puedeConstruir(tipo, ciudadVista);
     const bloqueado = ed.requiere && !tiene(ed.requiere);
     html += `
       <div class="item ${bloqueado ? "bloqueado" : ""}">
@@ -184,7 +195,7 @@ function panelAcciones() {
 
 function panelEjercito() {
   let html = `<p>🛡️ Defensa de Roma: <b>${Math.round(poderDefensa())}</b>
-    <small>(soldados + habitantes${cuenta("muralla") ? ` + muralla +${bonusMuralla() * 100}%` : ""}${efecto("defensa") ? ` + tecnologías +${Math.round(efecto("defensa") * 100)}%` : ""})</small></p>
+    <small>(soldados + habitantes${bonusMuralla() ? ` + muralla +${bonusMuralla() * 100}%` : ""}${efecto("defensa") ? ` + tecnologías +${Math.round(efecto("defensa") * 100)}%` : ""})</small></p>
     <p>👥 Habitantes libres para alistar: <b>${libres()}</b></p><div class="lista">`;
   for (const tipo in UNIDADES) {
     const u = UNIDADES[tipo];
@@ -305,7 +316,7 @@ function infoCasilla() {
   if (lugar) return `<div class="lista">${tarjetaEnemigo(lugar)}</div>${pie}`;
   const col = coloniaEn(x, y);
   if (col) {
-    return `<h3>⛲ ${estado.colonias[col - 1].nombre}</h3><p>Una ciudad fundada por Roma. Comparte con Roma los recursos y los habitantes.</p>
+    return `<h3>⛲ ${estado.colonias[col - 1].nombre}</h3><p>Una ciudad fundada por Roma: puede tener todos los edificios que tiene Roma. Comparte con Roma los recursos y los habitantes.</p>
       <button data-accion="ver-ciudad" data-ciudad="${col}">🏛️ Ver la ciudad</button>${pie}`;
   }
   const ter = MAPA.terrenos[terreno(x, y)];
@@ -709,6 +720,7 @@ document.addEventListener("click", (ev) => {
       if (n) { ciudadVista = n; loteElegido = null; cambiarVista("ciudad"); }
       break;
     }
+    case "subir-nivel": subirNivel(ciudadVista); break;
     case "ver-ciudad": ciudadVista = +d.ciudad; loteElegido = null; cambiarVista("ciudad"); break;
     case "demoler": {
       // Cartel propio del juego (las ventanitas del navegador pueden estar bloqueadas)

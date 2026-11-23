@@ -24,12 +24,12 @@ const INICIO = {
 // produce: lo que da cada turno (si tiene a toda su gente)
 // capacidad: lugar para vivir que suma
 // requiere: tecnología necesaria
-// unico: solo se puede tener uno
+// unico: solo se puede tener uno por ciudad
 const EDIFICIOS = {
   regia:      { nombre: "Regia", icono: "👑", desc: "El palacio del rey. Corazón de Roma.",
                 produce: { comida: 3, oro: 2, ciencia: 3 }, capacidad: 10, unico: true, fijo: true },
   plaza:      { nombre: "Plaza", icono: "⛲", desc: "El centro de una ciudad que fundaste.",
-                produce: { comida: 2, oro: 1 }, capacidad: 5, fijo: true },
+                produce: { comida: 2, oro: 1, ciencia: 1 }, capacidad: 5, fijo: true },
   casa:       { nombre: "Casas", icono: "🏠", desc: "Lugar para que viva más gente.",
                 costo: { madera: 15 }, turnos: 1, capacidad: 5 },
   granja:     { nombre: "Granja", icono: "🌾", desc: "Produce comida para el pueblo y el ejército.",
@@ -48,6 +48,7 @@ const EDIFICIOS = {
                 costo: { madera: 25, oro: 10 }, turnos: 2, unico: true },
   muralla:    { nombre: "Muralla", icono: "🧱", desc: "Tus defensores pelean +50% mejor.",
                 costo: { madera: 20, piedra: 40 }, turnos: 3, unico: true, requiere: "albanileria" },
+                // (solo la muralla de Roma ayuda a defender, porque los enemigos atacan Roma)
   herreria:   { nombre: "Herrería", icono: "⚒️", desc: "Forja armas de hierro para legionarios.",
                 costo: { madera: 20, piedra: 20 }, turnos: 2, trabajadores: 1, unico: true, requiere: "hierro" },
   establo:    { nombre: "Establo", icono: "🐴", desc: "Cría caballos para la caballería.",
@@ -295,6 +296,23 @@ const FUNDACION = {
   distancia: 2,
   prohibidos: ["~", "m"],
   nombres: ["Ostia", "Tibur", "Antium", "Ardea", "Lavinium", "Praeneste", "Tusculum", "Gabii"],
+};
+
+// Niveles de las ciudades: subir de nivel agranda la ciudad (más terrenos para construir).
+// Todas las ciudades pueden tener todo lo que tiene Roma (también su propio Cuartel, Muralla, etc.),
+// pero Roma empieza más grande y llega más lejos.
+//   terrenos:  cuántos terrenos suma cada nivel (5 = una fila)
+//   maximo:    nivel más alto de Roma y de las ciudades fundadas
+//   costo:     lo que cuesta pasar a nivel 2
+//   aumento:   cada nivel siguiente cuesta un 50% más que el anterior (0.5)
+//   habitantes: cuánta gente tiene que tener tu reino por cada nivel que querés alcanzar
+//              (para nivel 3 hacen falta 3 x 10 = 30 habitantes)
+const NIVELES = {
+  terrenos: 5,
+  maximo: { roma: 6, ciudad: 4 },
+  costo: { madera: 40, piedra: 20, oro: 30 },
+  aumento: 0.5,
+  habitantes: 10,
 };
 
 // Botón "Incitar inmigración": pagás oro y llega gente nueva (una vez por turno, si hay lugar)
