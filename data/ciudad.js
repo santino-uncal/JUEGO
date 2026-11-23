@@ -90,34 +90,34 @@ const TECNOLOGIAS = {
   // ===== Monarquía =====
   // fila: altura fija en el árbol (0 = arriba). Si un período no la tiene, se acomoda solo.
   // Fundación
-  agricultura: { nombre: "Agricultura",  icono: "🌱", periodo: "monarquia", fila: 0, costo: 15, desc: "Arado de hierro: cada granja da +2 de comida.",
+  agricultura: { nombre: "Agricultura",  icono: "🌱", periodo: "monarquia", fila: 0, costo: 20, desc: "Arado de hierro: cada granja da +2 de comida.",
                  efecto: { mejora: { granja: { comida: 2 } } } },
-  mineria:     { nombre: "Minería",      icono: "⛰️", periodo: "monarquia", fila: 1.2, costo: 15, desc: "Desbloquea la Cantera." },
-  alfareria:   { nombre: "Alfarería",    icono: "🏺", periodo: "monarquia", fila: 3, costo: 15, desc: "Vasijas para guardar y vender: desbloquea el Mercado y cada casa da +2 de lugar.",
+  mineria:     { nombre: "Minería",      icono: "⛰️", periodo: "monarquia", fila: 1.2, costo: 20, desc: "Desbloquea la Cantera." },
+  alfareria:   { nombre: "Alfarería",    icono: "🏺", periodo: "monarquia", fila: 3, costo: 20, desc: "Vasijas para guardar y vender: desbloquea el Mercado y cada casa da +2 de lugar.",
                  efecto: { capacidad: { casa: 2 } } },
-  escritura:   { nombre: "Escritura",    icono: "✍️", periodo: "monarquia", fila: 6.5, costo: 15, desc: "Desbloquea la Biblioteca." },
+  escritura:   { nombre: "Escritura",    icono: "✍️", periodo: "monarquia", fila: 6.5, costo: 20, desc: "Desbloquea la Biblioteca." },
 
   // Primeros reyes
   riego:       { nombre: "Riego",        icono: "💧", periodo: "monarquia", fila: 0, costo: 45, desc: "Canales desde el Tíber: cada granja da +2 de comida más.", requiere: ["agricultura"],
                  efecto: { mejora: { granja: { comida: 2 } } } },
-  bronce:      { nombre: "Bronce",       icono: "🔱", periodo: "monarquia", fila: 1.2, costo: 20, desc: "Desbloquea Lanceros.", requiere: ["mineria"] },
-  albanileria: { nombre: "Albañilería",  icono: "🧱", periodo: "monarquia", fila: 3, costo: 20, desc: "Desbloquea Templo y Muralla.", requiere: ["alfareria"] },
-  matematicas: { nombre: "Matemáticas",  icono: "📐", periodo: "monarquia", fila: 5, costo: 60, desc: "Cada biblioteca da +2 de conocimiento.", requiere: ["escritura"],
+  bronce:      { nombre: "Bronce",       icono: "🔱", periodo: "monarquia", fila: 1.2, costo: 45, desc: "Desbloquea Lanceros.", requiere: ["mineria"] },
+  albanileria: { nombre: "Albañilería",  icono: "🧱", periodo: "monarquia", fila: 3, costo: 45, desc: "Desbloquea Templo y Muralla.", requiere: ["alfareria"] },
+  matematicas: { nombre: "Matemáticas",  icono: "📐", periodo: "monarquia", fila: 5, costo: 45, desc: "Cada biblioteca da +2 de conocimiento.", requiere: ["escritura"],
                  efecto: { mejora: { biblioteca: { ciencia: 2 } } } },
-  filosofia:   { nombre: "Filosofía",    icono: "🦉", periodo: "monarquia", fila: 6.5, costo: 50, desc: "Los sabios debaten en la Regia: +2 de conocimiento por turno.", requiere: ["escritura"],
+  filosofia:   { nombre: "Filosofía",    icono: "🦉", periodo: "monarquia", fila: 6.5, costo: 45, desc: "Los sabios debaten en la Regia: +2 de conocimiento por turno.", requiere: ["escritura"],
                  efecto: { mejora: { regia: { ciencia: 2 } } } },
 
   // Reyes sabinos
   equitacion:  { nombre: "Equitación",   icono: "🐴", periodo: "monarquia", fila: 0, costo: 70, desc: "Desbloquea Establo y Caballería.", requiere: ["riego"] },
-  construccion:{ nombre: "Construcción", icono: "🔨", periodo: "monarquia", fila: 4, costo: 40, desc: "Vigas y tejas: cada casa da +3 de lugar y cada aserradero +2 de madera.", requiere: ["albanileria", "matematicas"],
+  construccion:{ nombre: "Construcción", icono: "🔨", periodo: "monarquia", fila: 4, costo: 70, desc: "Vigas y tejas: cada casa da +3 de lugar y cada aserradero +2 de madera.", requiere: ["albanileria", "matematicas"],
                  efecto: { capacidad: { casa: 3 }, mejora: { aserradero: { madera: 2 } } } },
   senado:      { nombre: "Senado",       icono: "👴", periodo: "monarquia", fila: 5.8, costo: 70, desc: "Los ancianos aconsejan al rey: desbloquea el Foro.", requiere: ["filosofia"] },
 
   // Reyes etruscos
-  hierro:      { nombre: "Hierro",       icono: "⚒️", periodo: "monarquia", fila: 0.8, costo: 70, desc: "Desbloquea Herrería y Legionarios.", requiere: ["equitacion", "bronce"] },
+  hierro:      { nombre: "Hierro",       icono: "⚒️", periodo: "monarquia", fila: 0.8, costo: 85, desc: "Desbloquea Herrería y Legionarios.", requiere: ["equitacion", "bronce"] },
 
   // Fin de la monarquía
-  democracia:  { nombre: "Democracia",   icono: "🗳️", periodo: "monarquia", fila: 4, costo: 120, desc: "El pueblo quiere elegir a sus gobernantes. Te permite proclamar la República.",
+  democracia:  { nombre: "Democracia",   icono: "🗳️", periodo: "monarquia", fila: 4, costo: 100, desc: "El pueblo quiere elegir a sus gobernantes. Te permite proclamar la República.",
                  requiere: ["hierro", "construccion", "senado"] },
 
   // ===== República =====
