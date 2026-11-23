@@ -219,8 +219,16 @@ function puedeAtacarZona(x, y) {
       : "Queda lejos: primero ganá las zonas que están en el medio." };
   }
   if (estado.atacoEsteTurno) return { ok: false, motivo: "Ya atacaste este turno. Tus tropas descansan." };
+  if (!alcanza(costoZona(x, y))) return { ok: false, motivo: `Te falta ⚖️ poder político: quedarte con esta zona cuesta ${costoZona(x, y).poder} y tenés ${Math.floor(estado.rec.poder)}.` };
   if (soldados() === 0) return { ok: false, motivo: "No tenés soldados. Entrenalos en la pestaña ⚔️ Ejército." };
   return { ok: true };
+}
+
+// ⚖️ Poder político que cuesta quedarse con una zona
+function costoZona(x, y) {
+  const id = duenoDe(x, y);
+  if (esCapital(x, y) === id) return { poder: MAPA.poder.capital + MAPA.poder.porZona * (zonasDe(id) - 1) };
+  return { poder: MAPA.poder.zona };
 }
 
 // Defensa de una zona: la capital la defiende todo el ejército que está en casa (con murallas);
@@ -405,7 +413,7 @@ function hacerAccion(id) {
 
 // Devuelve lo que entra y sale por turno, recurso por recurso
 function balance() {
-  const b = { comida: 0, madera: 0, piedra: 0, oro: 0, ciencia: 0 };
+  const b = { comida: 0, madera: 0, piedra: 0, oro: 0, ciencia: 0, poder: 0 };
   const efi = eficiencia() * productividad();
   for (const l of todosLotes()) {
     if (!l || l.falta > 0) continue;
@@ -745,6 +753,7 @@ function atacarZona(x, y, envio) {
   const e = estado.enemigos[id];
   const datos = ENEMIGOS[id];
   const capital = esCapital(x, y) === id;
+  const costo = costoZona(x, y);
   const grupo = {};
   let total = 0;
   for (const u in UNIDADES) {
@@ -760,6 +769,7 @@ function atacarZona(x, y, envio) {
   const lugar = capital ? datos.ciudad : `una zona de los ${datos.nombre.toLowerCase()}`;
   let muertos;
 
+  if (r.ganaA) pagar(costo);
   if (r.ganaA && capital) {
     muertos = aplicarBajas(grupo, r.perdidaGanador);
     e.vivo = false;

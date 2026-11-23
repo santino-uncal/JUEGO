@@ -20,6 +20,7 @@ function cargar() {
       for (const id in d.techs) if (!TECNOLOGIAS[id]) delete d.techs[id];
       if (d.meta && !TECNOLOGIAS[d.meta]) d.meta = null;
       if (d.apoyo === undefined) d.apoyo = APOYO.inicio;
+      if (d.rec.poder === undefined) d.rec.poder = INICIO.recursos.poder;
       d.colonias = d.colonias || [];
       // Ya no se pierde por saqueos: las partidas que habían terminado así siguen
       if (d.resultado === "derrota") { d.terminado = false; d.resultado = null; }
@@ -360,7 +361,7 @@ function infoZona() {
     : `La defiende parte de su ejército${bonus ? ` (${ter.nombre.toLowerCase()}: +${bonus * 100}% de defensa)` : ""}. Si la ganás, pasa a ser tuya y te llevás algo de botín.`;
   const enGuerra = estado.enemigos[dueno].guerra;
   return `<h3>${titulo}</h3>
-    <p>${detalle}<br><small>Defensa: ~${estimar(defensaZona(x, y))}</small></p>
+    <p>${detalle}<br><small>Defensa: ~${estimar(defensaZona(x, y))} · Para quedártela: ${textoCosto(costoZona(x, y))} de poder político (se paga solo si ganás)</small></p>
     ${p.ok || !enGuerra ? "" : `<p class="motivo"><small>${p.motivo}</small></p>`}
     ${enGuerra
       ? `<button data-accion="preparar" ${p.ok && !estado.terminado ? "" : "disabled"}>⚔️ Atacar esta zona</button>`
@@ -649,6 +650,7 @@ function prepararAtaque(x, y) {
   abrirModal(`
     <h2>${d.icono} Atacar ${nombre}</h2>
     <p>¿Cuántos soldados mandás? Los que se quedan siguen defendiendo Roma.</p>
+    <p><small>Si ganás, pagás ${textoCosto(costoZona(x, y))} de poder político para quedarte con ${esCapital(x, y) === id ? "todo su territorio" : "la zona"}.</small></p>
     ${filas}
     <p id="comparacion"></p>
     <div class="fila centrado">

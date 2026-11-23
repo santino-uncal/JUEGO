@@ -8,11 +8,12 @@ const RECURSOS = {
   piedra:  { nombre: "Piedra",       icono: '<img class="ico" src="img/piedra.svg" alt="piedra">' },
   oro:     { nombre: "Oro",          icono: "💰" },
   ciencia: { nombre: "Conocimiento", icono: "💡" },
+  poder:   { nombre: "Poder político", icono: "⚖️" },
 };
 
 // Con qué empezás
 const INICIO = {
-  recursos: { comida: 20, madera: 50, piedra: 0, oro: 20, ciencia: 0 },
+  recursos: { comida: 20, madera: 50, piedra: 0, oro: 20, ciencia: 0, poder: 20 },
   habitantes: 6,
   lotes: 20,          // terrenos de la ciudad (5 columnas x 4 filas)
   loteRegia: 7,       // dónde está el palacio
@@ -27,9 +28,9 @@ const INICIO = {
 // unico: solo se puede tener uno por ciudad
 const EDIFICIOS = {
   regia:      { nombre: "Regia", icono: "👑", desc: "El palacio del rey. Corazón de Roma.",
-                produce: { comida: 3, oro: 2, ciencia: 3 }, capacidad: 10, unico: true, fijo: true },
+                produce: { comida: 3, oro: 2, ciencia: 3, poder: 2 }, capacidad: 10, unico: true, fijo: true },
   plaza:      { nombre: "Plaza", icono: "⛲", desc: "El centro de una ciudad que fundaste.",
-                produce: { comida: 2, oro: 1, ciencia: 1 }, capacidad: 5, fijo: true },
+                produce: { comida: 2, oro: 1, ciencia: 1, poder: 1 }, capacidad: 5, fijo: true },
   casa:       { nombre: "Casas", icono: "🏠", desc: "Lugar para que viva más gente.",
                 costo: { madera: 15 }, turnos: 1, capacidad: 5 },
   granja:     { nombre: "Granja", icono: "🌾", desc: "Produce comida para el pueblo y el ejército.",
@@ -43,7 +44,7 @@ const EDIFICIOS = {
   mercado:    { nombre: "Mercado", icono: "🏪", desc: "El comercio llena las arcas.",
                 costo: { madera: 20, piedra: 20 }, turnos: 2, trabajadores: 2, produce: { oro: 6 }, requiere: "alfareria" },
   templo:     { nombre: "Templo", icono: "🏛️", desc: "Templo a Júpiter: ofrendas y sabiduría.",
-                costo: { piedra: 30, oro: 20 }, turnos: 3, trabajadores: 1, produce: { oro: 2, ciencia: 2 }, requiere: "albanileria" },
+                costo: { piedra: 30, oro: 20 }, turnos: 3, trabajadores: 1, produce: { oro: 2, ciencia: 2, poder: 1 }, requiere: "albanileria" },
   cuartel:    { nombre: "Cuartel", icono: "⚔️", desc: "Permite entrenar soldados.",
                 costo: { madera: 25, oro: 10 }, turnos: 2, unico: true },
   muralla:    { nombre: "Muralla", icono: "🧱", desc: "Tus defensores pelean +50% mejor.",
@@ -62,7 +63,7 @@ const EDIFICIOS = {
   anfiteatro: { nombre: "Anfiteatro", icono: "🏟️", desc: "Juegos y espectáculos: más gente quiere vivir en Roma.",
                 costo: { piedra: 60, oro: 30 }, turnos: 3, trabajadores: 1, unico: true, produce: { oro: 3 }, capacidad: 8, requiere: "arquitectura" },
   foro:       { nombre: "Foro", icono: "🏤", desc: "Plaza de la política, los juicios y los negocios.",
-                costo: { piedra: 40, oro: 30 }, turnos: 3, trabajadores: 2, unico: true, produce: { oro: 5, ciencia: 3 }, requiere: "senado" },
+                costo: { piedra: 40, oro: 30 }, turnos: 3, trabajadores: 2, unico: true, produce: { oro: 5, ciencia: 3, poder: 4 }, requiere: "senado" },
 };
 
 // Tecnologías: se pagan con conocimiento 💡
@@ -453,6 +454,11 @@ const MAPA = {
   // y cuánto pierde su ejército (0.15 = 15%).
   botinZona: 0.2,
   perdidaZona: 0.15,
+  // ⚖️ Poder político que hace falta para quedarte con una zona (se paga solo si ganás la batalla).
+  //   zona:     lo que cuesta cada zona común
+  //   capital:  lo que cuesta la capital, más "porZona" por cada otra zona que todavía tenga ese pueblo
+  //             (al tomar la capital te quedás con todo su territorio)
+  poder: { zona: 10, capital: 15, porZona: 2 },
   // Las islas (o cualquier costa lejos de tu territorio) solo se pueden atacar con esta tecnología
   tecMar: "navegacion",
 };
