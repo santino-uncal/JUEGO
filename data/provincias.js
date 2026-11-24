@@ -62,13 +62,13 @@ const RUTAS = [
 ];
 
 // Eventos al azar al empezar cada turno.
-// tipo: "oro" (suma/resta oro) o "tropas" (suma legiones en Roma)
+// tipo: "oro" (suma/resta oro) o "tropas" (suma legiones en la capital)
 const EVENTOS = [
   { texto: "Cosecha abundante en los campos: +15 de oro.", tipo: "oro", valor: 15 },
   { texto: "Un senador rico dona a la República: +10 de oro.", tipo: "oro", valor: 10 },
   { texto: "Los piratas asaltan barcos mercantes: -10 de oro.", tipo: "oro", valor: -10 },
-  { texto: "Juegos en el Circo: el pueblo se alista. +2 legiones en Roma.", tipo: "tropas", valor: 2 },
-  { texto: "Veteranos vuelven a las armas: +1 legión en Roma.", tipo: "tropas", valor: 1 },
+  { texto: "Juegos en el Circo: el pueblo se alista. +2 legiones en la capital.", tipo: "tropas", valor: 2 },
+  { texto: "Veteranos vuelven a las armas: +1 legión en la capital.", tipo: "tropas", valor: 1 },
   { texto: "Incendio en el mercado: -8 de oro.", tipo: "oro", valor: -8 },
   { texto: "Nuevas minas de plata: +20 de oro.", tipo: "oro", valor: 20 },
 ];

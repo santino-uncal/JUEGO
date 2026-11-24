@@ -27,6 +27,12 @@
     </section>
 
     <aside id="panel">
+      <div id="jugadores" class="caja oculto">
+        <h3>👥 Sala <span id="codigo-chico" class="codigo"></span></h3>
+        <ul id="lista-jugadores"></ul>
+        <p id="aviso-turno"></p>
+      </div>
+
       <div id="info" class="caja">
         <p class="ayuda">Tocá una provincia para ver su información.</p>
       </div>
@@ -51,7 +57,8 @@
       <details class="caja">
         <summary>¿Cómo se juega?</summary>
         <ul class="reglas">
-          <li>Sos <b style="color:#c0392b">Roma</b>. Ganás si conquistás todas las provincias. Perdés si cae Roma.</li>
+          <li><b>Solo:</b> sos <b style="color:#c0392b">Roma</b>. Ganás si conquistás todas las provincias. Perdés si cae Roma.</li>
+          <li><b>Con amigos:</b> cada uno elige un pueblo y juegan por turnos. Los pueblos que nadie eligió los maneja la computadora. Quedás afuera si perdés todas tus provincias; gana el último que queda.</li>
           <li>Tocá una provincia tuya, elegí cuántas legiones mandar y tocá una vecina.</li>
           <li>Si la vecina es tuya, las tropas se mueven. Si es enemiga, hay batalla.</li>
           <li>Siempre queda al menos 1 legión cuidando la provincia.</li>
@@ -64,6 +71,49 @@
     </aside>
   </main>
 
+  <!-- Pantalla de inicio: solo o con amigos -->
+  <div id="inicio" class="pantalla oculto">
+    <div class="cartel-caja ancha">
+      <h2>🗺️ Modo TEG</h2>
+      <button id="btn-solo" class="grande">🧍 Jugar solo</button>
+      <hr>
+      <h3>👥 Jugar con amigos</h3>
+      <label class="campo">Tu nombre <input id="mi-nombre" maxlength="16" placeholder="Ej: Santi"></label>
+      <button id="btn-crear">➕ Crear una sala</button>
+      <button id="btn-retomar" class="oculto"></button>
+      <div class="unirse">
+        <input id="codigo-unirse" maxlength="5" placeholder="CÓDIGO" autocomplete="off">
+        <button id="btn-unirse">🔑 Unirme</button>
+      </div>
+      <p id="aviso-inicio" class="aviso"></p>
+    </div>
+  </div>
+
+  <!-- Sala de espera -->
+  <div id="sala" class="pantalla oculto">
+    <div class="cartel-caja ancha">
+      <p>Código de la sala</p>
+      <div id="codigo-grande" class="codigo grande"></div>
+      <button id="btn-copiar">📋 Copiar invitación</button>
+      <h3>Jugadores</h3>
+      <ul id="lista-sala"></ul>
+      <h3>Elegí tu pueblo</h3>
+      <div id="elegir-faccion"></div>
+      <p class="ayuda">Los pueblos que nadie elija los maneja la computadora.</p>
+      <p id="espera-sala" class="aviso"></p>
+      <button id="btn-empezar" class="grande oculto">⚔️ Empezar la partida</button>
+    </div>
+  </div>
+
+  <!-- Aviso si se corta la conexión con el anfitrión -->
+  <div id="conexion-perdida" class="pantalla oculto">
+    <div class="cartel-caja">
+      <h2>📵 Se cortó la conexión</h2>
+      <p>Se perdió la conexión con el anfitrión. Para volver, entrá de nuevo con el mismo código y el mismo nombre.</p>
+      <button id="btn-reconectar">Volver a entrar</button>
+    </div>
+  </div>
+
   <div id="cartel" class="oculto">
     <div class="cartel-caja">
       <h2 id="cartel-titulo"></h2>
@@ -72,8 +122,10 @@
     </div>
   </div>
 
+  <!-- PeerJS: conecta los navegadores entre sí para jugar con amigos -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script>
-    for (const f of ["data/provincias.js", "js/juego.js"]) document.write(`<script src="${f}?v=${Date.now()}"><\/script>`);
+    for (const f of ["data/provincias.js", "js/red.js", "js/juego.js"]) document.write(`<script src="${f}?v=${Date.now()}"><\/script>`);
   </script>
 </body>
 </html>

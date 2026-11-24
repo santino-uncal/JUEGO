@@ -126,3 +126,29 @@ body.menu { min-height: 100vh; display: flex; flex-direction: column; align-item
 .modo:hover { transform: translateY(-4px) scale(1.02); }
 .modo-icono { font-size: 4rem; }
 .modo h2 { margin: 8px 0; color: #7b1e1e; }
+
+/* Modo TEG con amigos */
+.pantalla { position: fixed; inset: 0; z-index: 10; background: rgba(40,10,10,.75);
+  display: flex; align-items: center; justify-content: center; padding: 16px; overflow-y: auto; }
+#cartel { z-index: 20; }
+.cartel-caja.ancha { max-width: 460px; width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.cartel-caja h2, .cartel-caja h3 { margin: 4px 0; color: #7b1e1e; }
+.cartel-caja hr { width: 100%; border: none; border-top: 2px dashed #d9c39a; }
+.campo { display: flex; flex-direction: column; gap: 4px; text-align: left; font-weight: bold; }
+.cartel-caja input { font: inherit; font-size: 1rem; padding: 8px; border: 2px solid #d9c39a; border-radius: 8px; background: #fff; }
+.unirse { display: flex; gap: 6px; }
+.unirse input { flex: 1; min-width: 0; text-transform: uppercase; letter-spacing: 4px; text-align: center; font-weight: bold; }
+.aviso { color: #b02a2a; min-height: 1.2em; margin: 0; }
+.codigo { font-family: "Courier New", monospace; letter-spacing: 3px; color: #7b1e1e; }
+.codigo.grande { font-size: 2.6rem; font-weight: bold; letter-spacing: 8px; }
+#lista-sala, #lista-jugadores { list-style: none; margin: 0; padding: 0; text-align: left; }
+#lista-sala li, #lista-jugadores li { display: flex; align-items: center; gap: 6px; padding: 5px 4px; border-bottom: 1px dashed #e0d0b0; }
+#lista-jugadores li.toca { background: #fff3c4; border-radius: 6px; }
+#lista-jugadores li.muerto { opacity: .5; text-decoration: line-through; }
+#lista-jugadores .derecha { margin-left: auto; white-space: nowrap; }
+#aviso-turno { margin: 8px 0 0; }
+#elegir-faccion { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+button.faccion { background: #fff; color: #3b2f22; border: 3px solid var(--color); font-weight: bold; display: flex; flex-direction: column; align-items: center; }
+button.faccion:hover:not(:disabled) { background: #fff3e0; }
+button.faccion.elegida { background: var(--color); color: #fff; }
+button.faccion small { font-weight: normal; font-size: .75rem; }
