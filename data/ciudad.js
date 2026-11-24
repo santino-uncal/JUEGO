@@ -219,33 +219,56 @@ const UNIDADES = {
 //   cada: turnos entre un ataque y el siguiente mientras están en guerra.
 //   botin: lo que ganás al tomar su capital. tributo: lo que te pagan cada turno después.
 const ENEMIGOS = {
-  umbros:   { nombre: "Umbros",   ciudad: "Iguvium",  icono: "🐑", letra: "U", color: "#87cdde", x: 11, y: 7,
+  // --- Italia ---
+  umbros:   { nombre: "Umbros",   ciudad: "Iguvium",  icono: "🐑", letra: "U", color: "#ffaec9", x: 105, y: 175,
               fuerza: 5,  crece: 0.9, muro: 0, primerAtaque: 10, cada: 9, botin: { comida: 40, oro: 30 }, tributo: { comida: 3, oro: 2 },
               desc: "Pastores de los Apeninos. Son pocos, pero atrevidos." },
-  etruscos: { nombre: "Etruscos", ciudad: "Veyes",    icono: "🏺", letra: "E", color: "#c83737", x: 8, y: 10,
+  etruscos: { nombre: "Etruscos", ciudad: "Veyes",    icono: "🏺", letra: "E", color: "#fff301", x: 100, y: 180,
               fuerza: 12, crece: 1.2, muro: 0.5, primerAtaque: 18, cada: 8, botin: { oro: 80, piedra: 40 }, tributo: { oro: 5, piedra: 2 },
               desc: "Ricos y sabios, con una ciudad amurallada." },
-  samnitas: { nombre: "Samnitas", ciudad: "Bovianum", icono: "🐺", letra: "S", color: "#037e3e", x: 15, y: 13,
+  samnitas: { nombre: "Samnitas", ciudad: "Bovianum", icono: "🐺", letra: "S", color: "#00a1e8", x: 107, y: 182,
               fuerza: 18, crece: 1.8, muro: 0.25, primerAtaque: 26, cada: 7, botin: { oro: 100, madera: 60 }, tributo: { oro: 5, madera: 4 },
               desc: "Guerreros duros de las montañas." },
-  celtas:   { nombre: "Celtas",   ciudad: "Mediolanum", icono: "🐗", letra: "C", color: "#a05a2c", x: 4, y: 2,
+  celtas:   { nombre: "Celtas",   ciudad: "Mediolanum", icono: "🐗", letra: "C", color: "#a05a2c", x: 93, y: 166,
               fuerza: 25, crece: 2.4, muro: 0, primerAtaque: 34, cada: 6, botin: { oro: 150, comida: 80 }, tributo: { oro: 8, comida: 4 },
-              desc: "Bárbaros feroces del norte. Saquean todo a su paso." },
-  apulios:  { nombre: "Mesapios y apulios", ciudad: "Arpi", icono: "🐴", letra: "A", color: "#fe7e44", x: 18, y: 14,
+              desc: "Bárbaros feroces del norte de Italia y de los Alpes. Saquean todo a su paso." },
+  mesapios: { nombre: "Mesapios", ciudad: "Uria", icono: "🐴", letra: "A", color: "#efe5af", x: 120, y: 185,
               fuerza: 15, crece: 1.2, muro: 0.25, cada: 8, botin: { comida: 60, oro: 90 }, tributo: { comida: 4, oro: 3 },
               desc: "Criadores de caballos de las llanuras del este. Viven en paz si no los molestás." },
-  italiotas:{ nombre: "Italiotas", ciudad: "Consentia", icono: "🌲", letra: "I", color: "#3cd23c", x: 20, y: 20,
+  italos:   { nombre: "Ítalos", ciudad: "Consentia", icono: "🌲", letra: "I", color: "#d9a066", x: 118, y: 195,
               fuerza: 16, crece: 1.4, muro: 0, cada: 8, botin: { madera: 80, oro: 80 }, tributo: { madera: 4, oro: 3 },
-              desc: "Lucanos y brucios de los bosques del sur. Viven en paz si no los molestás." },
-  sardos:   { nombre: "Sardos",   ciudad: "Caralis",  icono: "🗿", letra: "D", color: "#c4e800", x: 1, y: 21,
-              fuerza: 10, crece: 0.8, muro: 0.25, cada: 9, botin: { comida: 50, piedra: 50 }, tributo: { comida: 3, piedra: 2 },
-              desc: "Pueblo de la isla de Cerdeña, con torres de piedra. Para llegar necesitás ⛵ Navegación." },
-  griegos:  { nombre: "Griegos",  ciudad: "Siracusa", icono: "🏛️", letra: "G", color: "#ffd42a", x: 16, y: 28,
+              desc: "Pueblos de los bosques del sur de Italia. Viven en paz si no los molestás." },
+  griegos:  { nombre: "Griegos de Italia", ciudad: "Siracusa", icono: "🏛️", letra: "G", color: "#ff7e26", x: 114, y: 205,
               fuerza: 22, crece: 1.5, muro: 0.75, cada: 7, botin: { oro: 180, ciencia: 60 }, tributo: { oro: 8, ciencia: 3 },
-              desc: "Colonias griegas ricas y sabias en el sur y en Sicilia, con grandes murallas." },
-  cartagineses: { nombre: "Cartagineses", ciudad: "Lilibeo", icono: "🐘", letra: "K", color: "#83017b", x: 10, y: 25,
-              fuerza: 30, crece: 2.5, muro: 0.5, cada: 6, botin: { oro: 200, comida: 60 }, tributo: { oro: 10 },
-              desc: "Mercaderes y marinos de África con un puerto en Sicilia. Muy poderosos." },
+              desc: "Colonias griegas ricas y sabias en las costas del sur y en Sicilia, con grandes murallas." },
+  siculos:  { nombre: "Sículos", ciudad: "Henna", icono: "🌾", letra: "L", color: "#b5e61d", x: 110, y: 203,
+              fuerza: 10, crece: 0.9, muro: 0.25, cada: 9, botin: { comida: 70, piedra: 40 }, tributo: { comida: 4, piedra: 2 },
+              desc: "Campesinos del centro de Sicilia. Para llegar necesitás ⛵ Navegación." },
+  // --- El Mediterráneo y Europa ---
+  cartagineses: { nombre: "Cartagineses", ciudad: "Cartago", icono: "🐘", letra: "K", color: "#a349a5", x: 95, y: 211,
+              fuerza: 30, crece: 2.5, muro: 0.75, cada: 6, botin: { oro: 250, comida: 80 }, tributo: { oro: 12 },
+              desc: "Mercaderes y marinos de África. Tienen Cerdeña, Córcega, el oeste de Sicilia y el sur de Hispania. Muy poderosos." },
+  liga:     { nombre: "Liga griega", ciudad: "Atenas", icono: "🦉", letra: "H", color: "#804000", x: 145, y: 195,
+              fuerza: 40, crece: 3, muro: 0.75, cada: 7, botin: { oro: 300, ciencia: 120 }, tributo: { oro: 12, ciencia: 5 },
+              desc: "Las ciudades de Grecia unidas: filósofos, templos y falanges temibles." },
+  persas:   { nombre: "Persas", ciudad: "Sardes", icono: "🦁", letra: "P", color: "#c8bfe6", x: 166, y: 190,
+              fuerza: 80, crece: 5, muro: 0.5, cada: 6, botin: { oro: 500, comida: 150 }, tributo: { oro: 20, comida: 5 },
+              desc: "El imperio más grande del mundo. Enfrentarlos es una locura... por ahora." },
+  galos:    { nombre: "Galos", ciudad: "Bibracte", icono: "🪓", letra: "B", color: "#6b8e3d", x: 67, y: 152,
+              fuerza: 35, crece: 3, muro: 0.25, cada: 6, botin: { comida: 150, oro: 120 }, tributo: { comida: 6, oro: 6 },
+              desc: "Tribus guerreras de la Galia, con bosques enormes y muchos guerreros." },
+  ilirios:  { nombre: "Ilirios", ciudad: "Escodra", icono: "🛶", letra: "Y", color: "#c25b5b", x: 123, y: 167,
+              fuerza: 20, crece: 1.8, muro: 0.25, cada: 8, botin: { madera: 100, oro: 80 }, tributo: { madera: 4, oro: 4 },
+              desc: "Piratas y montañeses del otro lado del mar Adriático." },
+  peonios:  { nombre: "Peonios", ciudad: "Bylazora", icono: "🏹", letra: "N", color: "#8a5a9a", x: 142, y: 170,
+              fuerza: 20, crece: 1.6, muro: 0, cada: 8, botin: { comida: 80, oro: 80 }, tributo: { comida: 4, oro: 3 },
+              desc: "Tribus de los Balcanes, al norte de Grecia." },
+  celtiberos: { nombre: "Celtíberos", ciudad: "Numancia", icono: "🗡️", letra: "T", color: "#d9a03c", x: 41, y: 175,
+              fuerza: 30, crece: 2.2, muro: 0.5, cada: 7, botin: { oro: 120, piedra: 80 }, tributo: { oro: 6, piedra: 3 },
+              desc: "Guerreros del centro de Hispania, famosos por sus espadas." },
+  lusitanos:{ nombre: "Lusitanos", ciudad: "Olisipo", icono: "🐐", letra: "Z", color: "#3fa3a0", x: 15, y: 195,
+              fuerza: 18, crece: 1.5, muro: 0, cada: 8, botin: { comida: 80, oro: 60 }, tributo: { comida: 4, oro: 3 },
+              desc: "Pastores del oeste de Hispania, en la punta de Europa." },
 };
 
 // Apoyo popular 😊 (de 0 a 100). Con mucho apoyo la gente trabaja con ganas y todo rinde más;
@@ -300,9 +323,12 @@ const ACCIONES = {
 };
 
 // Explorar: un habitante libre sale de viaje y vuelve con lo que vio.
-// Tarda 1 turno por cada 2 casillas de distancia a tu territorio.
+// porTurno: casillas que avanza por turno (tarda 1 turno cada 4 casillas de distancia a tu territorio).
+// radio: cuánto descubre alrededor de la zona a la que fue (2 = un cuadrado de 5 x 5 casillas).
 // probHallazgo: chance de que traiga algo de lo que encontró en el camino.
 const EXPLORACION = {
+  porTurno: 4,
+  radio: 2,
   probHallazgo: 0.3,
   hallazgos: [
     { texto: "encontró un bosque con frutos", efecto: { comida: 15 } },
@@ -366,77 +392,12 @@ const EVENTOS_CIUDAD = [
   { texto: "Una fiebre recorre la ciudad: -2 habitantes.", habitantes: -2 },
 ];
 
-// Mapa de Italia. Cada letra es una casilla.
-// filas (el terreno):  ~ mar   . llanura   f bosque   h colinas   m montaña
-// duenos (de quién es): R Roma, - tierra de nadie, ~ mar,
-//                       y la letra de cada pueblo (ver "letra" en ENEMIGOS).
-// Las dos listas tienen que tener el mismo tamaño.
+// Mapa de Europa. Las casillas están en data/mapa-europa.js (salen de la imagen del mapa):
+//   MAPA_TERRENO (el terreno) y MAPA_DUENOS (de quién es cada casilla al empezar).
 const MAPA = {
-  filas: [
-    "mmmmmmmmmm~~~~~~~~~~~~~~~~",
-    "mmmmmmmmmm~~~~~~~~~~~~~~~~",
-    "mmhhhhhmmm~~~~~~~~~~~~~~~~",
-    "hhhffffffh~~~~~~~~~~~~~~~~",
-    "~~..fhffm.~~~~~~~~~~~~~~~~",
-    "~~~~..hfm..~~~~~~~~~~~~~~~",
-    "~~~~~.hfmhh..~~~~~~~~~~~~~",
-    "~~~~~.hfmhmhh.~~~~~~~~~~~~",
-    "~~~~~h.fhfhfhh~~~~~~~~~~~~",
-    "~~h~~~.hhmhmf.~~~~~~~~~~~~",
-    "~f.~~~~hfmmhh.h~~~~~~~~~~~",
-    "~.h~~~~~f.mmfh..~~~~~~~~~~",
-    "~..~~~~~~.fhhmm..hhf~~~~~~",
-    "~hh~~~~~~~hhhfffffh~~~~~~~",
-    "~~~~~~~~~~~~..fhff...~~~~~",
-    "~fh~~~~~~~~~~~..hfmm.fh~~~",
-    "h..f~~~~~~~~~~~.fhmhf..f~~",
-    ".hh.~~~~~~~~~~~~~hmh..~.f~",
-    ".f.~~~~~~~~~~~~~~h.h.~~~.h",
-    "fmh~~~~~~~~~~~~~~~~.f~~~~~",
-    ".h.~~~~~~~~~~~~~~~~..f~~~~",
-    "..h~~~~~~~~~~~~~~~~...~~~~",
-    "~~~~~~~~~~~~~~~~~~~~f~~~~~",
-    "~~~~~~~~~~~~~~~~~~~hh~~~~~",
-    "~~~~~~~~~~~~~~~~~~~.~~~~~~",
-    "~~~~~~~~~~.fh...fh..~~~~~~",
-    "~~~~~~~~~~h..hmmf~~~~~~~~~",
-    "~~~~~~~~~~~~h.fm.~~~~~~~~~",
-    "~~~~~~~~~~~~~~.h.h~~~~~~~~",
-    "~~~~~~~~~~~~~~~~.~~~~~~~~~",
-  ],
-  duenos: [
-    "CCCCCCCCCC~~~~~~~~~~~~~~~~",
-    "CCCCCCCCCC~~~~~~~~~~~~~~~~",
-    "CCCCCCCCCC~~~~~~~~~~~~~~~~",
-    "CCCCCCCCCC~~~~~~~~~~~~~~~~",
-    "~~CCCCCCCC~~~~~~~~~~~~~~~~",
-    "~~~~EEEUUUC~~~~~~~~~~~~~~~",
-    "~~~~~EEEUUUCC~~~~~~~~~~~~~",
-    "~~~~~EEEEUUUUU~~~~~~~~~~~~",
-    "~~~~~EEEEEUUUU~~~~~~~~~~~~",
-    "~~-~~~EEEEUUUU~~~~~~~~~~~~",
-    "~--~~~~EEEUUUUU~~~~~~~~~~~",
-    "~--~~~~~ERUUUUUU~~~~~~~~~~",
-    "~--~~~~~~RRUUUSSSSAA~~~~~~",
-    "~--~~~~~~~RRUUSSSAA~~~~~~~",
-    "~~~~~~~~~~~~RRSSSAAAA~~~~~",
-    "~DD~~~~~~~~~~~RSSSSAAAA~~~",
-    "DDDD~~~~~~~~~~~SSSSIAAAA~~",
-    "DDDD~~~~~~~~~~~~~IIIIG~AA~",
-    "DDD~~~~~~~~~~~~~~IIII~~~AA",
-    "DDD~~~~~~~~~~~~~~~~IG~~~~~",
-    "DDD~~~~~~~~~~~~~~~~III~~~~",
-    "DDD~~~~~~~~~~~~~~~~III~~~~",
-    "~~~~~~~~~~~~~~~~~~~~I~~~~~",
-    "~~~~~~~~~~~~~~~~~~~II~~~~~",
-    "~~~~~~~~~~~~~~~~~~~G~~~~~~",
-    "~~~~~~~~~~KKIIIIIGGG~~~~~~",
-    "~~~~~~~~~~KKIIIII~~~~~~~~~",
-    "~~~~~~~~~~~~GIIIG~~~~~~~~~",
-    "~~~~~~~~~~~~~~GGGG~~~~~~~~",
-    "~~~~~~~~~~~~~~~~G~~~~~~~~~",
-  ],
-  roma: { x: 9, y: 12 },
+  filas: MAPA_TERRENO,
+  duenos: MAPA_DUENOS,
+  roma: { x: 102, y: 182 },
   colorRoma: "#ff6600",
   colorNadie: "#d8d2c4",
   terrenos: {
@@ -458,7 +419,8 @@ const MAPA = {
   //   zona:     lo que cuesta cada zona común
   //   capital:  lo que cuesta la capital, más "porZona" por cada otra zona que todavía tenga ese pueblo
   //             (al tomar la capital te quedás con todo su territorio)
-  poder: { zona: 10, capital: 15, porZona: 2 },
+  //   maxCapital: lo máximo que puede costar una capital (para los pueblos enormes)
+  poder: { zona: 10, capital: 15, porZona: 2, maxCapital: 120 },
   // Las islas (o cualquier costa lejos de tu territorio) solo se pueden atacar con esta tecnología
   tecMar: "navegacion",
 };

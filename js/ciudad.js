@@ -268,45 +268,270 @@ function tarjetaEnemigo(id) {
 
 const colorDe = (dueno) => (dueno === "roma" ? MAPA.colorRoma : dueno ? ENEMIGOS[dueno].color : MAPA.colorNadie);
 
+// El mapa se dibuja en un <canvas> y se puede acercar y alejar (rueda del mouse, pellizco o botones ＋ －)
+// y mover arrastrando. "camara" dice qué parte se ve: escala = píxeles por casilla, ox/oy = corrimiento.
+let camara = null;
+let capaMapa = null;    // lo que hay que pintar en cada casilla (se recalcula cuando cambia la partida)
+const ESCALA_MAX = 48;
+
+function escalaMin() {
+  const cv = $("mapa");
+  return Math.min(cv.clientWidth / MAPA_ANCHO, cv.clientHeight / MAPA_ALTO);
+}
+
+// Mueve la cámara para que la casilla (x, y) quede en el medio
+function centrarMapa(x, y, escala) {
+  const cv = $("mapa");
+  if (!camara) camara = { escala: 14, ox: 0, oy: 0 };
+  if (escala) camara.escala = escala;
+  camara.ox = cv.clientWidth / 2 - (x + 0.5) * camara.escala;
+  camara.oy = cv.clientHeight / 2 - (y + 0.5) * camara.escala;
+  limitarCamara();
+}
+
+// Que no se pueda alejar de más ni perder el mapa de vista
+function limitarCamara() {
+  const cv = $("mapa");
+  const w = cv.clientWidth, h = cv.clientHeight;
+  camara.escala = Math.min(ESCALA_MAX, Math.max(escalaMin(), camara.escala));
+  const ancho = MAPA_ANCHO * camara.escala, alto = MAPA_ALTO * camara.escala;
+  camara.ox = ancho <= w ? (w - ancho) / 2 : Math.min(0, Math.max(w - ancho, camara.ox));
+  camara.oy = alto <= h ? (h - alto) / 2 : Math.min(0, Math.max(h - alto, camara.oy));
+}
+
+// Acerca (factor > 1) o aleja (factor < 1) dejando quieto el punto (px, py) de la pantalla
+function zoomMapa(factor, px, py) {
+  const cv = $("mapa");
+  if (px === undefined) { px = cv.clientWidth / 2; py = cv.clientHeight / 2; }
+  const antes = camara.escala;
+  camara.escala = Math.min(ESCALA_MAX, Math.max(escalaMin(), antes * factor));
+  const f = camara.escala / antes;
+  camara.ox = px - (px - camara.ox) * f;
+  camara.oy = py - (py - camara.oy) * f;
+  limitarCamara();
+  pintarMapa();
+}
+
+// Calcula qué color y qué marcas lleva cada casilla. Se llama cada vez que cambia la partida.
 function dibujarMapa() {
-  const m = $("mapa");
-  m.style.gridTemplateColumns = `repeat(${MAPA_ANCHO}, minmax(0, 1fr))`;
-  let html = "";
+  const n = MAPA_ANCHO * MAPA_ALTO;
+  const capa = { color: new Array(n), atacables: [], explorables: [], viajes: [], lugares: [] };
   for (let y = 0; y < MAPA_ALTO; y++) {
     for (let x = 0; x < MAPA_ANCHO; x++) {
-      const elegida = casillaElegida && casillaElegida.x === x && casillaElegida.y === y ? " elegida" : "";
+      const i = y * MAPA_ANCHO + x;
       if (!vista(x, y)) {
         const viajando = estado.exploradores.some((ex) => ex.x === x && ex.y === y);
-        const se = puedeExplorar(x, y).ok || viajando ? " explorable" : "";
-        html += `<div class="casilla niebla${se}${elegida}" data-x="${x}" data-y="${y}">${viajando ? "🧭" : ""}</div>`;
+        if (viajando) capa.viajes.push(i);
+        if (viajando || puedeExplorar(x, y).ok) { capa.color[i] = "#4a3d2e"; capa.explorables.push(i); }
+        else capa.color[i] = "#2a231b";
         continue;
       }
-      if (!esTierra(x, y)) { html += `<div class="casilla mar" data-x="${x}" data-y="${y}"></div>`; continue; }
+      if (!esTierra(x, y)) { capa.color[i] = "#9fd3ea"; continue; }
       const dueno = duenoDe(x, y);
-      const lugar = lugarEn(x, y);
-      const col = coloniaEn(x, y);
-      let contenido = MAPA.terrenos[terreno(x, y)].icono;
-      let extra = "";
-      let clases = "casilla tierra";
-      if (lugar === "roma") { contenido = "👑"; extra = `<span class="rotulo mio">Roma</span>`; clases += " ciudad-mapa"; }
-      else if (col) { contenido = "⛲"; extra = `<span class="rotulo mio">${estado.colonias[col - 1].nombre}</span>`; clases += " ciudad-mapa"; }
-      else if (lugar) {
-        const vivo = estado.enemigos[lugar].vivo;
-        contenido = vivo ? ENEMIGOS[lugar].icono : "🦅";
-        extra = `<span class="rotulo ${vivo ? "enemigo" : "mio"}">${ENEMIGOS[lugar].ciudad}</span>`;
-        clases += " ciudad-mapa";
-      }
-      if (dueno && dueno !== "roma" && estado.enemigos[dueno].guerra && alcanzable(x, y)) clases += " atacable";
-      // Línea oscura donde cambia el dueño (la frontera)
-      const borde = [[0, -1, "top"], [1, 0, "right"], [0, 1, "bottom"], [-1, 0, "left"]]
-        .filter(([dx, dy]) => vista(x + dx, y + dy) && esTierra(x + dx, y + dy) && duenoDe(x + dx, y + dy) !== dueno)
-        .map(([, , lado]) => `border-${lado}:2px solid #3b2f22`).join(";");
-      html += `<div class="${clases}${elegida}" style="background:${colorDe(dueno)};${borde}" data-x="${x}" data-y="${y}">${contenido}${extra}</div>`;
+      capa.color[i] = colorDe(dueno);
+      if (dueno && dueno !== "roma" && estado.enemigos[dueno].guerra && alcanzable(x, y)) capa.atacables.push(i);
     }
   }
-  m.innerHTML = html;
+  // Ciudades: Roma, las fundadas y las capitales que ya viste
+  capa.lugares.push({ x: MAPA.roma.x, y: MAPA.roma.y, icono: "👑", nombre: "Roma", mio: true });
+  estado.colonias.forEach((c) => capa.lugares.push({ x: c.x, y: c.y, icono: "⛲", nombre: c.nombre, mio: true }));
+  for (const id in ENEMIGOS) {
+    const d = ENEMIGOS[id];
+    if (!vista(d.x, d.y)) continue;
+    const vivo = estado.enemigos[id].vivo;
+    capa.lugares.push({ x: d.x, y: d.y, icono: vivo ? d.icono : "🦅", nombre: d.ciudad, mio: !vivo });
+  }
+  capaMapa = capa;
+  pintarMapa();
   $("mapa-info").innerHTML = infoCasilla();
 }
+
+// Pinta en pantalla la parte del mapa que se ve (se llama al mover o acercar, sin recalcular nada)
+function pintarMapa() {
+  const cv = $("mapa");
+  if (!capaMapa || !cv.clientWidth) return;   // el mapa está oculto
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+  }
+  if (!camara) centrarMapa(MAPA.roma.x, MAPA.roma.y, 14);
+  limitarCamara();
+  const ctx = cv.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = "#2a231b";
+  ctx.fillRect(0, 0, w, h);
+  const { escala: e, ox, oy } = camara;
+  const x0 = Math.max(0, Math.floor(-ox / e)), x1 = Math.min(MAPA_ANCHO - 1, Math.floor((w - ox) / e));
+  const y0 = Math.max(0, Math.floor(-oy / e)), y1 = Math.min(MAPA_ALTO - 1, Math.floor((h - oy) / e));
+  const px = (x) => ox + x * e, py = (y) => oy + y * e;
+  const enPantalla = (i) => { const x = i % MAPA_ANCHO, y = Math.floor(i / MAPA_ANCHO); return x >= x0 && x <= x1 && y >= y0 && y <= y1; };
+
+  // Colores de cada casilla
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      ctx.fillStyle = capaMapa.color[y * MAPA_ANCHO + x];
+      ctx.fillRect(px(x), py(y), e + 0.6, e + 0.6);
+    }
+  }
+
+  // Íconos del terreno (solo bien de cerca)
+  if (e >= 22) {
+    ctx.font = `${Math.round(e * 0.5)}px sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        if (!vista(x, y) || !esTierra(x, y)) continue;
+        const ic = MAPA.terrenos[terreno(x, y)].icono;
+        if (ic) ctx.fillText(ic, px(x) + e / 2, py(y) + e / 2);
+      }
+    }
+  }
+
+  // Fronteras: una línea oscura donde cambia el dueño
+  ctx.beginPath();
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      if (!vista(x, y) || !esTierra(x, y)) continue;
+      const d = duenoDe(x, y);
+      if (x + 1 < MAPA_ANCHO && vista(x + 1, y) && esTierra(x + 1, y) && duenoDe(x + 1, y) !== d) {
+        ctx.moveTo(px(x + 1), py(y)); ctx.lineTo(px(x + 1), py(y + 1));
+      }
+      if (y + 1 < MAPA_ALTO && vista(x, y + 1) && esTierra(x, y + 1) && duenoDe(x, y + 1) !== d) {
+        ctx.moveTo(px(x), py(y + 1)); ctx.lineTo(px(x + 1), py(y + 1));
+      }
+    }
+  }
+  ctx.strokeStyle = "#3b2f22";
+  ctx.lineWidth = Math.max(1, e / 8);
+  ctx.stroke();
+
+  // Zonas que se pueden explorar: borde dorado
+  if (e >= 5) {
+    ctx.strokeStyle = "#d4a017";
+    ctx.lineWidth = Math.max(1, e / 10);
+    for (const i of capaMapa.explorables) {
+      if (!enPantalla(i)) continue;
+      const lw = ctx.lineWidth / 2;
+      ctx.strokeRect(px(i % MAPA_ANCHO) + lw, py(Math.floor(i / MAPA_ANCHO)) + lw, e - 2 * lw, e - 2 * lw);
+    }
+  }
+
+  // Zonas que podés atacar: titilan
+  const brillo = (Math.sin(Date.now() / 220) + 1) / 2;
+  ctx.fillStyle = `rgba(255,255,255,${0.15 + 0.35 * brillo})`;
+  for (const i of capaMapa.atacables) {
+    if (enPantalla(i)) ctx.fillRect(px(i % MAPA_ANCHO), py(Math.floor(i / MAPA_ANCHO)), e + 0.6, e + 0.6);
+  }
+
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  // Exploradores de viaje
+  ctx.font = `${Math.max(10, Math.round(e * 0.7))}px sans-serif`;
+  for (const i of capaMapa.viajes) {
+    if (enPantalla(i)) ctx.fillText("🧭", px(i % MAPA_ANCHO) + e / 2, py(Math.floor(i / MAPA_ANCHO)) + e / 2);
+  }
+
+  // Ciudades con su nombre
+  const tam = Math.max(e < 5 ? 10 : 12, Math.min(30, e * 0.9));
+  for (const l of capaMapa.lugares) {
+    const cx = px(l.x) + e / 2, cy = py(l.y) + e / 2;
+    if (cx < -60 || cy < -30 || cx > w + 60 || cy > h + 30) continue;
+    ctx.font = `${tam}px sans-serif`;
+    ctx.fillText(l.icono, cx, cy);
+    if (e < 5 && !(l.mio && l.nombre === "Roma")) continue;   // muy de lejos los nombres se pisan
+    ctx.font = "bold 11px sans-serif";
+    const tw = ctx.measureText(l.nombre).width + 8;
+    const ty = cy + tam / 2 + 8;
+    ctx.fillStyle = l.mio ? "#22783a" : "#b02a2a";
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(cx - tw / 2, ty - 7, tw, 14, 4) : ctx.rect(cx - tw / 2, ty - 7, tw, 14);
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.fillText(l.nombre, cx, ty + 1);
+  }
+
+  // Casilla elegida
+  if (casillaElegida) {
+    const t = Math.max(e, 8);
+    ctx.strokeStyle = "#ffd700";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(px(casillaElegida.x) + e / 2 - t / 2, py(casillaElegida.y) + e / 2 - t / 2, t, t);
+  }
+}
+
+// Las zonas atacables titilan: se repinta solo mientras el mapa está a la vista y hay algo que titile
+setInterval(() => {
+  if (vistaActual === "mapa" && capaMapa && capaMapa.atacables.length && !document.hidden) pintarMapa();
+}, 120);
+window.addEventListener("resize", () => { if (vistaActual === "mapa") pintarMapa(); });
+
+// ----- Mover y acercar el mapa con el mouse o los dedos -----
+(function () {
+  const cv = $("mapa");
+  const dedos = new Map();     // punteros apretados: id → {x, y}
+  let movido = false, inicio = null, pellizco = null;
+  const local = (ev) => { const r = cv.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; };
+
+  cv.addEventListener("pointerdown", (ev) => {
+    cv.setPointerCapture(ev.pointerId);
+    dedos.set(ev.pointerId, local(ev));
+    if (dedos.size === 1) { movido = false; inicio = local(ev); }
+    pellizco = null;
+  });
+  cv.addEventListener("pointermove", (ev) => {
+    if (!dedos.has(ev.pointerId)) return;
+    const antes = dedos.get(ev.pointerId);
+    const ahora = local(ev);
+    dedos.set(ev.pointerId, ahora);
+    if (dedos.size === 1) {
+      if (!movido && Math.abs(ahora.x - inicio.x) + Math.abs(ahora.y - inicio.y) < 6) return;
+      movido = true;
+      camara.ox += ahora.x - antes.x;
+      camara.oy += ahora.y - antes.y;
+      limitarCamara();
+      pintarMapa();
+    } else if (dedos.size === 2) {
+      movido = true;
+      const [a, b] = [...dedos.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      const medio = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      if (pellizco) {
+        camara.ox += medio.x - pellizco.medio.x;
+        camara.oy += medio.y - pellizco.medio.y;
+        zoomMapa(dist / pellizco.dist, medio.x, medio.y);
+      }
+      pellizco = { dist, medio };
+    }
+  });
+  const soltar = (ev) => {
+    if (!dedos.has(ev.pointerId)) return;
+    dedos.delete(ev.pointerId);
+    pellizco = null;
+    if (dedos.size || movido || ev.type === "pointercancel") return;
+    // Fue un toque sin mover: elegir la casilla
+    const p = local(ev);
+    const x = Math.floor((p.x - camara.ox) / camara.escala), y = Math.floor((p.y - camara.oy) / camara.escala);
+    if (!dentro(x, y)) return;
+    const misma = casillaElegida && casillaElegida.x === x && casillaElegida.y === y;
+    casillaElegida = misma ? null : { x, y };
+    pintarMapa();
+    $("mapa-info").innerHTML = infoCasilla();
+  };
+  cv.addEventListener("pointerup", soltar);
+  cv.addEventListener("pointercancel", soltar);
+  cv.addEventListener("wheel", (ev) => {
+    ev.preventDefault();
+    const p = local(ev);
+    zoomMapa(ev.deltaY < 0 ? 1.2 : 1 / 1.2, p.x, p.y);
+  }, { passive: false });
+  document.querySelectorAll("[data-zoom]").forEach((b) => b.addEventListener("click", () => {
+    const z = +b.dataset.zoom;
+    if (z === 0) { centrarMapa(MAPA.roma.x, MAPA.roma.y, 14); pintarMapa(); }
+    else if (z === 2) { camara.escala = escalaMin(); limitarCamara(); pintarMapa(); }
+    else zoomMapa(z > 0 ? 1.5 : 1 / 1.5);
+  }));
+})();
 
 function infoCasilla() {
   const pie = `<p class="ayuda">🧭 Exploradores de viaje: ${estado.exploradores.length} · 👥 Habitantes libres: ${libres()}</p>`;
@@ -597,6 +822,7 @@ function cambiarVista(v) {
   $("vista-ciudad").classList.toggle("oculto", v !== "ciudad");
   $("vista-mapa").classList.toggle("oculto", v !== "mapa");
   $("vista-arbol").classList.toggle("oculto", v !== "arbol");
+  if (v === "mapa") pintarMapa();
 }
 
 function dibujarLog() {
@@ -681,7 +907,7 @@ function actualizarComparacion(x, y) {
 }
 
 function mostrarFin() {
-  abrirModal(`<h2>¡Ave, ${PERIODOS[periodoActual()].titulo}! 🏆</h2><p>Sometiste a todos los pueblos vecinos en ${estado.turno} años. Roma domina Italia.</p>
+  abrirModal(`<h2>¡Ave, ${PERIODOS[periodoActual()].titulo}! 🏆</h2><p>Sometiste a todos los pueblos vecinos en ${estado.turno} años. Roma domina Europa.</p>
     <button data-accion="nueva">Jugar de nuevo</button>`);
 }
 
@@ -761,6 +987,7 @@ document.addEventListener("click", (ev) => {
       const e = ENEMIGOS[d.enemigo];
       casillaElegida = { x: e.x, y: e.y };
       cambiarVista("mapa");
+      centrarMapa(e.x, e.y, Math.max(camara ? camara.escala : 0, 12));
       dibujarMapa();
       return;
     }

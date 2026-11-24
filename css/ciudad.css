@@ -85,41 +85,29 @@ header .stats { flex: 1 1 420px; }
 .vistas button.activa { background: #7b1e1e; color: #fbe9c6; }
 
 /* Mapa */
-#mapa {
-  display: grid;
-  gap: 0;
-  padding: 8px;
-  background: #9fd3ea;
+#mapa-marco {
+  position: relative;
   border: 4px solid #d4a017;
   border-radius: 12px;
-  max-width: 620px;
+  overflow: hidden;
+  max-width: 900px;
   margin: 0 auto;
+  background: #2a231b;
 }
-.casilla {
-  aspect-ratio: 1;
-  display: flex; align-items: center; justify-content: center;
-  font-size: clamp(.5rem, 1.3vw, .85rem);
-  cursor: pointer;
-  position: relative;
-  overflow: visible;
-  box-sizing: border-box;
+#mapa {
+  display: block;
+  width: 100%;
+  height: min(70vh, 620px);
+  touch-action: none;
+  cursor: grab;
 }
-.casilla.mar { background: #9fd3ea; cursor: default; }
-.casilla.niebla { background: #2a231b; color: #fff; }
-.casilla.niebla.explorable { background: #4a3d2e; box-shadow: inset 0 0 0 2px #d4a017; }
-.casilla.tierra:hover { filter: brightness(1.15); }
-.casilla.atacable { animation: titila 1.4s ease-in-out infinite; }
-@keyframes titila { 50% { filter: brightness(1.35) saturate(.7); } }
-.ciudad-mapa { font-size: clamp(.7rem, 1.8vw, 1.1rem); z-index: 1; }
-.casilla.elegida { outline: 3px solid #ffd700; outline-offset: -1px; z-index: 3; }
+#mapa:active { cursor: grabbing; }
+.mapa-zoom {
+  position: absolute; top: 8px; right: 8px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.mapa-zoom button { width: 36px; height: 36px; padding: 0; font-size: 1.1rem; }
 .muestra { display: inline-block; width: .8em; height: .8em; border-radius: 2px; border: 1px solid #3b2f22; vertical-align: middle; }
-.rotulo {
-  position: absolute; bottom: -10px; z-index: 2; pointer-events: none; left: 50%; transform: translateX(-50%);
-  font-size: .6rem; font-weight: bold; white-space: nowrap;
-  background: #fffaf0; color: #3b2f22; padding: 0 4px; border-radius: 4px;
-}
-.rotulo.enemigo { background: #b02a2a; color: #fff; }
-.rotulo.mio { background: #22783a; color: #fff; }
 #mapa-info { margin-top: 10px; }
 #mapa-info h3 { margin: 0 0 6px; }
 

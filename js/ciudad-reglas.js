@@ -31,7 +31,7 @@ const enemigoNuevo = (id) => ({
   proximo: ENEMIGOS[id].primerAtaque || null, cada: ENEMIGOS[id].cada, marcha: null,
 });
 
-// Agrega el mapa de Italia a una partida (también arregla las partidas guardadas con el mapa viejo)
+// Agrega el mapa de Europa a una partida (también arregla las partidas guardadas con el mapa viejo)
 function prepararMapa(partida) {
   // Pueblos: se borran los que ya no existen y se agregan los nuevos
   for (const id in partida.enemigos) if (!ENEMIGOS[id]) delete partida.enemigos[id];
@@ -58,7 +58,7 @@ function prepararMapa(partida) {
   }
   // Niebla: al empezar solo conocés tu territorio y lo que está pegado a él
   if (!partida.visto || partida.visto.length !== MAPA_ANCHO * MAPA_ALTO) {
-    partida.visto = Array(MAPA_ANCHO * MAPA_ALTO).fill(false);
+    partida.visto = Array(MAPA_ANCHO * MAPA_ALTO).fill(0);
     partida.exploradores = [];
     revelarTerritorio(partida);
   }
@@ -75,7 +75,7 @@ function revelarTerritorio(partida = estado) {
 function revelar(x, y, radio, partida = estado) {
   for (let dy = -radio; dy <= radio; dy++)
     for (let dx = -radio; dx <= radio; dx++)
-      if (dentro(x + dx, y + dy)) partida.visto[(y + dy) * MAPA_ANCHO + x + dx] = true;
+      if (dentro(x + dx, y + dy)) partida.visto[(y + dy) * MAPA_ANCHO + x + dx] = 1;
 }
 
 const vista = (x, y) => dentro(x, y) && estado.visto[y * MAPA_ANCHO + x];
@@ -84,13 +84,13 @@ const descubierto = (id) => estado.duenos.some((d, i) => d === id && estado.vist
 
 // ---------- Exploración ----------
 
-// Cuánto tarda un explorador: 1 turno por cada 2 casillas desde la zona tuya más cercana
+// Cuánto tarda un explorador: 1 turno por cada EXPLORACION.porTurno casillas desde la zona tuya más cercana
 function turnosViaje(x, y) {
   let d = Infinity;
   estado.duenos.forEach((dueno, i) => {
     if (dueno === "roma") d = Math.min(d, distancia(x, y, i % MAPA_ANCHO, Math.floor(i / MAPA_ANCHO)));
   });
-  return Math.max(1, Math.ceil(d / 2));
+  return Math.max(1, Math.ceil(d / EXPLORACION.porTurno));
 }
 
 function puedeExplorar(x, y) {
@@ -115,7 +115,7 @@ function volverExploradores() {
   for (const ex of estado.exploradores) {
     if (estado.turno < ex.vuelve) { quedan.push(ex); continue; }
     const antes = Object.keys(ENEMIGOS).filter(descubierto);
-    revelar(ex.x, ex.y, 1);
+    revelar(ex.x, ex.y, EXPLORACION.radio);
     let texto = "🧭 Vuelve un explorador y dibuja una parte nueva del mapa.";
     for (const id in ENEMIGOS) {
       if (descubierto(id) && !antes.includes(id)) texto += ` ¡Descubrió las tierras de los ${ENEMIGOS[id].nombre.toLowerCase()}!`;
@@ -227,7 +227,7 @@ function puedeAtacarZona(x, y) {
 // ⚖️ Poder político que cuesta quedarse con una zona
 function costoZona(x, y) {
   const id = duenoDe(x, y);
-  if (esCapital(x, y) === id) return { poder: MAPA.poder.capital + MAPA.poder.porZona * (zonasDe(id) - 1) };
+  if (esCapital(x, y) === id) return { poder: Math.min(MAPA.poder.maxCapital, MAPA.poder.capital + MAPA.poder.porZona * (zonasDe(id) - 1)) };
   return { poder: MAPA.poder.zona };
 }
 
