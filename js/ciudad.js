@@ -274,9 +274,19 @@ let camara = null;
 let capaMapa = null;    // lo que hay que pintar en cada casilla (se recalcula cuando cambia la partida)
 const ESCALA_MAX = 48;
 
+// Geometría de los hexágonos (con punta arriba). Con escala e: cada hexágono mide e de ancho,
+// las filas están a FILA_HEX * e una de otra y las filas impares se corren medio hexágono.
+const FILA_HEX = Math.sqrt(3) / 2;
+const RADIO_HEX = 1 / Math.sqrt(3);
+const anchoMapa = (e) => (MAPA_ANCHO + 0.5) * e;
+const altoMapa = (e) => ((MAPA_ALTO - 1) * FILA_HEX + 2 * RADIO_HEX) * e;
+// Centro de un hexágono en la pantalla
+const centroHexX = (x, y) => camara.ox + (x + 0.5 + (y & 1) * 0.5) * camara.escala;
+const centroHexY = (y) => camara.oy + (RADIO_HEX + y * FILA_HEX) * camara.escala;
+
 function escalaMin() {
   const cv = $("mapa");
-  return Math.min(cv.clientWidth / MAPA_ANCHO, cv.clientHeight / MAPA_ALTO);
+  return Math.min(cv.clientWidth / anchoMapa(1), cv.clientHeight / altoMapa(1));
 }
 
 // Mueve la cámara para que la casilla (x, y) quede en el medio
@@ -284,8 +294,8 @@ function centrarMapa(x, y, escala) {
   const cv = $("mapa");
   if (!camara) camara = { escala: 14, ox: 0, oy: 0 };
   if (escala) camara.escala = escala;
-  camara.ox = cv.clientWidth / 2 - (x + 0.5) * camara.escala;
-  camara.oy = cv.clientHeight / 2 - (y + 0.5) * camara.escala;
+  camara.ox = cv.clientWidth / 2 - (x + 0.5 + (y & 1) * 0.5) * camara.escala;
+  camara.oy = cv.clientHeight / 2 - (RADIO_HEX + y * FILA_HEX) * camara.escala;
   limitarCamara();
 }
 
@@ -294,9 +304,25 @@ function limitarCamara() {
   const cv = $("mapa");
   const w = cv.clientWidth, h = cv.clientHeight;
   camara.escala = Math.min(ESCALA_MAX, Math.max(escalaMin(), camara.escala));
-  const ancho = MAPA_ANCHO * camara.escala, alto = MAPA_ALTO * camara.escala;
+  const ancho = anchoMapa(camara.escala), alto = altoMapa(camara.escala);
   camara.ox = ancho <= w ? (w - ancho) / 2 : Math.min(0, Math.max(w - ancho, camara.ox));
   camara.oy = alto <= h ? (h - alto) / 2 : Math.min(0, Math.max(h - alto, camara.oy));
+}
+
+// Qué hexágono hay en un punto de la pantalla (el de centro más cercano)
+function casillaEnPantalla(px, py) {
+  const e = camara.escala;
+  const fila = Math.floor((py - camara.oy) / e / FILA_HEX);
+  let mejor = null, dmin = Infinity;
+  for (let y = fila - 1; y <= fila + 1; y++) {
+    const col = Math.round((px - camara.ox) / e - 0.5 - (y & 1) * 0.5);
+    for (let x = col - 1; x <= col + 1; x++) {
+      if (!dentro(x, y)) continue;
+      const d = (centroHexX(x, y) - px) ** 2 + (centroHexY(y) - py) ** 2;
+      if (d < dmin) { dmin = d; mejor = { x, y }; }
+    }
+  }
+  return mejor;
 }
 
 // Acerca (factor > 1) o aleja (factor < 1) dejando quieto el punto (px, py) de la pantalla
@@ -362,80 +388,102 @@ function pintarMapa() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = "#2a231b";
   ctx.fillRect(0, 0, w, h);
-  const { escala: e, ox, oy } = camara;
-  const x0 = Math.max(0, Math.floor(-ox / e)), x1 = Math.min(MAPA_ANCHO - 1, Math.floor((w - ox) / e));
-  const y0 = Math.max(0, Math.floor(-oy / e)), y1 = Math.min(MAPA_ALTO - 1, Math.floor((h - oy) / e));
-  const px = (x) => ox + x * e, py = (y) => oy + y * e;
+  const e = camara.escala;
+  const y0 = Math.max(0, Math.floor(-camara.oy / e / FILA_HEX) - 1);
+  const y1 = Math.min(MAPA_ALTO - 1, Math.ceil((h - camara.oy) / e / FILA_HEX) + 1);
+  const x0 = Math.max(0, Math.floor(-camara.ox / e) - 1);
+  const x1 = Math.min(MAPA_ANCHO - 1, Math.ceil((w - camara.ox) / e) + 1);
   const enPantalla = (i) => { const x = i % MAPA_ANCHO, y = Math.floor(i / MAPA_ANCHO); return x >= x0 && x <= x1 && y >= y0 && y <= y1; };
 
-  // Colores de cada casilla
+  // Las 6 puntas del hexágono, empezando arriba y girando como el reloj
+  const r = RADIO_HEX * e;
+  const puntas = [-90, -30, 30, 90, 150, 210].map((g) => [Math.cos(g * Math.PI / 180), Math.sin(g * Math.PI / 180)]);
+  const hexagono = (path, x, y, agrandar = 1) => {
+    const cx = centroHexX(x, y), cy = centroHexY(y), rr = r * agrandar;
+    path.moveTo(cx + puntas[0][0] * rr, cy + puntas[0][1] * rr);
+    for (let k = 1; k < 6; k++) path.lineTo(cx + puntas[k][0] * rr, cy + puntas[k][1] * rr);
+    path.closePath();
+  };
+  // Muy de lejos los hexágonos son tan chiquitos que alcanza con cuadraditos (es más rápido)
+  const lejos = e < 4;
+  const forma = (path, x, y) => (lejos
+    ? path.rect(centroHexX(x, y) - e / 2, centroHexY(y) - e * 0.5, e + 0.5, e * FILA_HEX + 0.8)
+    : hexagono(path, x, y, 1.04));
+
+  // Colores de cada casilla (se juntan las del mismo color para pintar más rápido)
+  const porColor = new Map();
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
-      ctx.fillStyle = capaMapa.color[y * MAPA_ANCHO + x];
-      ctx.fillRect(px(x), py(y), e + 0.6, e + 0.6);
+      const c = capaMapa.color[y * MAPA_ANCHO + x];
+      if (!porColor.has(c)) porColor.set(c, new Path2D());
+      forma(porColor.get(c), x, y);
     }
   }
+  for (const [c, path] of porColor) { ctx.fillStyle = c; ctx.fill(path); }
 
   // Íconos del terreno (solo bien de cerca)
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
   if (e >= 22) {
     ctx.font = `${Math.round(e * 0.5)}px sans-serif`;
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         if (!vista(x, y) || !esTierra(x, y)) continue;
         const ic = MAPA.terrenos[terreno(x, y)].icono;
-        if (ic) ctx.fillText(ic, px(x) + e / 2, py(y) + e / 2);
+        if (ic) ctx.fillText(ic, centroHexX(x, y), centroHexY(y));
       }
     }
   }
 
-  // Fronteras: una línea oscura donde cambia el dueño
-  ctx.beginPath();
-  for (let y = y0; y <= y1; y++) {
-    for (let x = x0; x <= x1; x++) {
-      if (!vista(x, y) || !esTierra(x, y)) continue;
-      const d = duenoDe(x, y);
-      if (x + 1 < MAPA_ANCHO && vista(x + 1, y) && esTierra(x + 1, y) && duenoDe(x + 1, y) !== d) {
-        ctx.moveTo(px(x + 1), py(y)); ctx.lineTo(px(x + 1), py(y + 1));
-      }
-      if (y + 1 < MAPA_ALTO && vista(x, y + 1) && esTierra(x, y + 1) && duenoDe(x, y + 1) !== d) {
-        ctx.moveTo(px(x), py(y + 1)); ctx.lineTo(px(x + 1), py(y + 1));
+  // Fronteras: una línea oscura en el lado del hexágono donde cambia el dueño.
+  // Se miran 3 vecinos (derecha, abajo a la derecha, abajo a la izquierda) para no dibujar cada lado dos veces.
+  // Lado compartido con cada uno: entre las puntas 1-2, 2-3 y 3-4.
+  if (!lejos) {
+    const borde = new Path2D();
+    for (let y = y0; y <= y1; y++) {
+      const dirs = direcciones(y);
+      for (let x = x0; x <= x1; x++) {
+        if (!vista(x, y) || !esTierra(x, y)) continue;
+        const d = duenoDe(x, y);
+        const cx = centroHexX(x, y), cy = centroHexY(y);
+        for (let k = 0; k < 3; k++) {
+          const vx = x + dirs[k][0], vy = y + dirs[k][1];
+          if (!vista(vx, vy) || !esTierra(vx, vy) || duenoDe(vx, vy) === d) continue;
+          borde.moveTo(cx + puntas[k + 1][0] * r, cy + puntas[k + 1][1] * r);
+          borde.lineTo(cx + puntas[k + 2][0] * r, cy + puntas[k + 2][1] * r);
+        }
       }
     }
+    ctx.strokeStyle = "#3b2f22";
+    ctx.lineWidth = Math.max(1, e / 8);
+    ctx.stroke(borde);
   }
-  ctx.strokeStyle = "#3b2f22";
-  ctx.lineWidth = Math.max(1, e / 8);
-  ctx.stroke();
 
   // Zonas que se pueden explorar: borde dorado
   if (e >= 5) {
+    const path = new Path2D();
+    for (const i of capaMapa.explorables) if (enPantalla(i)) hexagono(path, i % MAPA_ANCHO, Math.floor(i / MAPA_ANCHO), 0.85);
     ctx.strokeStyle = "#d4a017";
     ctx.lineWidth = Math.max(1, e / 10);
-    for (const i of capaMapa.explorables) {
-      if (!enPantalla(i)) continue;
-      const lw = ctx.lineWidth / 2;
-      ctx.strokeRect(px(i % MAPA_ANCHO) + lw, py(Math.floor(i / MAPA_ANCHO)) + lw, e - 2 * lw, e - 2 * lw);
-    }
+    ctx.stroke(path);
   }
 
   // Zonas que podés atacar: titilan
   const brillo = (Math.sin(Date.now() / 220) + 1) / 2;
+  const atac = new Path2D();
+  for (const i of capaMapa.atacables) if (enPantalla(i)) forma(atac, i % MAPA_ANCHO, Math.floor(i / MAPA_ANCHO));
   ctx.fillStyle = `rgba(255,255,255,${0.15 + 0.35 * brillo})`;
-  for (const i of capaMapa.atacables) {
-    if (enPantalla(i)) ctx.fillRect(px(i % MAPA_ANCHO), py(Math.floor(i / MAPA_ANCHO)), e + 0.6, e + 0.6);
-  }
+  ctx.fill(atac);
 
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
   // Exploradores de viaje
   ctx.font = `${Math.max(10, Math.round(e * 0.7))}px sans-serif`;
   for (const i of capaMapa.viajes) {
-    if (enPantalla(i)) ctx.fillText("🧭", px(i % MAPA_ANCHO) + e / 2, py(Math.floor(i / MAPA_ANCHO)) + e / 2);
+    if (enPantalla(i)) ctx.fillText("🧭", centroHexX(i % MAPA_ANCHO, Math.floor(i / MAPA_ANCHO)), centroHexY(Math.floor(i / MAPA_ANCHO)));
   }
 
   // Ciudades con su nombre
   const tam = Math.max(e < 5 ? 10 : 12, Math.min(30, e * 0.9));
   for (const l of capaMapa.lugares) {
-    const cx = px(l.x) + e / 2, cy = py(l.y) + e / 2;
+    const cx = centroHexX(l.x, l.y), cy = centroHexY(l.y);
     if (cx < -60 || cy < -30 || cx > w + 60 || cy > h + 30) continue;
     ctx.font = `${tam}px sans-serif`;
     ctx.fillText(l.icono, cx, cy);
@@ -453,10 +501,12 @@ function pintarMapa() {
 
   // Casilla elegida
   if (casillaElegida) {
-    const t = Math.max(e, 8);
+    const path = new Path2D();
+    const agrandar = e < 8 ? 8 / e : 1;
+    hexagono(path, casillaElegida.x, casillaElegida.y, agrandar);
     ctx.strokeStyle = "#ffd700";
     ctx.lineWidth = 3;
-    ctx.strokeRect(px(casillaElegida.x) + e / 2 - t / 2, py(casillaElegida.y) + e / 2 - t / 2, t, t);
+    ctx.stroke(path);
   }
 }
 
@@ -511,8 +561,9 @@ window.addEventListener("resize", () => { if (vistaActual === "mapa") pintarMapa
     if (dedos.size || movido || ev.type === "pointercancel") return;
     // Fue un toque sin mover: elegir la casilla
     const p = local(ev);
-    const x = Math.floor((p.x - camara.ox) / camara.escala), y = Math.floor((p.y - camara.oy) / camara.escala);
-    if (!dentro(x, y)) return;
+    const c = casillaEnPantalla(p.x, p.y);
+    if (!c) return;
+    const { x, y } = c;
     const misma = casillaElegida && casillaElegida.x === x && casillaElegida.y === y;
     casillaElegida = misma ? null : { x, y };
     pintarMapa();

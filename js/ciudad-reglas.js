@@ -75,8 +75,8 @@ function revelarTerritorio(partida = estado) {
 
 function revelar(x, y, radio, partida = estado) {
   for (let dy = -radio; dy <= radio; dy++)
-    for (let dx = -radio; dx <= radio; dx++)
-      if (dentro(x + dx, y + dy)) partida.visto[(y + dy) * MAPA_ANCHO + x + dx] = 1;
+    for (let dx = -radio - 1; dx <= radio + 1; dx++)
+      if (dentro(x + dx, y + dy) && distancia(x, y, x + dx, y + dy) <= radio) partida.visto[(y + dy) * MAPA_ANCHO + x + dx] = 1;
 }
 
 const vista = (x, y) => dentro(x, y) && estado.visto[y * MAPA_ANCHO + x];
@@ -151,7 +151,13 @@ function lugarParaColonia(partida, puestas, cerca) {
 const MAPA_ANCHO = MAPA.filas[0].length;
 const MAPA_ALTO = MAPA.filas.length;
 const terreno = (x, y) => MAPA.filas[y][x];
-const distancia = (x1, y1, x2, y2) => Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2));
+// Las casillas son hexágonos: las filas impares están corridas medio hexágono a la derecha.
+// Distancia = cuántos pasos de hexágono en hexágono hay entre dos casillas.
+const cubo = (x, y) => { const q = x - (y - (y & 1)) / 2; return [q, y, -q - y]; };
+const distancia = (x1, y1, x2, y2) => {
+  const a = cubo(x1, y1), b = cubo(x2, y2);
+  return Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2]));
+};
 const dentro = (x, y) => x >= 0 && y >= 0 && x < MAPA_ANCHO && y < MAPA_ALTO;
 const esTierra = (x, y) => dentro(x, y) && terreno(x, y) !== "~";
 
@@ -165,9 +171,13 @@ const duenoDe = (x, y) => (dentro(x, y) ? estado.duenos[y * MAPA_ANCHO + x] : nu
 const esMia = (x, y) => duenoDe(x, y) === "roma";
 const zonasDe = (id) => estado.duenos.filter((d) => d === id).length;
 
+// Los 6 vecinos de un hexágono: derecha, abajo a la derecha, abajo a la izquierda, izquierda, arriba a la izquierda, arriba a la derecha
+const direcciones = (y) => (y & 1
+  ? [[1, 0], [1, 1], [0, 1], [-1, 0], [0, -1], [1, -1]]
+  : [[1, 0], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1]]);
 const vecinas = (x, y) => {
   const v = [];
-  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && dentro(x + dx, y + dy)) v.push({ x: x + dx, y: y + dy });
+  for (const [dx, dy] of direcciones(y)) if (dentro(x + dx, y + dy)) v.push({ x: x + dx, y: y + dy });
   return v;
 };
 const pegadaAMi = (x, y) => vecinas(x, y).some((c) => esMia(c.x, c.y));
