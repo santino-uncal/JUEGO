@@ -39,7 +39,8 @@ function prepararMapa(partida) {
     const e = partida.enemigos[id] || (partida.enemigos[id] = enemigoNuevo(id));
     if (e.guerra === undefined) e.guerra = !!e.marcha || (e.proximo !== null && partida.turno >= e.proximo - 2);
   }
-  if (!partida.duenos || partida.duenos.length !== MAPA_ANCHO * MAPA_ALTO) {
+  if (!partida.duenos || partida.duenos.length !== MAPA_ANCHO * MAPA_ALTO || partida.versionMapa !== MAPA.version) {
+    partida.versionMapa = MAPA.version;
     // De quién es cada casilla al empezar (los pueblos ya conquistados pasan a ser tuyos)
     partida.duenos = [];
     for (let y = 0; y < MAPA_ALTO; y++) {
