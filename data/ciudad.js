@@ -238,9 +238,6 @@ const ENEMIGOS = {
   italos:   { nombre: "Ítalos", ciudad: "Consentia", icono: "🌲", letra: "I", color: "#b5e61d", x: 118, y: 195,
               fuerza: 16, crece: 1.4, muro: 0, cada: 8, botin: { madera: 80, oro: 80 }, tributo: { madera: 4, oro: 3 },
               desc: "Pueblos de los bosques del sur de Italia. Viven en paz si no los molestás." },
-  griegos:  { nombre: "Griegos de Italia", ciudad: "Siracusa", icono: "🏛️", letra: "G", color: "#804000", x: 114, y: 205,
-              fuerza: 22, crece: 1.5, muro: 0.75, cada: 7, botin: { oro: 180, ciencia: 60 }, tributo: { oro: 8, ciencia: 3 },
-              desc: "Colonias griegas ricas y sabias en las costas del sur y en Sicilia, con grandes murallas." },
   siculos:  { nombre: "Sículos", ciudad: "Henna", icono: "🌾", letra: "L", color: "#b5e61d", x: 110, y: 203,
               fuerza: 10, crece: 0.9, muro: 0.25, cada: 9, botin: { comida: 70, piedra: 40 }, tributo: { comida: 4, piedra: 2 },
               desc: "Campesinos del centro de Sicilia. Para llegar necesitás ⛵ Navegación." },
@@ -250,7 +247,7 @@ const ENEMIGOS = {
               desc: "Mercaderes y marinos de África. Tienen Cerdeña, Córcega, el oeste de Sicilia y el sur de Hispania. Muy poderosos." },
   liga:     { nombre: "Liga griega", ciudad: "Atenas", icono: "🦉", letra: "H", color: "#804000", x: 145, y: 195,
               fuerza: 40, crece: 3, muro: 0.75, cada: 7, botin: { oro: 300, ciencia: 120 }, tributo: { oro: 12, ciencia: 5 },
-              desc: "Las ciudades de Grecia unidas: filósofos, templos y falanges temibles." },
+              desc: "Las ciudades griegas unidas: Grecia y sus colonias del sur de Italia y de Sicilia, como Siracusa. Filósofos, templos y falanges temibles." },
   persas:   { nombre: "Persas", ciudad: "Sardes", icono: "🦁", letra: "P", color: "#c8bfe6", x: 166, y: 190,
               fuerza: 80, crece: 5, muro: 0.5, cada: 6, botin: { oro: 500, comida: 150 }, tributo: { oro: 20, comida: 5 },
               desc: "El imperio más grande del mundo. Enfrentarlos es una locura... por ahora." },
@@ -395,7 +392,7 @@ const EVENTOS_CIUDAD = [
 // Mapa de Europa. Las casillas están en data/mapa-europa.js (salen de la imagen del mapa):
 //   MAPA_TERRENO (el terreno) y MAPA_DUENOS (de quién es cada casilla al empezar).
 const MAPA = {
-  version: 2,          // subirlo cuando cambia el dibujo del mapa: las partidas guardadas se rearman
+  version: 3,          // subirlo cuando cambia el dibujo del mapa: las partidas guardadas se rearman
   filas: MAPA_TERRENO,
   duenos: MAPA_DUENOS,
   roma: { x: 102, y: 182 },
