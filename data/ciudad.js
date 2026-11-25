@@ -244,6 +244,15 @@ const UNIDADES = {
                  desc: "Soldados de los pueblos conquistados. Más baratos que los legionarios." },
 };
 
+// Barcos: se construyen en el Puerto y llevan soldados para atacar zonas a las que solo se llega por mar.
+//   lleva:    cuántos soldados lleva cada barco
+//   hundidos: qué parte de los barcos se hunde si perdés la batalla (0.5 = la mitad)
+const BARCOS = {
+  nombre: "Trirreme", plural: "Trirremes", icono: "🚢", edificio: "puerto",
+  costo: { madera: 40, oro: 15 }, lleva: 5, hundidos: 0.5,
+  desc: "Barco de guerra con tres filas de remeros.",
+};
+
 // Pueblos de Italia. Cada uno tiene su territorio en el mapa (ver MAPA.duenos).
 //   letra: con qué letra aparece su territorio en MAPA.duenos
 //   color: color de su territorio en el mapa

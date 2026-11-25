@@ -243,6 +243,23 @@ function panelEjercito() {
         </div>
       </div>`;
   }
+  // Barcos
+  const b1 = puedeConstruirBarco(1), b5 = puedeConstruirBarco(5);
+  const sinBarcos = !tiene(MAPA.tecMar);
+  html += `
+      <div class="item ${sinBarcos ? "bloqueado" : ""}">
+        <div class="item-icono">${sinBarcos ? "🔒" : BARCOS.icono}</div>
+        <div class="item-texto">
+          <b>${BARCOS.plural}</b> <span class="cantidad">× ${barcos()}</span>${barcosListos() < barcos() ? ` <small>(${barcos() - barcosListos()} ya navegaron este año)</small>` : ""}<br>
+          <small>${BARCOS.desc} Cada uno lleva ${BARCOS.lleva} soldados para atacar zonas a las que solo se llega por mar. Si perdés, se hunde la mitad.</small><br>
+          <small>Cuesta: ${textoCosto(BARCOS.costo)}</small>
+          ${b1.ok ? "" : `<br><small class="motivo">${b1.motivo}</small>`}
+        </div>
+        <div class="botones">
+          <button data-accion="barco" data-n="1" ${b1.ok ? "" : "disabled"}>+1</button>
+          <button data-accion="barco" data-n="5" ${b5.ok ? "" : "disabled"}>+5</button>
+        </div>
+      </div>`;
   return html + "</div>";
 }
 
@@ -955,6 +972,7 @@ function prepararAtaque(x, y) {
     <h2>${d.icono} Atacar ${nombre}</h2>
     <p>¿Cuántos soldados mandás? Los que se quedan siguen defendiendo Roma y pueden atacar otra zona este mismo año. Los que pelean descansan hasta el año que viene.</p>
     <p><small>Si ganás, pagás ${textoCosto(costoZona(x, y))} de poder político para quedarte con ${esCapital(x, y) === id ? "todo su territorio" : "la zona"}.</small></p>
+    ${porMar(x, y) ? `<p>${BARCOS.icono} <b>Por mar:</b> tenés ${barcosListos()} barco${barcosListos() === 1 ? "" : "s"} listo${barcosListos() === 1 ? "" : "s"}, que llevan hasta <b>${barcosListos() * BARCOS.lleva}</b> soldados.</p>` : ""}
     ${filas}
     <p id="comparacion"></p>
     <div class="fila centrado">
@@ -981,7 +999,13 @@ function actualizarComparacion(x, y) {
   if (mio > suyo * 1.3) consejo = `<span class="bien">Tenés clara ventaja.</span>`;
   else if (mio > suyo * 0.9) consejo = `<span>Pelea pareja: puede salir para cualquier lado.</span>`;
   else consejo = `<span class="mal">Muy arriesgado: ellos son más fuertes.</span>`;
-  $("comparacion").innerHTML = `Tu ataque: <b>${Math.round(mio)}</b> contra su defensa: <b>~${estimar(suyo)}</b><br>${consejo}`;
+  let total = 0;
+  for (const u in envio) total += envio[u];
+  const lugar = porMar(x, y) ? barcosListos() * BARCOS.lleva : Infinity;
+  if (total > lugar) consejo = `<span class="mal">No entran en los barcos: podés mandar hasta ${lugar} soldados.</span>`;
+  const boton = document.querySelector('#modal [data-accion="atacar"]');
+  if (boton) boton.disabled = total === 0 || total > lugar;
+  $("comparacion").innerHTML = `Tu ataque: <b>${Math.round(mio)}</b> contra su defensa: <b>~${estimar(suyo)}</b>${porMar(x, y) ? ` · ${BARCOS.icono} usás ${Math.ceil(total / BARCOS.lleva)}` : ""}<br>${consejo}`;
 }
 
 function mostrarFin() {
@@ -1125,6 +1149,7 @@ document.addEventListener("click", (ev) => {
       return;
     }
     case "entrenar": entrenar(d.unidad, +d.n); break;
+    case "barco": construirBarco(+d.n); break;
     case "gobierno": hacerAccion(d.id); break;
     case "preparar": if (casillaElegida) prepararAtaque(casillaElegida.x, casillaElegida.y); return;
     case "atacar": {

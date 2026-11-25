@@ -212,10 +212,32 @@ function declararGuerra(id) {
 }
 
 // ¿Se puede llegar a esa casilla? Por tierra, si está pegada a tu territorio.
-// Por mar (islas o costas lejanas), si tenés Navegación.
+// Por mar (islas o costas lejanas), si tenés un Puerto (que pide Navegación).
 function alcanzable(x, y) {
   if (pegadaAMi(x, y)) return true;
-  return tiene(MAPA.tecMar) && costera(x, y);
+  return tiene(MAPA.tecMar) && costera(x, y) && cuenta(BARCOS.edificio) > 0;
+}
+// Se llega solo por mar: hacen falta barcos para llevar a los soldados
+const porMar = (x, y) => !pegadaAMi(x, y);
+
+// ---------- Barcos ----------
+
+const barcos = () => estado.barcos || 0;
+const barcosListos = () => Math.max(0, barcos() - (estado.barcosUsados || 0));
+
+function puedeConstruirBarco(n = 1) {
+  if (!tiene(MAPA.tecMar)) return { ok: false, motivo: `Necesitás ⛵ ${TECNOLOGIAS[MAPA.tecMar].nombre}.` };
+  if (cuenta(BARCOS.edificio) === 0) return { ok: false, motivo: `Necesitás un ${EDIFICIOS[BARCOS.edificio].nombre} terminado.` };
+  if (!alcanza(multiplicar(BARCOS.costo, n))) return { ok: false, motivo: "No te alcanzan los recursos." };
+  return { ok: true };
+}
+
+function construirBarco(n = 1) {
+  if (!puedeConstruirBarco(n).ok) return false;
+  pagar(multiplicar(BARCOS.costo, n));
+  estado.barcos = barcos() + n;
+  anotar(`${BARCOS.icono} Botás ${n} ${(n > 1 ? BARCOS.plural : BARCOS.nombre).toLowerCase()} al mar.`);
+  return true;
 }
 
 function puedeAtacarZona(x, y) {
@@ -225,9 +247,15 @@ function puedeAtacarZona(x, y) {
   if (!vista(x, y)) return { ok: false, motivo: "Primero explorá esta zona." };
   if (!e.guerra) return { ok: false, motivo: `No estás en guerra con los ${ENEMIGOS[id].nombre.toLowerCase()}.` };
   if (!alcanzable(x, y)) {
-    return { ok: false, motivo: costera(x, y) && !tiene(MAPA.tecMar)
-      ? `Queda lejos de tu territorio. Investigá ⛵ ${TECNOLOGIAS[MAPA.tecMar].nombre} para llegar por mar, o ganá las zonas del medio si hay camino por tierra.`
-      : "Queda lejos: primero ganá las zonas que están en el medio." };
+    let motivo = "Queda lejos: primero ganá las zonas que están en el medio.";
+    if (costera(x, y) && !tiene(MAPA.tecMar)) motivo = `Queda lejos de tu territorio. Investigá ⛵ ${TECNOLOGIAS[MAPA.tecMar].nombre} para llegar por mar, o ganá las zonas del medio si hay camino por tierra.`;
+    else if (costera(x, y)) motivo = `Para llegar por mar necesitás un ⚓ ${EDIFICIOS[BARCOS.edificio].nombre} terminado y barcos.`;
+    return { ok: false, motivo };
+  }
+  if (porMar(x, y) && barcosListos() === 0) {
+    return { ok: false, motivo: barcos() === 0
+      ? `Solo se llega por mar: construí ${BARCOS.icono} ${BARCOS.plural.toLowerCase()} en la pestaña ⚔️ Ejército (cada uno lleva ${BARCOS.lleva} soldados).`
+      : "Tus barcos ya navegaron este año. El año que viene vuelven a estar listos." };
   }
   if (!alcanza(costoZona(x, y))) return { ok: false, motivo: `Te falta ⚖️ poder político: quedarte con esta zona cuesta ${costoZona(x, y).poder} y tenés ${Math.floor(estado.rec.poder)}.` };
   if (soldados() === 0) return { ok: false, motivo: "No tenés soldados. Entrenalos en la pestaña ⚔️ Ejército." };
@@ -842,6 +870,10 @@ function atacarZona(x, y, envio) {
     total += grupo[u];
   }
   if (total === 0) return null;
+  // Por mar: hacen falta barcos para todos los que van
+  const naves = porMar(x, y) ? Math.ceil(total / BARCOS.lleva) : 0;
+  if (naves > barcosListos()) return null;
+  estado.barcosUsados = (estado.barcosUsados || 0) + naves;
 
   for (const u in grupo) estado.ejercito[u] -= grupo[u];
   const r = choque(poderAtaque(grupo), defensaZona(x, y, grupo.catapulta));
@@ -872,7 +904,9 @@ function atacarZona(x, y, envio) {
   } else {
     muertos = aplicarBajas(grupo, 0.75);
     e.fuerza = Math.max(1, e.fuerza * (1 - r.perdidaGanador * 0.8));
-    anotar(`💀 Derrota en ${lugar}. Volvieron ${enviados - muertos} de ${enviados} soldados.${cambiarApoyo(APOYO.sucesos.derrota)}${cambiarFama(FAMA.sucesos.derrota)}`, "mal");
+    const hundidos = Math.min(naves, Math.ceil(naves * BARCOS.hundidos));
+    if (hundidos) { estado.barcos -= hundidos; estado.barcosUsados -= hundidos; }
+    anotar(`💀 Derrota en ${lugar}. Volvieron ${enviados - muertos} de ${enviados} soldados.${hundidos ? ` Se hundieron ${hundidos} ${BARCOS.icono}.` : ""}${cambiarApoyo(APOYO.sucesos.derrota)}${cambiarFama(FAMA.sucesos.derrota)}`, "mal");
   }
   // Los que vuelven quedan cansados hasta el año siguiente; los que se quedaron en casa pueden seguir atacando
   estado.cansadas = estado.cansadas || {};
@@ -881,7 +915,7 @@ function atacarZona(x, y, envio) {
     estado.cansadas[u] = (estado.cansadas[u] || 0) + grupo[u];
   }
   revisarFin();
-  return { gano: r.ganaA, enviados, muertos };
+  return { gano: r.ganaA, enviados, muertos, naves };
 }
 
 const textoRecursos = (rec) => Object.entries(rec).map(([r, v]) => `${v} ${RECURSOS[r].icono}`).join(", ");
@@ -1110,6 +1144,7 @@ function terminarTurno() {
   }
   alianzasPorFama();
   estado.cansadas = {};
+  estado.barcosUsados = 0;
   estado.inmigroEsteTurno = false;
   if (revisarFin()) return;
 
