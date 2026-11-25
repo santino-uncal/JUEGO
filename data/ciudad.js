@@ -26,6 +26,7 @@ const INICIO = {
 // capacidad: lugar para vivir que suma
 // requiere: tecnología necesaria
 // unico: solo se puede tener uno por ciudad
+// maravilla: gran obra que solo se construye en Roma y hay una sola en todo el reino
 const EDIFICIOS = {
   regia:      { nombre: "Regia", icono: "👑", desc: "El palacio del rey. Corazón de Roma.",
                 produce: { comida: 3, oro: 2, ciencia: 3, poder: 2 }, capacidad: 10, unico: true, fijo: true },
@@ -60,12 +61,15 @@ const EDIFICIOS = {
                 costo: { piedra: 50, oro: 20 }, turnos: 3, capacidad: 12, produce: { comida: 2 }, requiere: "ingenieria" },
   puerto:     { nombre: "Puerto", icono: "⚓", desc: "Barcos de pesca y de comercio.",
                 costo: { madera: 30, piedra: 10 }, turnos: 2, trabajadores: 2, produce: { comida: 3, oro: 4 }, requiere: "navegacion" },
-  anfiteatro: { nombre: "Anfiteatro", icono: "🏟️", desc: "Juegos y espectáculos: más gente quiere vivir en Roma.",
+  anfiteatro: { nombre: "Anfiteatro", icono: "🎭", desc: "Juegos y espectáculos: más gente quiere vivir en Roma.",
                 costo: { piedra: 60, oro: 30 }, turnos: 3, trabajadores: 1, unico: true, produce: { oro: 3 }, capacidad: 8, requiere: "arquitectura" },
   foro:       { nombre: "Foro", icono: "🏤", desc: "Plaza de la política, los juicios y los negocios.",
                 costo: { piedra: 40, oro: 30 }, turnos: 3, trabajadores: 2, unico: true, produce: { oro: 5, ciencia: 3, poder: 4 }, requiere: "senado" },
   termas:     { nombre: "Termas", icono: "🛁", desc: "Baños públicos: la gente se relaja, charla y está contenta.",
                 costo: { piedra: 50, oro: 30 }, turnos: 3, trabajadores: 1, unico: true, produce: { oro: 2 }, capacidad: 4, requiere: "termas" },
+  coliseo:    { nombre: "Coliseo", icono: "🏟️", desc: "El anfiteatro más grande del mundo: 50.000 romanos mirando gladiadores. Solo en Roma, uno en todo el reino.",
+                costo: { piedra: 250, madera: 80, oro: 200 }, turnos: 6, trabajadores: 3, produce: { oro: 8, poder: 4 }, capacidad: 10,
+                requiere: "panem", maravilla: true },
 };
 
 // Tecnologías: se pagan con conocimiento 💡
@@ -191,7 +195,7 @@ const TECNOLOGIAS = {
   // Gloria de Roma
   ciudadania:  { nombre: "Ciudadanía",   icono: "🤝", periodo: "imperio", fila: 0.5, costo: 360, desc: "Todos los hombres libres del imperio son romanos: tributos +50% y +10 de apoyo.", requiere: ["comercio", "censo"],
                  efecto: { tributo: 0.5, apoyo: 10 } },
-  panem:       { nombre: "Pan y circo",  icono: "🎭", periodo: "imperio", fila: 4, costo: 350, desc: "Trigo gratis y juegos todo el año: +10 de apoyo y cada anfiteatro da +4 de oro.", requiere: ["termas"],
+  panem:       { nombre: "Pan y circo",  icono: "🎭", periodo: "imperio", fila: 4, costo: 350, desc: "Trigo gratis y juegos todo el año: +10 de apoyo, cada anfiteatro da +4 de oro y desbloquea el Coliseo.", requiere: ["termas"],
                  efecto: { apoyo: 10, mejora: { anfiteatro: { oro: 4 } } } },
   biblio:      { nombre: "Gran biblioteca", icono: "🏛️", periodo: "imperio", fila: 5.5, costo: 370, desc: "Copias de todos los libros del mundo: cada biblioteca da +3 de conocimiento y la Regia +3.", requiere: ["hormigon", "medicina"],
                  efecto: { mejora: { biblioteca: { ciencia: 3 }, regia: { ciencia: 3 } } } },
@@ -317,7 +321,7 @@ const APOYO = {
   maximo: 1.3,
   derrocado: 10,      // si el apoyo llega a esto (o menos), el pueblo se rebela y perdés la partida
   aviso: 20,          // con este apoyo (o menos) la crónica te avisa que el pueblo está por rebelarse
-  edificios: { muralla: 15, templo: 5, acueducto: 5, anfiteatro: 10, foro: 5, termas: 8 },
+  edificios: { muralla: 15, templo: 5, acueducto: 5, anfiteatro: 10, foro: 5, termas: 8, coliseo: 20 },
   sucesos: {
     saqueo: -25,      // te saquean Roma
     saqueoColonia: -10, // te saquean una ciudad que fundaste
@@ -420,6 +424,33 @@ const NIVELES = {
 
 // Botón "Incitar inmigración": pagás oro y llega gente nueva (una vez por año, si hay lugar)
 const INMIGRACION = { costo: { oro: 20 }, habitantes: 3 };
+
+// Fama 🌟 (de 0 a 100): qué tan conocida es Roma en el mundo. Empieza en 0 y no baja sola.
+//   habitantesCada: llega 1 habitante más por año cada tantos puntos de fama (25 → con 50 de fama, +2)
+//   oroCada:        +1 de oro por año cada tantos puntos de fama (comerciantes que vienen a Roma)
+//   alianza:        desde esta fama, los pueblos en paz que conocés pueden unirse a Roma solos, sin pelear.
+//                   Solo se unen si su ejército es más chico que tu fama.
+//   probAlianza:    probabilidad por año y por pueblo con fama 100 (con menos fama, es menos)
+//   edificios:      fama que da terminar cada edificio
+//   sucesos:        cuánto suma o resta cada cosa que pasa
+const FAMA = {
+  habitantesCada: 25,
+  oroCada: 10,
+  alianza: 50,
+  probAlianza: 0.12,
+  edificios: { templo: 1, muralla: 1, acueducto: 2, foro: 2, anfiteatro: 3, termas: 3, coliseo: 15 },
+  sucesos: {
+    conquista: 10,    // tomás la capital de un pueblo
+    zona: 1,          // le ganás una zona a otro pueblo
+    rechazo: 2,       // rechazás un ataque
+    periodo: 10,      // proclamás la República o el Imperio
+    ciudad: 3,        // fundás una ciudad
+    derrota: -3,      // perdés un ataque
+    zonaPerdida: -2,  // te quitan una zona
+    saqueoColonia: -4,// te saquean una ciudad fundada
+    saqueo: -10,      // te saquean Roma
+  },
+};
 
 // Eventos al azar al empezar cada año.
 // efecto: recursos que suman o restan. habitantes: gente que llega o se va.

@@ -18,7 +18,7 @@ function partidaNueva() {
     habitantes: INICIO.habitantes,
     lotes, techs: {}, ejercito, enemigos,
     colonias: [],
-    saqueos: 0, cansadas: {}, periodo: 0, apoyo: APOYO.inicio,
+    saqueos: 0, cansadas: {}, periodo: 0, apoyo: APOYO.inicio, fama: 0,
     log: [], terminado: false, resultado: null,
   };
   prepararMapa(nueva);
@@ -392,6 +392,39 @@ function cambiarApoyo(n) {
   return real ? ` (${real > 0 ? "+" : ""}${real} 😊 apoyo)` : "";
 }
 
+// ---------- Fama ----------
+
+// Partidas guardadas de antes de la fama arrancan en 0
+const fama = () => estado.fama || 0;
+
+// Suma o resta fama y lo cuenta en la crónica
+function cambiarFama(n) {
+  if (!n) return "";
+  const antes = fama();
+  estado.fama = Math.max(0, Math.min(100, antes + n));
+  const real = estado.fama - antes;
+  return real ? ` (${real > 0 ? "+" : ""}${real} 🌟 fama)` : "";
+}
+
+// Con mucha fama, los pueblos en paz que conocés pueden pedir unirse a Roma
+function alianzasPorFama() {
+  if (fama() < FAMA.alianza) return;
+  const prob = FAMA.probAlianza * (fama() - FAMA.alianza) / (100 - FAMA.alianza);
+  for (const id in estado.enemigos) {
+    const e = estado.enemigos[id];
+    if (!e.vivo || e.guerra || e.marcha || !descubierto(id) || e.fuerza >= fama()) continue;
+    if (Math.random() >= prob) continue;
+    const datos = ENEMIGOS[id];
+    e.vivo = false;
+    e.proximo = null;
+    const zonas = zonasDe(id);
+    estado.duenos = estado.duenos.map((d) => (d === id ? "roma" : d));
+    revelarTerritorio();
+    anotar(`🤝 ¡La fama de Roma llegó a ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se unen a Roma sin pelear: sus ${zonas} zonas pasan a ser tuyas y te pagan tributo.${cambiarApoyo(APOYO.sucesos.zona)}`, "bien");
+    return;   // como mucho uno por año
+  }
+}
+
 // ---------- Acciones del gobierno ----------
 
 // Lo que recibís con una acción (lo fijo más lo que depende de los habitantes)
@@ -446,6 +479,8 @@ function balance() {
   }
   // Impuestos: cada 3 habitantes pagan 1 de oro
   b.oro += Math.floor(estado.habitantes / 3) * (1 + efecto("impuestos")) * productividad();
+  // Comerciantes que atrae la fama
+  b.oro += Math.floor(fama() / FAMA.oroCada);
   // Tributos de pueblos conquistados
   for (const id in estado.enemigos) {
     if (estado.enemigos[id].vivo) continue;
@@ -467,6 +502,8 @@ function puedeConstruir(tipo, ciudad = 0) {
   if (ed.fijo) return { ok: false, motivo: "No se puede construir." };
   if (ed.requiere && !tiene(ed.requiere)) return { ok: false, motivo: `Necesitás investigar ${TECNOLOGIAS[ed.requiere].nombre}.` };
   if (ed.unico && (lotesDe(ciudad) || []).some((l) => l && l.tipo === tipo)) return { ok: false, motivo: `Ya hay uno en ${nombreCiudad(ciudad)}.` };
+  if (ed.maravilla && cuenta(tipo, true) > 0) return { ok: false, motivo: `Ya tenés ${articuloEd(tipo) === "una" ? "la" : "el"} ${ed.nombre}: hay uno solo en todo el reino.` };
+  if (ed.maravilla && ciudad !== 0) return { ok: false, motivo: "Esta gran obra solo se puede construir en Roma." };
   if ((ed.trabajadores || 0) > libres()) return { ok: false, motivo: `Necesita ${ed.trabajadores} habitantes libres (tenés ${libres()}).` };
   if (!alcanza(ed.costo)) return { ok: false, motivo: "No te alcanzan los recursos." };
   return { ok: true };
@@ -542,7 +579,7 @@ function fundarCiudad(x, y) {
   const lotes = Array(FUNDACION.lotes).fill(null);
   lotes[FUNDACION.lotePlaza] = { tipo: "plaza", falta: 0 };
   estado.colonias.push({ nombre, x, y, lotes });
-  anotar(`🏘️ ¡${FUNDACION.colonos} familias romanas fundan ${nombre}! Ya podés construir en sus terrenos.`, "bien");
+  anotar(`🏘️ ¡${FUNDACION.colonos} familias romanas fundan ${nombre}! Ya podés construir en sus terrenos.${cambiarFama(FAMA.sucesos.ciudad)}`, "bien");
   return estado.colonias.length;
 }
 
@@ -699,7 +736,7 @@ function avanzarPeriodo() {
   const sig = PERIODOS[periodoActual() + 1];
   if (sig.requisitos && sig.requisitos.costo) pagar(sig.requisitos.costo);
   estado.periodo = periodoActual() + 1;
-  anotar(`${sig.icono} ¡Comienza ${articulo(estado.periodo)} ${sig.nombre}! ${sig.desc} Ahora sos ${sig.titulo}.`, "bien");
+  anotar(`${sig.icono} ¡Comienza ${articulo(estado.periodo)} ${sig.nombre}! ${sig.desc} Ahora sos ${sig.titulo}.${cambiarFama(FAMA.sucesos.periodo)}`, "bien");
   avanzarMeta();
   return true;
 }
@@ -822,7 +859,7 @@ function atacarZona(x, y, envio) {
     estado.duenos = estado.duenos.map((d) => (d === id ? "roma" : d));
     revelarTerritorio();
     for (const rec in datos.botin) estado.rec[rec] += datos.botin[rec];
-    anotar(`🏆 ¡Conquistaste ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se rinden y sus ${zonas} zonas pasan a ser de Roma. Botín: ${textoRecursos(datos.botin)}. Ahora te pagan tributo.${cambiarApoyo(APOYO.sucesos.conquista)}`, "bien");
+    anotar(`🏆 ¡Conquistaste ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se rinden y sus ${zonas} zonas pasan a ser de Roma. Botín: ${textoRecursos(datos.botin)}. Ahora te pagan tributo.${cambiarApoyo(APOYO.sucesos.conquista)}${cambiarFama(FAMA.sucesos.conquista)}`, "bien");
   } else if (r.ganaA) {
     muertos = aplicarBajas(grupo, r.perdidaGanador);
     estado.duenos[y * MAPA_ANCHO + x] = "roma";
@@ -831,11 +868,11 @@ function atacarZona(x, y, envio) {
     const botin = {};
     for (const rec in datos.botin) botin[rec] = Math.round(datos.botin[rec] * MAPA.botinZona);
     for (const rec in botin) estado.rec[rec] += botin[rec];
-    anotar(`🚩 ¡Ganaste ${lugar}! Ahora es territorio romano. Botín: ${textoRecursos(botin)}.${cambiarApoyo(APOYO.sucesos.zona)}`, "bien");
+    anotar(`🚩 ¡Ganaste ${lugar}! Ahora es territorio romano. Botín: ${textoRecursos(botin)}.${cambiarApoyo(APOYO.sucesos.zona)}${cambiarFama(FAMA.sucesos.zona)}`, "bien");
   } else {
     muertos = aplicarBajas(grupo, 0.75);
     e.fuerza = Math.max(1, e.fuerza * (1 - r.perdidaGanador * 0.8));
-    anotar(`💀 Derrota en ${lugar}. Volvieron ${enviados - muertos} de ${enviados} soldados.${cambiarApoyo(APOYO.sucesos.derrota)}`, "mal");
+    anotar(`💀 Derrota en ${lugar}. Volvieron ${enviados - muertos} de ${enviados} soldados.${cambiarApoyo(APOYO.sucesos.derrota)}${cambiarFama(FAMA.sucesos.derrota)}`, "mal");
   }
   // Los que vuelven quedan cansados hasta el año siguiente; los que se quedaron en casa pueden seguir atacando
   estado.cansadas = estado.cansadas || {};
@@ -906,12 +943,12 @@ function defenderZona(id, x, y) {
   if (r.ganaA) {
     const muertos = aplicarBajas(estado.ejercito, r.perdidaGanador * 0.5);
     e.fuerza = Math.max(1, e.fuerza - atacantes * 0.8);
-    anotar(`🛡️ ¡Los ${datos.nombre.toLowerCase()} quisieron recuperar una zona y los echaste! Perdiste ${muertos} soldado(s).${cambiarApoyo(APOYO.sucesos.rechazo / 2)}`, "bien");
+    anotar(`🛡️ ¡Los ${datos.nombre.toLowerCase()} quisieron recuperar una zona y los echaste! Perdiste ${muertos} soldado(s).${cambiarApoyo(APOYO.sucesos.rechazo / 2)}${cambiarFama(FAMA.sucesos.rechazo)}`, "bien");
   } else {
     aplicarBajas(estado.ejercito, 0.2);
     e.fuerza = Math.max(1, e.fuerza - atacantes * 0.2);
     estado.duenos[y * MAPA_ANCHO + x] = id;
-    anotar(`🏳️ ¡Los ${datos.nombre.toLowerCase()} te quitaron una zona de tu territorio!${cambiarApoyo(APOYO.sucesos.zonaPerdida)}`, "mal");
+    anotar(`🏳️ ¡Los ${datos.nombre.toLowerCase()} te quitaron una zona de tu territorio!${cambiarApoyo(APOYO.sucesos.zonaPerdida)}${cambiarFama(FAMA.sucesos.zonaPerdida)}`, "mal");
   }
 }
 
@@ -926,7 +963,7 @@ function defenderColonia(id, ciudad) {
   if (r.ganaA) {
     const muertos = aplicarBajas(estado.ejercito, r.perdidaGanador * 0.7);
     e.fuerza = Math.max(1, e.fuerza - atacantes * 0.8);
-    anotar(`🛡️ ¡${nombre} rechazó a los ${datos.nombre.toLowerCase()}! Perdiste ${muertos} soldado(s).${cambiarApoyo(APOYO.sucesos.rechazo)}`, "bien");
+    anotar(`🛡️ ¡${nombre} rechazó a los ${datos.nombre.toLowerCase()}! Perdiste ${muertos} soldado(s).${cambiarApoyo(APOYO.sucesos.rechazo)}${cambiarFama(FAMA.sucesos.rechazo)}`, "bien");
     return;
   }
   aplicarBajas(estado.ejercito, 0.3);
@@ -942,7 +979,7 @@ function defenderColonia(id, ciudad) {
     quemado = ` Incendiaron: ${EDIFICIOS[lotes[i].tipo].nombre}.`;
     lotes[i] = null;
   }
-  anotar(`🔥 ¡Los ${datos.nombre.toLowerCase()} saquearon ${nombre}! Se llevaron un cuarto de tus recursos y murieron ${perdidos} habitantes.${quemado}${cambiarApoyo(APOYO.sucesos.saqueoColonia)}`, "mal");
+  anotar(`🔥 ¡Los ${datos.nombre.toLowerCase()} saquearon ${nombre}! Se llevaron un cuarto de tus recursos y murieron ${perdidos} habitantes.${quemado}${cambiarApoyo(APOYO.sucesos.saqueoColonia)}${cambiarFama(FAMA.sucesos.saqueoColonia)}`, "mal");
 }
 
 // Un pueblo enemigo llega a las puertas de Roma
@@ -956,7 +993,7 @@ function defenderRoma(id) {
   if (r.ganaA) {
     const muertos = aplicarBajas(estado.ejercito, r.perdidaGanador * 0.7);
     e.fuerza = Math.max(1, e.fuerza - atacantes * 0.8);
-    anotar(`🛡️ ¡Rechazaste a los ${datos.nombre.toLowerCase()}! Perdiste ${muertos} soldado(s).${cambiarApoyo(APOYO.sucesos.rechazo)}`, "bien");
+    anotar(`🛡️ ¡Rechazaste a los ${datos.nombre.toLowerCase()}! Perdiste ${muertos} soldado(s).${cambiarApoyo(APOYO.sucesos.rechazo)}${cambiarFama(FAMA.sucesos.rechazo)}`, "bien");
   } else if (r.b >= r.a * ATAQUES_ENEMIGOS.aplastante) {
     // Los arrasaron: toman Roma y se termina la partida
     estado.terminado = true;
@@ -977,7 +1014,7 @@ function defenderRoma(id) {
       quemado = ` Incendiaron: ${EDIFICIOS[estado.lotes[i].tipo].nombre}.`;
       estado.lotes[i] = null;
     }
-    anotar(`🔥 ¡Los ${datos.nombre.toLowerCase()} saquearon Roma! Te robaron la mitad de todo y murieron ${perdidos} habitantes.${quemado} El pueblo pierde la confianza en vos${cambiarApoyo(APOYO.sucesos.saqueo)}.`, "mal");
+    anotar(`🔥 ¡Los ${datos.nombre.toLowerCase()} saquearon Roma! Te robaron la mitad de todo y murieron ${perdidos} habitantes.${quemado} El pueblo pierde la confianza en vos${cambiarApoyo(APOYO.sucesos.saqueo)}.${cambiarFama(FAMA.sucesos.saqueo)}`, "mal");
   }
 }
 
@@ -1030,7 +1067,7 @@ function terminarTurno() {
   } else if (b.comida >= 0) {
     // 3) Crecimiento: si hay comida y lugar, llega gente
     const lugar = capacidad() - estado.habitantes - soldados();
-    const llegan = Math.min(lugar, 1 + Math.floor(cuenta("casa") / 2) + efecto("crecimiento"));
+    const llegan = Math.min(lugar, 1 + Math.floor(cuenta("casa") / 2) + efecto("crecimiento") + Math.floor(fama() / FAMA.habitantesCada));
     if (llegan > 0) estado.habitantes += llegan;
   }
 
@@ -1038,7 +1075,7 @@ function terminarTurno() {
   for (const l of todosLotes()) {
     if (l && l.falta > 0) {
       l.falta--;
-      if (l.falta === 0) anotar(`✅ Terminó la obra: ${EDIFICIOS[l.tipo].nombre}.${cambiarApoyo(APOYO.edificios[l.tipo])}`, "bien");
+      if (l.falta === 0) anotar(`✅ Terminó la obra: ${EDIFICIOS[l.tipo].nombre}.${cambiarApoyo(APOYO.edificios[l.tipo])}${cambiarFama(FAMA.edificios[l.tipo])}`, "bien");
     }
   }
 
@@ -1071,6 +1108,7 @@ function terminarTurno() {
       }
     }
   }
+  alianzasPorFama();
   estado.cansadas = {};
   estado.inmigroEsteTurno = false;
   if (revisarFin()) return;

@@ -70,6 +70,9 @@ function dibujarRecursos() {
   const base = apoyoBase();
   const tendencia = base > ap ? " ↑" : base < ap ? " ↓" : "";
   html += `<span title="Apoyo popular (0 a 100). Cambia cuánto rinden los edificios y los impuestos: ahora ${prod >= 0 ? "+" : ""}${prod}%. Con el tiempo vuelve a ${base}. Lo suben la muralla, templos y grandes obras, rechazar ataques y conquistar; lo bajan saqueos, derrotas y hambre. ¡Si llega a ${APOYO.derrocado}, el pueblo se rebela y perdés!">${cara} <b>${ap}</b>${tendencia} <small class="${prod < 0 ? "neg" : ""}">${prod >= 0 ? "+" : ""}${prod}%</small></span>`;
+  const fa = fama();
+  const extraGente = Math.floor(fa / FAMA.habitantesCada), extraOro = Math.floor(fa / FAMA.oroCada);
+  html += `<span title="Fama de Roma (0 a 100): qué tan conocida es en el mundo. La suben las conquistas, rechazar ataques, las grandes obras (¡el Coliseo!) y los nuevos períodos; la bajan los saqueos y las derrotas. Ahora atrae +${extraGente} habitante(s) y +${extraOro} de oro por año.${fa >= FAMA.alianza ? " ¡Ya hay pueblos en paz que pueden unirse a Roma sin pelear!" : ` Con ${FAMA.alianza} de fama, los pueblos en paz que conocés pueden unirse a Roma sin pelear.`}">🌟 <b>${fa}</b></span>`;
   $("recursos").innerHTML = html;
 }
 
