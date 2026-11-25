@@ -103,7 +103,7 @@ const TECNOLOGIAS = {
   // Primeros reyes
   riego:       { nombre: "Riego",        icono: "💧", periodo: "monarquia", fila: 0, costo: 45, desc: "Canales desde el Tíber: cada granja da +2 de comida más.", requiere: ["agricultura"],
                  efecto: { mejora: { granja: { comida: 2 } } } },
-  bronce:      { nombre: "Bronce",       icono: "🔱", periodo: "monarquia", fila: 1.2, costo: 45, desc: "Desbloquea Lanceros.", requiere: ["mineria"] },
+  bronce:      { nombre: "Bronce",       icono: "🔱", periodo: "monarquia", fila: 1.2, costo: 45, desc: "Desbloquea Lanceros y Arqueros.", requiere: ["mineria"] },
   albanileria: { nombre: "Albañilería",  icono: "🧱", periodo: "monarquia", fila: 3, costo: 45, desc: "Desbloquea Templo y Muralla.", requiere: ["alfareria"] },
   matematicas: { nombre: "Matemáticas",  icono: "📐", periodo: "monarquia", fila: 5, costo: 45, desc: "Cada biblioteca da +2 de conocimiento.", requiere: ["escritura"],
                  efecto: { mejora: { biblioteca: { ciencia: 2 } } } },
@@ -127,7 +127,8 @@ const TECNOLOGIAS = {
   // Primeros cónsules
   vias:        { nombre: "Vías romanas", icono: "🛣️", periodo: "republica", fila: 0.5, costo: 100, desc: "Caminos de piedra: llega 1 habitante más por turno.", requiere: ["equitacion", "alfareria"],
                  efecto: { crecimiento: 1 } },
-  arqueria:    { nombre: "Arquería",     icono: "🏹", periodo: "republica", fila: 2, costo: 90, desc: "Desbloquea Arqueros.", requiere: ["bronce"] },
+  arqueria:    { nombre: "Arquería",     icono: "🏹", periodo: "republica", fila: 2, costo: 90, desc: "Arqueros expertos y flechas con punta de hierro: tus tropas atacan +10% mejor.", requiere: ["bronce"],
+                 efecto: { ataque: 0.1 } },
   disciplina:  { nombre: "Disciplina",   icono: "🦅", periodo: "republica", fila: 3, costo: 120, desc: "Todo tu ejército pelea +25% mejor.", requiere: ["hierro"],
                  efecto: { ataque: 0.25, defensa: 0.25 } },
   ingenieria:  { nombre: "Ingeniería",   icono: "🏗️", periodo: "republica", fila: 5.5, costo: 110, desc: "Desbloquea Acueducto, Taller y Catapultas.", requiere: ["construccion", "matematicas"] },
@@ -228,7 +229,7 @@ const PERIODOS = [
 const UNIDADES = {
   milicia:     { nombre: "Milicia",     icono: "🗡️", ataque: 1, defensa: 2, costo: { oro: 8, comida: 5 },               edificio: "cuartel" },
   lanceros:    { nombre: "Lanceros",    icono: "🔱", ataque: 2, defensa: 4, costo: { oro: 12, madera: 8 },              edificio: "cuartel",  requiere: "bronce" },
-  arqueros:    { nombre: "Arqueros",    icono: "🏹", ataque: 4, defensa: 3, costo: { oro: 15, madera: 12 },             edificio: "cuartel",  requiere: "arqueria" },
+  arqueros:    { nombre: "Arqueros",    icono: "🏹", ataque: 4, defensa: 3, costo: { oro: 15, madera: 12 },             edificio: "cuartel",  requiere: "bronce" },
   legionarios: { nombre: "Legionarios", icono: "🛡️", ataque: 6, defensa: 6, costo: { oro: 25, piedra: 8 },              edificio: "herreria", requiere: "hierro" },
   caballeria:  { nombre: "Caballería",  icono: "🐎", ataque: 9, defensa: 3, costo: { oro: 35, comida: 15 },             edificio: "establo",  requiere: "equitacion" },
   catapulta:   { nombre: "Catapulta",   icono: "☄️", ataque: 12, defensa: 1, costo: { oro: 45, madera: 25, piedra: 15 }, edificio: "taller",   requiere: "ingenieria",
