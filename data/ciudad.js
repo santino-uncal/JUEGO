@@ -64,6 +64,8 @@ const EDIFICIOS = {
                 costo: { piedra: 60, oro: 30 }, turnos: 3, trabajadores: 1, unico: true, produce: { oro: 3 }, capacidad: 8, requiere: "arquitectura" },
   foro:       { nombre: "Foro", icono: "🏤", desc: "Plaza de la política, los juicios y los negocios.",
                 costo: { piedra: 40, oro: 30 }, turnos: 3, trabajadores: 2, unico: true, produce: { oro: 5, ciencia: 3, poder: 4 }, requiere: "senado" },
+  termas:     { nombre: "Termas", icono: "🛁", desc: "Baños públicos: la gente se relaja, charla y está contenta.",
+                costo: { piedra: 50, oro: 30 }, turnos: 3, trabajadores: 1, unico: true, produce: { oro: 2 }, capacidad: 4, requiere: "termas" },
 };
 
 // Tecnologías: se pagan con conocimiento 💡
@@ -161,14 +163,41 @@ const TECNOLOGIAS = {
                  requiere: ["legion", "derecho"] },
 
   // ===== Imperio =====
-  pax:         { nombre: "Pax Romana",   icono: "🕊️", periodo: "imperio", costo: 250, desc: "Paz en los caminos: llegan 2 habitantes más por turno y los tributos suben +50%.", requiere: ["administracion", "rutas"],
+  // Los césares
+  pax:         { nombre: "Pax Romana",   icono: "🕊️", periodo: "imperio", fila: 0, costo: 250, desc: "Paz en los caminos: llegan 2 habitantes más por turno y los tributos suben +50%.", requiere: ["administracion", "rutas"],
                  efecto: { crecimiento: 2, tributo: 0.5 } },
-  urbanismo:   { nombre: "Urbanismo",    icono: "🏘️", periodo: "imperio", costo: 220, desc: "Ciudades bien planeadas: cada casa da +4 de lugar y cada acueducto +8.", requiere: ["fortificacion", "arquitectura"],
-                 efecto: { capacidad: { casa: 4, acueducto: 8 } } },
-  academia:    { nombre: "Academia",     icono: "🎓", periodo: "imperio", costo: 230, desc: "Escuelas de sabios: cada biblioteca da +3 de conocimiento y el Foro +3.", requiere: ["calendario", "senado"],
-                 efecto: { mejora: { biblioteca: { ciencia: 3 }, foro: { ciencia: 3 } } } },
-  imperial:    { nombre: "Ejército imperial", icono: "🚩", periodo: "imperio", costo: 260, desc: "Las legiones más temidas del mundo: todo tu ejército pelea +25% mejor.", requiere: ["legion", "pretoriana"],
+  censo:       { nombre: "Censo",        icono: "📊", periodo: "imperio", fila: 1, costo: 220, desc: "Contar a cada habitante del imperio: +25% de oro de los impuestos.", requiere: ["administracion", "derecho"],
+                 efecto: { impuestos: 0.25 } },
+  imperial:    { nombre: "Ejército imperial", icono: "🚩", periodo: "imperio", fila: 2.5, costo: 260, desc: "Las legiones más temidas del mundo: todo tu ejército pelea +25% mejor.", requiere: ["legion", "pretoriana"],
                  efecto: { ataque: 0.25, defensa: 0.25 } },
+  urbanismo:   { nombre: "Urbanismo",    icono: "🏘️", periodo: "imperio", fila: 4.5, costo: 220, desc: "Ciudades bien planeadas: cada casa da +4 de lugar y cada acueducto +8.", requiere: ["fortificacion", "arquitectura"],
+                 efecto: { capacidad: { casa: 4, acueducto: 8 } } },
+  academia:    { nombre: "Academia",     icono: "🎓", periodo: "imperio", fila: 6, costo: 230, desc: "Escuelas de sabios: cada biblioteca da +3 de conocimiento y el Foro +3.", requiere: ["calendario", "senado"],
+                 efecto: { mejora: { biblioteca: { ciencia: 3 }, foro: { ciencia: 3 } } } },
+
+  // Alto Imperio
+  comercio:    { nombre: "Comercio imperial", icono: "🐫", periodo: "imperio", fila: 0, costo: 290, desc: "Caravanas y barcos de todo el Mediterráneo: cada mercado da +3 de oro y cada puerto +2.", requiere: ["pax"],
+                 efecto: { mejora: { mercado: { oro: 3 }, puerto: { oro: 2 } } } },
+  auxiliares:  { nombre: "Tropas auxiliares", icono: "🔰", periodo: "imperio", fila: 2, costo: 280, desc: "Soldados de los pueblos conquistados pelean por Roma: desbloquea Auxiliares, baratos y parejos.", requiere: ["imperial"] },
+  limes:       { nombre: "Limes",        icono: "🗼", periodo: "imperio", fila: 3, costo: 310, desc: "Fuertes y torres en las fronteras: defendés Roma +25% mejor y la muralla protege +25% más.", requiere: ["imperial"],
+                 efecto: { defensa: 0.25, muralla: 0.25 } },
+  termas:      { nombre: "Termas",       icono: "🛁", periodo: "imperio", fila: 4, costo: 280, desc: "Baños públicos con agua caliente: desbloquea las Termas.", requiere: ["urbanismo"] },
+  hormigon:    { nombre: "Hormigón romano", icono: "🌋", periodo: "imperio", fila: 5, costo: 300, desc: "Cal y ceniza volcánica: cada cantera da +2 de piedra y cada acueducto +4 de lugar.", requiere: ["urbanismo"],
+                 efecto: { mejora: { cantera: { piedra: 2 } }, capacidad: { acueducto: 4 } } },
+  medicina:    { nombre: "Medicina",     icono: "⚕️", periodo: "imperio", fila: 6, costo: 290, desc: "Médicos griegos en Roma: llega 1 habitante más por turno y cada templo da +2 de conocimiento.", requiere: ["academia"],
+                 efecto: { crecimiento: 1, mejora: { templo: { ciencia: 2 } } } },
+
+  // Gloria de Roma
+  ciudadania:  { nombre: "Ciudadanía",   icono: "🤝", periodo: "imperio", fila: 0.5, costo: 360, desc: "Todos los hombres libres del imperio son romanos: tributos +50% y +10 de apoyo.", requiere: ["comercio", "censo"],
+                 efecto: { tributo: 0.5, apoyo: 10 } },
+  panem:       { nombre: "Pan y circo",  icono: "🎭", periodo: "imperio", fila: 4, costo: 350, desc: "Trigo gratis y juegos todo el año: +10 de apoyo y cada anfiteatro da +4 de oro.", requiere: ["termas"],
+                 efecto: { apoyo: 10, mejora: { anfiteatro: { oro: 4 } } } },
+  biblio:      { nombre: "Gran biblioteca", icono: "🏛️", periodo: "imperio", fila: 5.5, costo: 370, desc: "Copias de todos los libros del mundo: cada biblioteca da +3 de conocimiento y la Regia +3.", requiere: ["hormigon", "medicina"],
+                 efecto: { mejora: { biblioteca: { ciencia: 3 }, regia: { ciencia: 3 } } } },
+
+  // Roma eterna
+  eterna:      { nombre: "Roma eterna",  icono: "🏆", periodo: "imperio", fila: 3, costo: 500, desc: "Roma es la capital del mundo: tu ejército pelea +15% mejor, +10 de apoyo y llega 1 habitante más por turno.", requiere: ["ciudadania", "limes", "panem"],
+                 efecto: { ataque: 0.15, defensa: 0.15, apoyo: 10, crecimiento: 1 } },
 };
 
 // Los tres períodos de Roma. En el árbol solo se ve el período en el que estás.
@@ -188,7 +217,7 @@ const PERIODOS = [
     requisitos: { tecnologia: "democracia" },
     efecto: { impuestos: 0.25 }, bonus: "+25% de oro de los impuestos." },
   { id: "imperio", nombre: "Imperio", icono: "🦅", titulo: "Emperador de Roma",
-    eras: ["Los césares"],
+    eras: ["Los césares", "Alto Imperio", "Gloria de Roma", "Roma eterna"],
     desc: "Un general victorioso se corona emperador. Roma domina el Mediterráneo.",
     requisitos: { tecnologia: "principado", conquistas: 2 },
     efecto: { ataque: 0.1, defensa: 0.1, tributo: 0.5 }, bonus: "Tu ejército pelea +10% mejor y los tributos suben +50%." },
@@ -205,6 +234,8 @@ const UNIDADES = {
   catapulta:   { nombre: "Catapulta",   icono: "☄️", ataque: 12, defensa: 1, costo: { oro: 45, madera: 25, piedra: 15 }, edificio: "taller",   requiere: "ingenieria",
                  desc: "Además, cada catapulta rompe parte de las murallas enemigas." },
   pretorianos: { nombre: "Pretorianos", icono: "💂", ataque: 10, defensa: 10, costo: { oro: 50, piedra: 10 },          edificio: "cuartel",  requiere: "pretoriana" },
+  auxiliares:  { nombre: "Auxiliares",  icono: "🔰", ataque: 5, defensa: 5, costo: { oro: 16, comida: 8 },              edificio: "cuartel",  requiere: "auxiliares",
+                 desc: "Soldados de los pueblos conquistados. Más baratos que los legionarios." },
 };
 
 // Pueblos de Italia. Cada uno tiene su territorio en el mapa (ver MAPA.duenos).
@@ -282,7 +313,7 @@ const APOYO = {
   vuelve: 2,
   minimo: 0.7,
   maximo: 1.3,
-  edificios: { muralla: 15, templo: 5, acueducto: 5, anfiteatro: 10, foro: 5 },
+  edificios: { muralla: 15, templo: 5, acueducto: 5, anfiteatro: 10, foro: 5, termas: 8 },
   sucesos: {
     saqueo: -25,      // te saquean Roma
     rechazo: 10,      // rechazás un ataque a Roma
