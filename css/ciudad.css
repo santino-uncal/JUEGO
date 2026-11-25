@@ -37,6 +37,8 @@ main { grid-template-columns: 1fr 400px; align-items: start; }
 .lote.obra { background: #e8d7a8; border-style: dashed; }
 .lote.regia { background: #ffe9a8; border-color: #d4a017; }
 .lote.elegido { outline: 4px solid #7b1e1e; outline-offset: 2px; }
+.lote.moviendo { opacity: .55; outline: 4px dashed #7b1e1e; outline-offset: 2px; }
+.lote.destino { outline: 4px solid #2e7d32; outline-offset: 2px; }
 
 #alertas { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 .alerta { background: #fff1e0; border-left: 6px solid #c0392b; border-radius: 6px; padding: 8px 12px; }

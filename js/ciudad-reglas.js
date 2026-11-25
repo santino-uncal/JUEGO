@@ -483,6 +483,15 @@ function construir(ciudad, lote, tipo) {
   return true;
 }
 
+// Cambia de lugar dos terrenos de la misma ciudad (si uno está vacío, el edificio se muda ahí).
+// Es gratis y no cambia nada del juego: solo cómo se ve la ciudad.
+function moverLote(ciudad, de, a) {
+  const lotes = lotesDe(ciudad);
+  if (!lotes || de === a || !lotes[de] || a < 0 || a >= lotes.length) return false;
+  [lotes[de], lotes[a]] = [lotes[a], lotes[de]];
+  return true;
+}
+
 function demoler(ciudad, lote) {
   const lotes = lotesDe(ciudad);
   const l = lotes && lotes[lote];

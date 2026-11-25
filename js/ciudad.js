@@ -3,6 +3,7 @@
 
 const CLAVE_GUARDADO = "imperium_ciudad";
 let loteElegido = null;
+let moviendo = null;            // terreno cuyo edificio se está mudando con el botón "Mover"
 let ciudadVista = 0;           // ciudad que se está mirando: 0 = Roma, 1... = las fundadas
 let pestania = "construir";
 let vistaActual = "ciudad";     // "ciudad" o "mapa"
@@ -109,7 +110,22 @@ function dibujarCiudad() {
         div.innerHTML = `<span class="icono">${ed.icono}</span><span class="nombre">${ed.nombre}</span>`;
       }
     }
+    if (moviendo === i) div.classList.add("moviendo");
     div.addEventListener("click", () => tocarLote(i));
+    // Arrastrar un edificio a otro terreno (con el mouse)
+    if (l && !estado.terminado) {
+      div.draggable = true;
+      div.addEventListener("dragstart", (ev) => { ev.dataTransfer.setData("text/plain", String(i)); div.classList.add("moviendo"); });
+      div.addEventListener("dragend", () => div.classList.remove("moviendo"));
+    }
+    div.addEventListener("dragover", (ev) => { ev.preventDefault(); div.classList.add("destino"); });
+    div.addEventListener("dragleave", () => div.classList.remove("destino"));
+    div.addEventListener("drop", (ev) => {
+      ev.preventDefault();
+      const de = +ev.dataTransfer.getData("text/plain");
+      if (moverLote(ciudadVista, de, i)) { loteElegido = i; moviendo = null; trasAccion(); }
+      else div.classList.remove("destino");
+    });
     c.appendChild(div);
   });
 
@@ -142,8 +158,14 @@ function panelConstruir() {
     const prod = textoProduce(ed);
     if (prod) html += `<p>Da: <b>${prod}</b>${ed.trabajadores ? ` (con ${ed.trabajadores} trabajador${ed.trabajadores > 1 ? "es" : ""})` : ""}</p>`;
     if (l.falta > 0) html += `<p class="ayuda">En obra: faltan ${l.falta} año(s).</p>`;
-    if (!ed.fijo) html += `<button data-accion="demoler">🔨 Demoler</button>`;
-    return html;
+    if (moviendo !== null) {
+      html += `<p class="ayuda">↔️ Tocá el terreno al que lo querés llevar. Si ahí hay otro edificio, cambian de lugar.</p>
+        <button data-accion="mover-cancelar" class="claro">Cancelar</button>`;
+      return html;
+    }
+    html += `<div class="fila"><button data-accion="mover" title="También podés arrastrarlo con el mouse">↔️ Mover</button>`;
+    if (!ed.fijo) html += ` <button data-accion="demoler">🔨 Demoler</button>`;
+    return html + `</div>`;
   }
   let html = `<h3>¿Qué construís acá?</h3><div class="lista">`;
   for (const tipo in EDIFICIOS) {
@@ -979,6 +1001,14 @@ function mostrarFin() {
 // ---------- Clics ----------
 
 function tocarLote(i) {
+  if (moviendo !== null) {
+    // Segundo toque del botón "Mover": se lleva el edificio a este terreno
+    if (moverLote(ciudadVista, moviendo, i)) loteElegido = i;
+    moviendo = null;
+    pestania = "construir";
+    trasAccion();
+    return;
+  }
   loteElegido = loteElegido === i ? null : i;
   pestania = "construir";
   dibujarTodo();
@@ -1065,7 +1095,7 @@ document.addEventListener("click", (ev) => {
       break;
     }
     case "subir-nivel": subirNivel(ciudadVista); break;
-    case "ver-ciudad": ciudadVista = +d.ciudad; loteElegido = null; cambiarVista("ciudad"); break;
+    case "ver-ciudad": ciudadVista = +d.ciudad; loteElegido = null; moviendo = null; cambiarVista("ciudad"); break;
     case "demoler": {
       // Cartel propio del juego (las ventanitas del navegador pueden estar bloqueadas)
       const ed = EDIFICIOS[lotesDe(ciudadVista)[loteElegido].tipo];
@@ -1073,6 +1103,8 @@ document.addEventListener("click", (ev) => {
         <div class="fila centrado"><button data-accion="demoler-si">🔨 Sí, demoler</button><button data-accion="cerrar" class="claro">Cancelar</button></div>`);
       return;
     }
+    case "mover": moviendo = loteElegido; dibujarTodo(); return;
+    case "mover-cancelar": moviendo = null; dibujarTodo(); return;
     case "demoler-si": demoler(ciudadVista, loteElegido); loteElegido = null; cerrarModal(); break;
     case "investigar": investigar(d.tech); break;
     case "meta": elegirMeta(d.tech || null); break;
