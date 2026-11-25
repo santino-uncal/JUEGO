@@ -18,7 +18,7 @@ function partidaNueva() {
     habitantes: INICIO.habitantes,
     lotes, techs: {}, ejercito, enemigos,
     colonias: [],
-    saqueos: 0, atacoEsteTurno: false, periodo: 0, apoyo: APOYO.inicio,
+    saqueos: 0, cansadas: {}, periodo: 0, apoyo: APOYO.inicio,
     log: [], terminado: false, resultado: null,
   };
   prepararMapa(nueva);
@@ -229,9 +229,9 @@ function puedeAtacarZona(x, y) {
       ? `Queda lejos de tu territorio. Investigá ⛵ ${TECNOLOGIAS[MAPA.tecMar].nombre} para llegar por mar, o ganá las zonas del medio si hay camino por tierra.`
       : "Queda lejos: primero ganá las zonas que están en el medio." };
   }
-  if (estado.atacoEsteTurno) return { ok: false, motivo: "Ya atacaste este turno. Tus tropas descansan." };
   if (!alcanza(costoZona(x, y))) return { ok: false, motivo: `Te falta ⚖️ poder político: quedarte con esta zona cuesta ${costoZona(x, y).poder} y tenés ${Math.floor(estado.rec.poder)}.` };
   if (soldados() === 0) return { ok: false, motivo: "No tenés soldados. Entrenalos en la pestaña ⚔️ Ejército." };
+  if (soldadosListos() === 0) return { ok: false, motivo: "Todos tus soldados ya pelearon este turno y descansan. El turno que viene vuelven a estar listos." };
   return { ok: true };
 }
 
@@ -316,6 +316,14 @@ function cuenta(tipo, incluirObras = false) {
 function soldados() {
   let n = 0;
   for (const u in estado.ejercito) n += estado.ejercito[u];
+  return n;
+}
+
+// Soldados que todavía no pelearon este turno (los que pelearon descansan hasta el turno siguiente)
+const listos = (u) => Math.max(0, estado.ejercito[u] - ((estado.cansadas || {})[u] || 0));
+function soldadosListos() {
+  let n = 0;
+  for (const u in estado.ejercito) n += listos(u);
   return n;
 }
 
@@ -651,8 +659,12 @@ function requisitosPeriodo() {
     lista.push({ texto: `Investigar ${TECNOLOGIAS[r.tecnologia].icono} ${TECNOLOGIAS[r.tecnologia].nombre}`, ok: tiene(r.tecnologia) });
   }
   if (r.tecnologias) {
-    const n = Object.keys(TECNOLOGIAS).filter((id) => tiene(id) && periodoTec(id) === periodoActual()).length;
-    lista.push({ texto: `${r.tecnologias} tecnologías de ${articulo(periodoActual())} ${PERIODOS[periodoActual()].nombre} (tenés ${n})`, ok: n >= r.tecnologias });
+    const delPeriodo = Object.keys(TECNOLOGIAS).filter((id) => periodoTec(id) === periodoActual());
+    const n = delPeriodo.filter(tiene).length;
+    const todas = r.tecnologias === "todas";
+    const hacen = todas ? delPeriodo.length : r.tecnologias;
+    const nombre = `${articulo(periodoActual())} ${PERIODOS[periodoActual()].nombre}`;
+    lista.push({ texto: todas ? `Investigar todas las tecnologías de ${nombre} (tenés ${n} de ${hacen})` : `${hacen} tecnologías de ${nombre} (tenés ${n})`, ok: n >= hacen });
   }
   if (r.habitantes) {
     lista.push({ texto: `${r.habitantes} habitantes (tenés ${estado.habitantes})`, ok: estado.habitantes >= r.habitantes });
@@ -706,18 +718,29 @@ function entrenar(tipo, n = 1) {
 const bonusAtaque = () => 1 + efecto("ataque");
 const bonusDefensa = () => 1 + efecto("defensa");
 
-// Solo cuenta la muralla de Roma (es la ciudad que atacan los enemigos)
-function bonusMuralla() {
-  if (!estado.lotes.some((l) => l && l.tipo === "muralla" && l.falta === 0)) return 0;
+// Cada ciudad se defiende con su propia muralla (0 = Roma, 1... = las fundadas)
+function bonusMuralla(ciudad = 0) {
+  const lotes = lotesDe(ciudad) || [];
+  if (!lotes.some((l) => l && l.tipo === "muralla" && l.falta === 0)) return 0;
   return 0.5 + efecto("muralla");
 }
 
-// Fuerza para defender Roma: soldados + los habitantes que agarran palos
-function poderDefensa() {
+// Fuerza para defender una ciudad: soldados + los habitantes que agarran palos.
+// Roma tiene a todos sus habitantes; las ciudades fundadas, una parte.
+function poderDefensa(ciudad = 0) {
   let p = 0;
   for (const u in estado.ejercito) p += estado.ejercito[u] * UNIDADES[u].defensa;
-  p = p * bonusDefensa() + 2 + estado.habitantes * 0.3;
-  return p * (1 + bonusMuralla());
+  const vecinos = estado.habitantes * 0.3 * (ciudad === 0 ? 1 : ATAQUES_ENEMIGOS.genteColonia);
+  p = p * bonusDefensa() + 2 + vecinos;
+  return p * (1 + bonusMuralla(ciudad));
+}
+
+// Defensa de una zona tuya que no es ciudad: va una parte del ejército, con ayuda del terreno
+function poderDefensaZona(x, y) {
+  let p = 0;
+  for (const u in estado.ejercito) p += estado.ejercito[u] * UNIDADES[u].defensa;
+  p = (p * bonusDefensa() + 1) * ATAQUES_ENEMIGOS.ejercitoZona;
+  return p * (1 + (MAPA.bonusTerreno[terreno(x, y)] || 0));
 }
 
 function poderAtaque(envio) {
@@ -769,12 +792,11 @@ function atacarZona(x, y, envio) {
   const grupo = {};
   let total = 0;
   for (const u in UNIDADES) {
-    grupo[u] = Math.max(0, Math.min(estado.ejercito[u], Math.floor(envio[u] || 0)));
+    grupo[u] = Math.max(0, Math.min(listos(u), Math.floor(envio[u] || 0)));
     total += grupo[u];
   }
   if (total === 0) return null;
 
-  estado.atacoEsteTurno = true;
   for (const u in grupo) estado.ejercito[u] -= grupo[u];
   const r = choque(poderAtaque(grupo), defensaZona(x, y, grupo.catapulta));
   const enviados = total;
@@ -806,12 +828,113 @@ function atacarZona(x, y, envio) {
     e.fuerza = Math.max(1, e.fuerza * (1 - r.perdidaGanador * 0.8));
     anotar(`💀 Derrota en ${lugar}. Volvieron ${enviados - muertos} de ${enviados} soldados.${cambiarApoyo(APOYO.sucesos.derrota)}`, "mal");
   }
-  for (const u in grupo) estado.ejercito[u] += grupo[u];
+  // Los que vuelven quedan cansados hasta el turno siguiente; los que se quedaron en casa pueden seguir atacando
+  estado.cansadas = estado.cansadas || {};
+  for (const u in grupo) {
+    estado.ejercito[u] += grupo[u];
+    estado.cansadas[u] = (estado.cansadas[u] || 0) + grupo[u];
+  }
   revisarFin();
   return { gano: r.ganaA, enviados, muertos };
 }
 
 const textoRecursos = (rec) => Object.entries(rec).map(([r, v]) => `${v} ${RECURSOS[r].icono}`).join(", ");
+
+// ---------- Ataques de los enemigos ----------
+
+// A dónde marcha un pueblo: { ciudad: 0 } = Roma, { ciudad: 2 } = la 2ª ciudad fundada,
+// { x, y } = una zona tuya pegada a su territorio (para recuperarla).
+function elegirObjetivo(id) {
+  const datos = ENEMIGOS[id];
+  const A = ATAQUES_ENEMIGOS;
+  // Zonas tuyas (sin ciudad) pegadas a su territorio
+  const zonas = [];
+  estado.duenos.forEach((d, i) => {
+    if (d !== "roma") return;
+    const x = i % MAPA_ANCHO, y = Math.floor(i / MAPA_ANCHO);
+    if (lugarEn(x, y) === "roma" || coloniaEn(x, y)) return;
+    if (vecinas(x, y).some((c) => duenoDe(c.x, c.y) === id)) zonas.push({ x, y });
+  });
+  if (zonas.length && Math.random() < A.probZona) return zonas[Math.floor(Math.random() * zonas.length)];
+  // Ciudades: casi siempre la más cercana a su capital; a veces cualquiera
+  const ciudades = [{ ciudad: 0, ...MAPA.roma }, ...estado.colonias.map((c, i) => ({ ciudad: i + 1, x: c.x, y: c.y }))];
+  ciudades.sort((a, b) => distancia(a.x, a.y, datos.x, datos.y) - distancia(b.x, b.y, datos.x, datos.y));
+  const elegida = Math.random() < A.probCercana ? ciudades[0] : ciudades[Math.floor(Math.random() * ciudades.length)];
+  return { ciudad: elegida.ciudad };
+}
+
+// Nombre del lugar al que marchan ("Roma", "Ostia", "una zona de tu territorio")
+function nombreObjetivo(marcha) {
+  const o = marcha.objetivo;
+  if (!o || o.ciudad === 0) return "Roma";
+  if (o.ciudad) return lotesDe(o.ciudad) ? nombreCiudad(o.ciudad) : "Roma";
+  return "una zona de tu territorio";
+}
+
+// Fuerza con la que defendés el lugar al que marchan
+function defensaObjetivo(marcha) {
+  const o = marcha.objetivo;
+  if (o && o.ciudad === undefined) return poderDefensaZona(o.x, o.y);
+  return poderDefensa(o && lotesDe(o.ciudad) ? o.ciudad : 0);
+}
+
+// Un ejército enemigo llega a su objetivo
+function defenderse(id) {
+  const o = estado.enemigos[id].marcha.objetivo;
+  if (o && o.ciudad === undefined) return defenderZona(id, o.x, o.y);
+  if (o && o.ciudad && lotesDe(o.ciudad)) return defenderColonia(id, o.ciudad);
+  return defenderRoma(id);
+}
+
+// Atacan una zona tuya: si ganan, la recuperan
+function defenderZona(id, x, y) {
+  const e = estado.enemigos[id];
+  const datos = ENEMIGOS[id];
+  const atacantes = e.marcha.fuerza;
+  e.marcha = null;
+  if (!esMia(x, y)) return;   // la zona ya no es tuya: se vuelven
+  const r = choque(poderDefensaZona(x, y), atacantes);
+  if (r.ganaA) {
+    const muertos = aplicarBajas(estado.ejercito, r.perdidaGanador * 0.5);
+    e.fuerza = Math.max(1, e.fuerza - atacantes * 0.8);
+    anotar(`🛡️ ¡Los ${datos.nombre.toLowerCase()} quisieron recuperar una zona y los echaste! Perdiste ${muertos} soldado(s).${cambiarApoyo(APOYO.sucesos.rechazo / 2)}`, "bien");
+  } else {
+    aplicarBajas(estado.ejercito, 0.2);
+    e.fuerza = Math.max(1, e.fuerza - atacantes * 0.2);
+    estado.duenos[y * MAPA_ANCHO + x] = id;
+    anotar(`🏳️ ¡Los ${datos.nombre.toLowerCase()} te quitaron una zona de tu territorio!${cambiarApoyo(APOYO.sucesos.zonaPerdida)}`, "mal");
+  }
+}
+
+// Atacan una ciudad que fundaste: si ganan, la saquean
+function defenderColonia(id, ciudad) {
+  const e = estado.enemigos[id];
+  const datos = ENEMIGOS[id];
+  const nombre = nombreCiudad(ciudad);
+  const atacantes = e.marcha.fuerza;
+  e.marcha = null;
+  const r = choque(poderDefensa(ciudad), atacantes);
+  if (r.ganaA) {
+    const muertos = aplicarBajas(estado.ejercito, r.perdidaGanador * 0.7);
+    e.fuerza = Math.max(1, e.fuerza - atacantes * 0.8);
+    anotar(`🛡️ ¡${nombre} rechazó a los ${datos.nombre.toLowerCase()}! Perdiste ${muertos} soldado(s).${cambiarApoyo(APOYO.sucesos.rechazo)}`, "bien");
+    return;
+  }
+  aplicarBajas(estado.ejercito, 0.3);
+  e.fuerza = Math.max(1, e.fuerza - atacantes * 0.3);
+  for (const rec of ["comida", "madera", "piedra", "oro"]) estado.rec[rec] = Math.floor(estado.rec[rec] * 0.75);
+  const perdidos = Math.min(estado.habitantes - 1, Math.ceil(estado.habitantes * 0.1));
+  estado.habitantes -= perdidos;
+  const lotes = lotesDe(ciudad);
+  const edificios = lotes.map((l, i) => (l && !EDIFICIOS[l.tipo].fijo ? i : -1)).filter((i) => i >= 0);
+  let quemado = "";
+  if (edificios.length) {
+    const i = edificios[Math.floor(Math.random() * edificios.length)];
+    quemado = ` Incendiaron: ${EDIFICIOS[lotes[i].tipo].nombre}.`;
+    lotes[i] = null;
+  }
+  anotar(`🔥 ¡Los ${datos.nombre.toLowerCase()} saquearon ${nombre}! Se llevaron un cuarto de tus recursos y murieron ${perdidos} habitantes.${quemado}${cambiarApoyo(APOYO.sucesos.saqueoColonia)}`, "mal");
+}
 
 // Un pueblo enemigo llega a las puertas de Roma
 function defenderRoma(id) {
@@ -825,6 +948,12 @@ function defenderRoma(id) {
     const muertos = aplicarBajas(estado.ejercito, r.perdidaGanador * 0.7);
     e.fuerza = Math.max(1, e.fuerza - atacantes * 0.8);
     anotar(`🛡️ ¡Rechazaste a los ${datos.nombre.toLowerCase()}! Perdiste ${muertos} soldado(s).${cambiarApoyo(APOYO.sucesos.rechazo)}`, "bien");
+  } else if (r.b >= r.a * ATAQUES_ENEMIGOS.aplastante) {
+    // Los arrasaron: toman Roma y se termina la partida
+    estado.terminado = true;
+    estado.resultado = "conquista";
+    estado.conquistadoPor = id;
+    anotar(`💀 ¡Los ${datos.nombre.toLowerCase()} arrasaron con tus defensas y tomaron Roma! Tu reinado terminó.`, "mal");
   } else {
     aplicarBajas(estado.ejercito, 0.5);
     e.fuerza = Math.max(1, e.fuerza - atacantes * 0.3);
@@ -918,21 +1047,22 @@ function terminarTurno() {
     const datos = ENEMIGOS[id];
     e.fuerza += datos.crece;
     if (e.marcha && estado.turno >= e.marcha.llega) {
-      defenderRoma(id);
+      defenderse(id);
+      if (estado.terminado) break;
       e.cada = Math.max(5, e.cada - 1);
       e.proximo = estado.turno + e.cada + Math.floor(azar(-1, 2));
     } else if (!e.marcha && e.proximo && estado.turno >= e.proximo - 2) {
       if (!e.guerra) anotar(`⚔️ ¡Los ${datos.nombre.toLowerCase()} le declaran la guerra a Roma!`, "mal");
       e.guerra = true;
-      e.marcha = { fuerza: Math.round(e.fuerza * 0.6), llega: e.proximo };
-      anotar(`⚠️ ¡Los ${datos.nombre.toLowerCase()} marchan hacia Roma! Llegan en ${e.proximo - estado.turno} turnos con unos ${estimar(e.marcha.fuerza)} de fuerza.`, "mal");
+      e.marcha = { fuerza: Math.round(e.fuerza * 0.6), llega: e.proximo, objetivo: elegirObjetivo(id) };
+      anotar(`⚠️ ¡Los ${datos.nombre.toLowerCase()} marchan hacia ${nombreObjetivo(e.marcha)}! Llegan en ${e.proximo - estado.turno} turnos con unos ${estimar(e.marcha.fuerza)} de fuerza.`, "mal");
       if (!vista(datos.x, datos.y)) {
         revelar(datos.x, datos.y, 1);
         anotar(`👀 Tus vigías siguen las huellas y descubren de dónde vienen: ${datos.ciudad}. Ya aparece en el mapa.`);
       }
     }
   }
-  estado.atacoEsteTurno = false;
+  estado.cansadas = {};
   estado.inmigroEsteTurno = false;
   if (revisarFin()) return;
 
@@ -957,6 +1087,7 @@ function terminarTurno() {
 
 function revisarFin() {
   if (estado.terminado) return true;
+  if (estado.resultado === "conquista") { estado.terminado = true; return true; }
   if (estado.rebelion || apoyo() <= APOYO.derrocado) {
     estado.terminado = true;
     estado.resultado = "descontento";

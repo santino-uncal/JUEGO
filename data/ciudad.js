@@ -205,6 +205,7 @@ const TECNOLOGIAS = {
 // eras: nombre de cada columna del árbol en ese período.
 // requisitos para pasar a este período desde el anterior:
 //   tecnologia:  la tecnología que hay que investigar (la última del período anterior)
+//   tecnologias: cuántas tecnologías del período anterior hay que tener ("todas" = el árbol entero)
 //   conquistas:  cuántos pueblos vecinos tenés que haber conquistado
 //   costo:       lo que se paga al proclamarlo
 // efecto: bonus que da el período desde que llegás (igual que en las tecnologías).
@@ -220,7 +221,7 @@ const PERIODOS = [
   { id: "imperio", nombre: "Imperio", icono: "🦅", titulo: "Emperador de Roma",
     eras: ["Los césares", "Alto Imperio", "Gloria de Roma", "Roma eterna"],
     desc: "Un general victorioso se corona emperador. Roma domina el Mediterráneo.",
-    requisitos: { tecnologia: "principado", conquistas: 2 },
+    requisitos: { tecnologia: "principado", tecnologias: "todas", conquistas: 2 },
     efecto: { ataque: 0.1, defensa: 0.1, tributo: 0.5 }, bonus: "Tu ejército pelea +10% mejor y los tributos suben +50%." },
 ];
 
@@ -319,6 +320,8 @@ const APOYO = {
   edificios: { muralla: 15, templo: 5, acueducto: 5, anfiteatro: 10, foro: 5, termas: 8 },
   sucesos: {
     saqueo: -25,      // te saquean Roma
+    saqueoColonia: -10, // te saquean una ciudad que fundaste
+    zonaPerdida: -5,  // un pueblo te quita una zona
     rechazo: 10,      // rechazás un ataque a Roma
     conquista: 15,    // conquistás un pueblo (tomás su capital)
     zona: 3,          // le ganás una zona a otro pueblo
@@ -326,6 +329,14 @@ const APOYO = {
     hambre: -3,       // cada turno sin comida
   },
 };
+
+// Cómo atacan los pueblos enemigos.
+//   probZona:     probabilidad de que vayan a recuperar una zona tuya pegada a su territorio (0.35 = 35%)
+//   probCercana:  si van por una ciudad, probabilidad de que elijan la más cercana (si no, cualquiera)
+//   ejercitoZona: qué parte de tu ejército llega a defender una zona que no es ciudad (0.5 = la mitad)
+//   genteColonia: qué parte de los habitantes ayuda a defender una ciudad fundada (Roma tiene a todos)
+//   aplastante:   si te ganan en Roma con el doble (o más) de fuerza, toman Roma y perdés la partida
+const ATAQUES_ENEMIGOS = { probZona: 0.35, probCercana: 0.6, ejercitoZona: 0.5, genteColonia: 0.3, aplastante: 2 };
 
 // Acciones del gobierno (pestaña 🎭 Acciones): ganás o perdés apoyo.
 //   costo:   lo que pagás

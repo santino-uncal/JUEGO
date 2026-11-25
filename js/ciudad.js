@@ -119,7 +119,7 @@ function dibujarCiudad() {
     const e = estado.enemigos[id];
     if (e.vivo && e.marcha) {
       const n = e.marcha.llega - estado.turno;
-      avisos.push(`⚠️ <b>${ENEMIGOS[id].nombre}</b> marchan hacia Roma con ~${estimar(e.marcha.fuerza)} de fuerza. Llegan ${n <= 1 ? "<b>el próximo turno</b>" : `en ${n} turnos`}. Tu defensa: ${Math.round(poderDefensa())}.`);
+      avisos.push(`⚠️ <b>${ENEMIGOS[id].nombre}</b> marchan hacia <b>${nombreObjetivo(e.marcha)}</b> con ~${estimar(e.marcha.fuerza)} de fuerza. Llegan ${n <= 1 ? "<b>el próximo turno</b>" : `en ${n} turnos`}. Tu defensa ahí: ${Math.round(defensaObjetivo(e.marcha))}.`);
     }
   }
   if (eficiencia() < 1) avisos.push(`👷 Faltan habitantes: tus edificios trabajan al ${Math.round(eficiencia() * 100)}%. Construí casas o demolé algo.`);
@@ -207,7 +207,7 @@ function panelEjercito() {
       <div class="item ${bloqueado ? "bloqueado" : ""}">
         <div class="item-icono">${bloqueado ? "🔒" : u.icono}</div>
         <div class="item-texto">
-          <b>${u.nombre}</b> <span class="cantidad">× ${estado.ejercito[tipo]}</span><br>
+          <b>${u.nombre}</b> <span class="cantidad">× ${estado.ejercito[tipo]}</span>${listos(tipo) < estado.ejercito[tipo] ? ` <small>(${estado.ejercito[tipo] - listos(tipo)} descansando)</small>` : ""}<br>
           <small>⚔️ Ataque ${u.ataque} · 🛡️ Defensa ${u.defensa}${u.desc ? " · " + u.desc : ""}</small><br>
           <small>Cuesta: ${textoCosto(costoUnidad(tipo))}</small>
           ${p1.ok ? "" : `<br><small class="motivo">${p1.motivo}</small>`}
@@ -222,7 +222,8 @@ function panelEjercito() {
 }
 
 function panelVecinos() {
-  let html = estado.atacoEsteTurno ? `<p class="ayuda">Ya atacaste este turno. Tus tropas descansan.</p>` : "";
+  const cansados = soldados() - soldadosListos();
+  let html = cansados ? `<p class="ayuda">😴 ${cansados} soldado${cansados > 1 ? "s" : ""} ya pelearon este turno y descansan. ${soldadosListos() ? `Te quedan ${soldadosListos()} listos para atacar.` : "El turno que viene vuelven a estar listos."}</p>` : "";
   html += `<p class="ayuda">Cada pueblo tiene su territorio en el 🗺️ Mapa. Declarale la guerra y después tocá en el mapa una zona suya pegada a la tuya para atacarla. Si tomás su capital, se rinde entero.</p>`;
   const conocidos = Object.keys(ENEMIGOS).filter(descubierto);
   const ocultos = Object.keys(ENEMIGOS).length - conocidos.length;
@@ -245,7 +246,7 @@ function tarjetaEnemigo(id) {
     return `<div class="item hecha"><div class="item-icono">🦅</div><div class="item-texto"><b>${d.nombre}</b> – conquistados<br><small>Te pagan ${trib} por turno.</small></div></div>`;
   }
   let estadoTexto;
-  if (e.marcha) estadoTexto = `<span class="motivo">⚠️ Su ejército marcha hacia Roma: ¡sus zonas quedaron poco defendidas!</span>`;
+  if (e.marcha) estadoTexto = `<span class="motivo">⚠️ Su ejército marcha hacia ${nombreObjetivo(e.marcha)}: ¡sus zonas quedaron poco defendidas!</span>`;
   else if (e.guerra) estadoTexto = `<small class="mal">⚔️ En guerra con Roma.${e.proximo ? ` Próximo ataque: en unos ${Math.max(1, e.proximo - estado.turno)} turnos.` : ""}</small>`;
   else estadoTexto = `<small>🕊️ En paz con Roma.${e.proximo ? ` Pero te van a atacar en unos ${Math.max(1, e.proximo - estado.turno)} turnos.` : ""}</small>`;
   const boton = e.guerra
@@ -920,13 +921,14 @@ function prepararAtaque(x, y) {
   const nombre = esCapital(x, y) === id ? d.ciudad : `una zona de los ${d.nombre.toLowerCase()}`;
   let filas = "";
   for (const u in UNIDADES) {
-    if (estado.ejercito[u] === 0) continue;
-    filas += `<label class="fila-envio">${UNIDADES[u].icono} ${UNIDADES[u].nombre} (tenés ${estado.ejercito[u]})
-      <input type="number" min="0" max="${estado.ejercito[u]}" value="${estado.ejercito[u]}" data-envio="${u}"></label>`;
+    if (listos(u) === 0) continue;
+    const descansan = estado.ejercito[u] - listos(u);
+    filas += `<label class="fila-envio">${UNIDADES[u].icono} ${UNIDADES[u].nombre} (listos ${listos(u)}${descansan ? `, ${descansan} descansando` : ""})
+      <input type="number" min="0" max="${listos(u)}" value="${listos(u)}" data-envio="${u}"></label>`;
   }
   abrirModal(`
     <h2>${d.icono} Atacar ${nombre}</h2>
-    <p>¿Cuántos soldados mandás? Los que se quedan siguen defendiendo Roma.</p>
+    <p>¿Cuántos soldados mandás? Los que se quedan siguen defendiendo Roma y pueden atacar otra zona este mismo turno. Los que pelean descansan hasta el turno que viene.</p>
     <p><small>Si ganás, pagás ${textoCosto(costoZona(x, y))} de poder político para quedarte con ${esCapital(x, y) === id ? "todo su territorio" : "la zona"}.</small></p>
     ${filas}
     <p id="comparacion"></p>
@@ -958,6 +960,13 @@ function actualizarComparacion(x, y) {
 }
 
 function mostrarFin() {
+  if (estado.resultado === "conquista") {
+    const d = ENEMIGOS[estado.conquistadoPor];
+    abrirModal(`<h2>¡Roma ha caído! 💀</h2><p>Los ${d ? d.nombre.toLowerCase() : "enemigos"} llegaron con un ejército mucho más grande que tus defensas, arrasaron con todo y tomaron Roma después de ${estado.turno} años.</p>
+    <p><small>Para que no pase: entrená soldados, construí una muralla y mirá los avisos de ejércitos en camino.</small></p>
+    <button data-accion="nueva">Jugar de nuevo</button>`);
+    return;
+  }
   if (estado.resultado === "descontento") {
     abrirModal(`<h2>¡Revuelta en Roma! 🔥</h2><p>El apoyo del pueblo se desplomó (llegó a ${APOYO.derrocado} o menos). Hartos de tu gobierno, asaltaron el palacio y te echaron del trono después de ${estado.turno} años.</p>
     <button data-accion="nueva">Jugar de nuevo</button>`);
