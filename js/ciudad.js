@@ -68,7 +68,7 @@ function dibujarRecursos() {
   const prod = Math.round((productividad() - 1) * 100);
   const base = apoyoBase();
   const tendencia = base > ap ? " ↑" : base < ap ? " ↓" : "";
-  html += `<span title="Apoyo popular (0 a 100). Cambia cuánto rinden los edificios y los impuestos: ahora ${prod >= 0 ? "+" : ""}${prod}%. Con el tiempo vuelve a ${base}. Lo suben la muralla, templos y grandes obras, rechazar ataques y conquistar; lo bajan saqueos, derrotas y hambre.">${cara} <b>${ap}</b>${tendencia} <small class="${prod < 0 ? "neg" : ""}">${prod >= 0 ? "+" : ""}${prod}%</small></span>`;
+  html += `<span title="Apoyo popular (0 a 100). Cambia cuánto rinden los edificios y los impuestos: ahora ${prod >= 0 ? "+" : ""}${prod}%. Con el tiempo vuelve a ${base}. Lo suben la muralla, templos y grandes obras, rechazar ataques y conquistar; lo bajan saqueos, derrotas y hambre. ¡Si llega a ${APOYO.derrocado}, el pueblo se rebela y perdés!">${cara} <b>${ap}</b>${tendencia} <small class="${prod < 0 ? "neg" : ""}">${prod >= 0 ? "+" : ""}${prod}%</small></span>`;
   $("recursos").innerHTML = html;
 }
 
@@ -958,6 +958,11 @@ function actualizarComparacion(x, y) {
 }
 
 function mostrarFin() {
+  if (estado.resultado === "descontento") {
+    abrirModal(`<h2>¡Revuelta en Roma! 🔥</h2><p>El apoyo del pueblo se desplomó (llegó a ${APOYO.derrocado} o menos). Hartos de tu gobierno, asaltaron el palacio y te echaron del trono después de ${estado.turno} años.</p>
+    <button data-accion="nueva">Jugar de nuevo</button>`);
+    return;
+  }
   abrirModal(`<h2>¡Ave, ${PERIODOS[periodoActual()].titulo}! 🏆</h2><p>Sometiste a todos los pueblos vecinos en ${estado.turno} años. Roma domina Europa.</p>
     <button data-accion="nueva">Jugar de nuevo</button>`);
 }
@@ -971,6 +976,7 @@ function tocarLote(i) {
 }
 
 function trasAccion() {
+  revisarFin();   // por ejemplo, una acción o una derrota que deja el apoyo por el piso
   guardar();
   dibujarTodo();
   if (estado.terminado) mostrarFin();
@@ -1079,6 +1085,7 @@ document.addEventListener("click", (ev) => {
     case "preparar": if (casillaElegida) prepararAtaque(casillaElegida.x, casillaElegida.y); return;
     case "atacar": {
       const r = atacarZona(+d.x, +d.y, leerEnvio());
+      revisarFin();
       cerrarModal();
       if (r && !estado.terminado) {
         abrirModal(`<h2>${r.gano ? "🏆 ¡Victoria!" : "💀 Derrota"}</h2><p>${estado.log[0].texto}</p><button data-accion="cerrar">Seguir</button>`);

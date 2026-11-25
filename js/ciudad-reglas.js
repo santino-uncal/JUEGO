@@ -379,6 +379,7 @@ function cambiarApoyo(n) {
   if (!n) return "";
   const antes = apoyo();
   estado.apoyo = limitarApoyo(antes + n);
+  if (estado.apoyo <= APOYO.derrocado) estado.rebelion = true;   // aunque después se recupere un poco, ya se rebelaron
   const real = estado.apoyo - antes;
   return real ? ` (${real > 0 ? "+" : ""}${real} 😊 apoyo)` : "";
 }
@@ -936,6 +937,8 @@ function terminarTurno() {
   if (revisarFin()) return;
 
   anotar(`— Año ${estado.turno} de tu reinado —`, "turno");
+  if (apoyo() <= APOYO.aviso)
+    anotar(`😡 ¡El pueblo está furioso! Si el apoyo baja a ${APOYO.derrocado}, se rebelan y te echan del trono.`, "mal");
 
   // 6) Evento al azar
   if (estado.turno > 2 && Math.random() < 0.25) {
@@ -954,6 +957,12 @@ function terminarTurno() {
 
 function revisarFin() {
   if (estado.terminado) return true;
+  if (estado.rebelion || apoyo() <= APOYO.derrocado) {
+    estado.terminado = true;
+    estado.resultado = "descontento";
+    anotar(`🔥 ¡Revuelta en Roma! El pueblo, harto de tu gobierno, asalta el palacio y te echa del trono.`, "mal");
+    return true;
+  }
   if (Object.values(estado.enemigos).every((e) => !e.vivo)) {
     estado.terminado = true;
     estado.resultado = "victoria";

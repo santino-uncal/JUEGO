@@ -313,6 +313,8 @@ const APOYO = {
   vuelve: 2,
   minimo: 0.7,
   maximo: 1.3,
+  derrocado: 10,      // si el apoyo llega a esto (o menos), el pueblo se rebela y perdés la partida
+  aviso: 20,          // con este apoyo (o menos) la crónica te avisa que el pueblo está por rebelarse
   edificios: { muralla: 15, templo: 5, acueducto: 5, anfiteatro: 10, foro: 5, termas: 8 },
   sucesos: {
     saqueo: -25,      // te saquean Roma
