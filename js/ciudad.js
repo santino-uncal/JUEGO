@@ -103,7 +103,7 @@ function dibujarCiudad() {
       const ed = EDIFICIOS[l.tipo];
       if (l.falta > 0) {
         div.classList.add("obra");
-        div.innerHTML = `<span class="icono">🚧</span><span class="nombre">${ed.nombre}</span><span class="falta-turnos">${l.falta} turno${l.falta > 1 ? "s" : ""}</span>`;
+        div.innerHTML = `<span class="icono">🚧</span><span class="nombre">${ed.nombre}</span><span class="falta-turnos">${l.falta} año${l.falta > 1 ? "s" : ""}</span>`;
       } else {
         if (ed.fijo) div.classList.add("regia");
         div.innerHTML = `<span class="icono">${ed.icono}</span><span class="nombre">${ed.nombre}</span>`;
@@ -119,7 +119,7 @@ function dibujarCiudad() {
     const e = estado.enemigos[id];
     if (e.vivo && e.marcha) {
       const n = e.marcha.llega - estado.turno;
-      avisos.push(`⚠️ <b>${ENEMIGOS[id].nombre}</b> marchan hacia <b>${nombreObjetivo(e.marcha)}</b> con ~${estimar(e.marcha.fuerza)} de fuerza. Llegan ${n <= 1 ? "<b>el próximo turno</b>" : `en ${n} turnos`}. Tu defensa ahí: ${Math.round(defensaObjetivo(e.marcha))}.`);
+      avisos.push(`⚠️ <b>${ENEMIGOS[id].nombre}</b> marchan hacia <b>${nombreObjetivo(e.marcha)}</b> con ~${estimar(e.marcha.fuerza)} de fuerza. Llegan ${n <= 1 ? "<b>el próximo año</b>" : `en ${n} años`}. Tu defensa ahí: ${Math.round(defensaObjetivo(e.marcha))}.`);
     }
   }
   if (eficiencia() < 1) avisos.push(`👷 Faltan habitantes: tus edificios trabajan al ${Math.round(eficiencia() * 100)}%. Construí casas o demolé algo.`);
@@ -141,7 +141,7 @@ function panelConstruir() {
     let html = `<h3>${ed.icono} ${ed.nombre}</h3><p>${ed.desc}</p>`;
     const prod = textoProduce(ed);
     if (prod) html += `<p>Da: <b>${prod}</b>${ed.trabajadores ? ` (con ${ed.trabajadores} trabajador${ed.trabajadores > 1 ? "es" : ""})` : ""}</p>`;
-    if (l.falta > 0) html += `<p class="ayuda">En obra: faltan ${l.falta} turno(s).</p>`;
+    if (l.falta > 0) html += `<p class="ayuda">En obra: faltan ${l.falta} año(s).</p>`;
     if (!ed.fijo) html += `<button data-accion="demoler">🔨 Demoler</button>`;
     return html;
   }
@@ -155,7 +155,7 @@ function panelConstruir() {
       <div class="item ${bloqueado ? "bloqueado" : ""}">
         <div class="item-icono">${bloqueado ? "🔒" : ed.icono}</div>
         <div class="item-texto">
-          <b>${ed.nombre}</b> <small>· ${ed.turnos} turno${ed.turnos > 1 ? "s" : ""}${ed.trabajadores ? ` · 👷 ${ed.trabajadores}` : ""}</small><br>
+          <b>${ed.nombre}</b> <small>· ${ed.turnos} año${ed.turnos > 1 ? "s" : ""}${ed.trabajadores ? ` · 👷 ${ed.trabajadores}` : ""}</small><br>
           <small>${ed.desc}${textoProduce(ed) ? " <b>" + textoProduce(ed) + "</b>" : ""}</small><br>
           <small>Cuesta: ${textoCosto(ed.costo)}</small>
           ${p.ok ? "" : `<br><small class="motivo">${p.motivo}</small>`}
@@ -169,7 +169,7 @@ function panelConstruir() {
 function panelAcciones() {
   const ap = apoyo();
   let html = `<p>😊 Apoyo popular: <b>${ap}</b> de 100 · todo rinde <b>${Math.round(productividad() * 100)}%</b></p>
-    <p class="ayuda">Ganarte al pueblo cuesta recursos; exprimirlo te da recursos pero baja el apoyo. Cada acción tarda unos turnos en poder repetirse.</p>
+    <p class="ayuda">Ganarte al pueblo cuesta recursos; exprimirlo te da recursos pero baja el apoyo. Cada acción tarda unos años en poder repetirse.</p>
     <div class="lista">`;
   for (const id in ACCIONES) {
     const a = ACCIONES[id];
@@ -185,7 +185,7 @@ function panelAcciones() {
         <div class="item-texto">
           <b>${a.nombre}</b> <small class="${a.apoyo >= 0 ? "bien" : "mal"}">${a.apoyo >= 0 ? "+" : ""}${a.apoyo} 😊</small><br>
           <small>${a.desc}</small><br>
-          <small>${partes.join(" · ") || "Gratis"} · se repite cada ${a.espera} turnos</small>
+          <small>${partes.join(" · ") || "Gratis"} · se repite cada ${a.espera} años</small>
           ${p.ok ? "" : `<br><small class="motivo">${p.motivo}</small>`}
         </div>
         <button data-accion="gobierno" data-id="${id}" ${p.ok && !estado.terminado ? "" : "disabled"}>Hacer</button>
@@ -223,7 +223,7 @@ function panelEjercito() {
 
 function panelVecinos() {
   const cansados = soldados() - soldadosListos();
-  let html = cansados ? `<p class="ayuda">😴 ${cansados} soldado${cansados > 1 ? "s" : ""} ya pelearon este turno y descansan. ${soldadosListos() ? `Te quedan ${soldadosListos()} listos para atacar.` : "El turno que viene vuelven a estar listos."}</p>` : "";
+  let html = cansados ? `<p class="ayuda">😴 ${cansados} soldado${cansados > 1 ? "s" : ""} ya pelearon este año y descansan. ${soldadosListos() ? `Te quedan ${soldadosListos()} listos para atacar.` : "El año que viene vuelven a estar listos."}</p>` : "";
   html += `<p class="ayuda">Cada pueblo tiene su territorio en el 🗺️ Mapa. Declarale la guerra y después tocá en el mapa una zona suya pegada a la tuya para atacarla. Si tomás su capital, se rinde entero.</p>`;
   const conocidos = Object.keys(ENEMIGOS).filter(descubierto);
   const ocultos = Object.keys(ENEMIGOS).length - conocidos.length;
@@ -243,12 +243,12 @@ function tarjetaEnemigo(id) {
   const muestra = `<span class="muestra" style="background:${d.color}"></span>`;
   if (!e.vivo) {
     const trib = Object.entries(d.tributo).map(([r, v]) => `+${v} ${RECURSOS[r].icono}`).join(" ");
-    return `<div class="item hecha"><div class="item-icono">🦅</div><div class="item-texto"><b>${d.nombre}</b> – conquistados<br><small>Te pagan ${trib} por turno.</small></div></div>`;
+    return `<div class="item hecha"><div class="item-icono">🦅</div><div class="item-texto"><b>${d.nombre}</b> – conquistados<br><small>Te pagan ${trib} por año.</small></div></div>`;
   }
   let estadoTexto;
   if (e.marcha) estadoTexto = `<span class="motivo">⚠️ Su ejército marcha hacia ${nombreObjetivo(e.marcha)}: ¡sus zonas quedaron poco defendidas!</span>`;
-  else if (e.guerra) estadoTexto = `<small class="mal">⚔️ En guerra con Roma.${e.proximo ? ` Próximo ataque: en unos ${Math.max(1, e.proximo - estado.turno)} turnos.` : ""}</small>`;
-  else estadoTexto = `<small>🕊️ En paz con Roma.${e.proximo ? ` Pero te van a atacar en unos ${Math.max(1, e.proximo - estado.turno)} turnos.` : ""}</small>`;
+  else if (e.guerra) estadoTexto = `<small class="mal">⚔️ En guerra con Roma.${e.proximo ? ` Próximo ataque: en unos ${Math.max(1, e.proximo - estado.turno)} años.` : ""}</small>`;
+  else estadoTexto = `<small>🕊️ En paz con Roma.${e.proximo ? ` Pero te van a atacar en unos ${Math.max(1, e.proximo - estado.turno)} años.` : ""}</small>`;
   const boton = e.guerra
     ? `<button data-accion="ver-mapa" data-enemigo="${id}">🗺️ Ver</button>`
     : `<button data-accion="guerra" data-enemigo="${id}" ${estado.terminado ? "disabled" : ""}>⚔️ Declarar guerra</button>`;
@@ -599,11 +599,11 @@ function infoZona() {
   const { x, y } = casillaElegida;
   if (!vista(x, y)) {
     const viaje = estado.exploradores.find((ex) => ex.x === x && ex.y === y);
-    if (viaje) return `<h3>🧭 Zona desconocida</h3><p>Tu explorador vuelve en ${viaje.vuelve - estado.turno} turno(s).</p>`;
+    if (viaje) return `<h3>🧭 Zona desconocida</h3><p>Tu explorador vuelve en ${viaje.vuelve - estado.turno} año(s).</p>`;
     const p = puedeExplorar(x, y);
     const t = turnosViaje(x, y);
     return `<h3>❓ Zona desconocida</h3>
-      <p>Un habitante libre va a explorar y vuelve en <b>${t} turno${t > 1 ? "s" : ""}</b>. Mientras viaja, no trabaja.</p>
+      <p>Un habitante libre va a explorar y vuelve en <b>${t} año${t > 1 ? "s" : ""}</b>. Mientras viaja, no trabaja.</p>
       ${p.ok ? "" : `<p class="motivo">${p.motivo}</p>`}
       <button data-accion="explorar" ${p.ok && !estado.terminado ? "" : "disabled"}>🧭 Explorar</button>`;
   }
@@ -823,7 +823,7 @@ function dibujarArbol() {
 }
 
 function infoTec() {
-  const ciencia = `<p class="ayuda">Tenés <b>${Math.floor(estado.rec.ciencia)} 💡</b> (${signo(balance().ciencia)} por turno).
+  const ciencia = `<p class="ayuda">Tenés <b>${Math.floor(estado.rec.ciencia)} 💡</b> (${signo(balance().ciencia)} por año).
     ${estado.meta ? `🎯 Meta: <b>${TECNOLOGIAS[estado.meta].nombre}</b>.` : "Sin meta elegida."}</p>`;
   if (!tecElegida) {
     return `${tarjetaPeriodo()}<p class="ayuda">Tocá una tecnología para ver qué da. Podés investigarla ya o ponerla como <b>🎯 meta</b>:
@@ -928,7 +928,7 @@ function prepararAtaque(x, y) {
   }
   abrirModal(`
     <h2>${d.icono} Atacar ${nombre}</h2>
-    <p>¿Cuántos soldados mandás? Los que se quedan siguen defendiendo Roma y pueden atacar otra zona este mismo turno. Los que pelean descansan hasta el turno que viene.</p>
+    <p>¿Cuántos soldados mandás? Los que se quedan siguen defendiendo Roma y pueden atacar otra zona este mismo año. Los que pelean descansan hasta el año que viene.</p>
     <p><small>Si ganás, pagás ${textoCosto(costoZona(x, y))} de poder político para quedarte con ${esCapital(x, y) === id ? "todo su territorio" : "la zona"}.</small></p>
     ${filas}
     <p id="comparacion"></p>

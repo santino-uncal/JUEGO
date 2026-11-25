@@ -22,7 +22,7 @@ const INICIO = {
 // costo: lo que se paga al empezar la obra
 // turnos: cuánto tarda la obra
 // trabajadores: habitantes que quedan ocupados trabajando ahí
-// produce: lo que da cada turno (si tiene a toda su gente)
+// produce: lo que da cada año (si tiene a toda su gente)
 // capacidad: lugar para vivir que suma
 // requiere: tecnología necesaria
 // unico: solo se puede tener uno por ciudad
@@ -76,7 +76,7 @@ const EDIFICIOS = {
 //   impuestos:   0.5   +50% del oro que pagan los habitantes
 //   ataque / defensa: 0.25   tu ejército pelea +25% mejor al atacar / al defender Roma
 //   muralla:     0.5   la muralla protege +50% más
-//   crecimiento: 1     llega 1 habitante más por turno (si hay comida y lugar)
+//   crecimiento: 1     llega 1 habitante más por año (si hay comida y lugar)
 //   tributo:     1     los pueblos conquistados pagan +100% de tributo
 //   descuentoTropas: 0.25   los soldados cuestan 25% menos
 //
@@ -107,7 +107,7 @@ const TECNOLOGIAS = {
   albanileria: { nombre: "Albañilería",  icono: "🧱", periodo: "monarquia", fila: 3, costo: 45, desc: "Desbloquea Templo y Muralla.", requiere: ["alfareria"] },
   matematicas: { nombre: "Matemáticas",  icono: "📐", periodo: "monarquia", fila: 5, costo: 45, desc: "Cada biblioteca da +2 de conocimiento.", requiere: ["escritura"],
                  efecto: { mejora: { biblioteca: { ciencia: 2 } } } },
-  filosofia:   { nombre: "Filosofía",    icono: "🦉", periodo: "monarquia", fila: 6.5, costo: 45, desc: "Los sabios debaten en la Regia: +2 de conocimiento por turno.", requiere: ["escritura"],
+  filosofia:   { nombre: "Filosofía",    icono: "🦉", periodo: "monarquia", fila: 6.5, costo: 45, desc: "Los sabios debaten en la Regia: +2 de conocimiento por año.", requiere: ["escritura"],
                  efecto: { mejora: { regia: { ciencia: 2 } } } },
 
   // Reyes sabinos
@@ -125,7 +125,7 @@ const TECNOLOGIAS = {
 
   // ===== República =====
   // Primeros cónsules
-  vias:        { nombre: "Vías romanas", icono: "🛣️", periodo: "republica", fila: 0.5, costo: 100, desc: "Caminos de piedra: llega 1 habitante más por turno.", requiere: ["equitacion", "alfareria"],
+  vias:        { nombre: "Vías romanas", icono: "🛣️", periodo: "republica", fila: 0.5, costo: 100, desc: "Caminos de piedra: llega 1 habitante más por año.", requiere: ["equitacion", "alfareria"],
                  efecto: { crecimiento: 1 } },
   arqueria:    { nombre: "Arquería",     icono: "🏹", periodo: "republica", fila: 2, costo: 90, desc: "Arqueros expertos y flechas con punta de hierro: tus tropas atacan +10% mejor.", requiere: ["bronce"],
                  efecto: { ataque: 0.1 } },
@@ -165,7 +165,7 @@ const TECNOLOGIAS = {
 
   // ===== Imperio =====
   // Los césares
-  pax:         { nombre: "Pax Romana",   icono: "🕊️", periodo: "imperio", fila: 0, costo: 250, desc: "Paz en los caminos: llegan 2 habitantes más por turno y los tributos suben +50%.", requiere: ["administracion", "rutas"],
+  pax:         { nombre: "Pax Romana",   icono: "🕊️", periodo: "imperio", fila: 0, costo: 250, desc: "Paz en los caminos: llegan 2 habitantes más por año y los tributos suben +50%.", requiere: ["administracion", "rutas"],
                  efecto: { crecimiento: 2, tributo: 0.5 } },
   censo:       { nombre: "Censo",        icono: "📊", periodo: "imperio", fila: 1, costo: 220, desc: "Contar a cada habitante del imperio: +25% de oro de los impuestos.", requiere: ["administracion", "derecho"],
                  efecto: { impuestos: 0.25 } },
@@ -185,7 +185,7 @@ const TECNOLOGIAS = {
   termas:      { nombre: "Termas",       icono: "🛁", periodo: "imperio", fila: 4, costo: 280, desc: "Baños públicos con agua caliente: desbloquea las Termas.", requiere: ["urbanismo"] },
   hormigon:    { nombre: "Hormigón romano", icono: "🌋", periodo: "imperio", fila: 5, costo: 300, desc: "Cal y ceniza volcánica: cada cantera da +2 de piedra y cada acueducto +4 de lugar.", requiere: ["urbanismo"],
                  efecto: { mejora: { cantera: { piedra: 2 } }, capacidad: { acueducto: 4 } } },
-  medicina:    { nombre: "Medicina",     icono: "⚕️", periodo: "imperio", fila: 6, costo: 290, desc: "Médicos griegos en Roma: llega 1 habitante más por turno y cada templo da +2 de conocimiento.", requiere: ["academia"],
+  medicina:    { nombre: "Medicina",     icono: "⚕️", periodo: "imperio", fila: 6, costo: 290, desc: "Médicos griegos en Roma: llega 1 habitante más por año y cada templo da +2 de conocimiento.", requiere: ["academia"],
                  efecto: { crecimiento: 1, mejora: { templo: { ciencia: 2 } } } },
 
   // Gloria de Roma
@@ -197,7 +197,7 @@ const TECNOLOGIAS = {
                  efecto: { mejora: { biblioteca: { ciencia: 3 }, regia: { ciencia: 3 } } } },
 
   // Roma eterna
-  eterna:      { nombre: "Roma eterna",  icono: "🏆", periodo: "imperio", fila: 3, costo: 500, desc: "Roma es la capital del mundo: tu ejército pelea +15% mejor, +10 de apoyo y llega 1 habitante más por turno.", requiere: ["ciudadania", "limes", "panem"],
+  eterna:      { nombre: "Roma eterna",  icono: "🏆", periodo: "imperio", fila: 3, costo: 500, desc: "Roma es la capital del mundo: tu ejército pelea +15% mejor, +10 de apoyo y llega 1 habitante más por año.", requiere: ["ciudadania", "limes", "panem"],
                  efecto: { ataque: 0.15, defensa: 0.15, apoyo: 10, crecimiento: 1 } },
 };
 
@@ -226,7 +226,7 @@ const PERIODOS = [
 ];
 
 // Tropas. ataque: fuerza al atacar. defensa: fuerza al defender Roma.
-// Cada soldado ocupa 1 lugar de vivienda y come 1 de comida por turno.
+// Cada soldado ocupa 1 lugar de vivienda y come 1 de comida por año.
 const UNIDADES = {
   milicia:     { nombre: "Milicia",     icono: "🗡️", ataque: 1, defensa: 2, costo: { oro: 8, comida: 5 },               edificio: "cuartel" },
   lanceros:    { nombre: "Lanceros",    icono: "🔱", ataque: 2, defensa: 4, costo: { oro: 12, madera: 8 },              edificio: "cuartel",  requiere: "bronce" },
@@ -245,12 +245,12 @@ const UNIDADES = {
 //   color: color de su territorio en el mapa
 //   ciudad, x, y: su capital (columna y fila del mapa, empezando en 0).
 //         Si conquistás la capital, el pueblo entero se rinde y todo su territorio pasa a ser tuyo.
-//   fuerza: tamaño de su ejército al empezar. crece: cuánto suma por turno.
+//   fuerza: tamaño de su ejército al empezar. crece: cuánto suma por año.
 //   muro: bonus de las murallas de su capital al defenderse (0.5 = +50%).
-//   primerAtaque: turno en que te declaran la guerra y marchan sobre Roma.
+//   primerAtaque: año en que te declaran la guerra y marchan sobre Roma.
 //                 Si no tiene, el pueblo vive en paz hasta que vos le declares la guerra.
-//   cada: turnos entre un ataque y el siguiente mientras están en guerra.
-//   botin: lo que ganás al tomar su capital. tributo: lo que te pagan cada turno después.
+//   cada: años entre un ataque y el siguiente mientras están en guerra.
+//   botin: lo que ganás al tomar su capital. tributo: lo que te pagan cada año después.
 const ENEMIGOS = {
   // --- Italia ---
   umbros:   { nombre: "Umbros",   ciudad: "Iguvium",  icono: "🐑", letra: "U", color: "#ffaec9", x: 104, y: 201,
@@ -305,7 +305,7 @@ const ENEMIGOS = {
 // con poco apoyo, rinde menos.
 //   minimo / maximo: con 0 de apoyo los edificios e impuestos rinden "minimo" (0.7 = 70%),
 //                    con 100 rinden "maximo" (1.3 = 130%). Con 50 rinden normal.
-//   base: el apoyo al que vuelve Roma con el tiempo. Cada turno el apoyo se acerca "vuelve" puntos a su base.
+//   base: el apoyo al que vuelve Roma con el tiempo. Cada año el apoyo se acerca "vuelve" puntos a su base.
 //   edificios: cuánto sube la base mientras el edificio esté en pie (y lo suman de golpe al terminarse).
 //   sucesos: cuánto suma o resta cada cosa que pasa.
 // Las tecnologías con efecto "apoyo" también suben la base (por ejemplo, Fortificaciones).
@@ -326,7 +326,7 @@ const APOYO = {
     conquista: 15,    // conquistás un pueblo (tomás su capital)
     zona: 3,          // le ganás una zona a otro pueblo
     derrota: -10,     // perdés un ataque contra otro pueblo
-    hambre: -3,       // cada turno sin comida
+    hambre: -3,       // cada año sin comida
   },
 };
 
@@ -343,7 +343,7 @@ const ATAQUES_ENEMIGOS = { probZona: 0.35, probCercana: 0.6, ejercitoZona: 0.5, 
 //   da:      lo que recibís
 //   porHabitante: recursos extra por cada habitante (por ejemplo, un impuesto especial)
 //   apoyo:   cuánto sube (+) o baja (-) el apoyo
-//   espera:  turnos hasta poder repetirla
+//   espera:  años hasta poder repetirla
 //   requiere: edificio terminado que hace falta (opcional)
 const ACCIONES = {
   pan:       { nombre: "Repartir pan", icono: "🍞", desc: "Regalás trigo de los graneros a los pobres de Roma.",
@@ -365,7 +365,7 @@ const ACCIONES = {
 };
 
 // Explorar: un habitante libre sale de viaje y vuelve con lo que vio.
-// porTurno: casillas que avanza por turno (tarda 1 turno cada 4 casillas de distancia a tu territorio).
+// porTurno: casillas que avanza por año (tarda 1 año cada 4 casillas de distancia a tu territorio).
 // radio: cuánto descubre alrededor de la zona a la que fue (2 = un cuadrado de 5 x 5 casillas).
 // probHallazgo: chance de que traiga algo de lo que encontró en el camino.
 const EXPLORACION = {
@@ -418,10 +418,10 @@ const NIVELES = {
   habitantes: 10,
 };
 
-// Botón "Incitar inmigración": pagás oro y llega gente nueva (una vez por turno, si hay lugar)
+// Botón "Incitar inmigración": pagás oro y llega gente nueva (una vez por año, si hay lugar)
 const INMIGRACION = { costo: { oro: 20 }, habitantes: 3 };
 
-// Eventos al azar al empezar cada turno.
+// Eventos al azar al empezar cada año.
 // efecto: recursos que suman o restan. habitantes: gente que llega o se va.
 const EVENTOS_CIUDAD = [
   { texto: "Cosecha abundante: +15 de comida.", efecto: { comida: 15 } },

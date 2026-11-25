@@ -85,7 +85,7 @@ const descubierto = (id) => estado.duenos.some((d, i) => d === id && estado.vist
 
 // ---------- Exploración ----------
 
-// Cuánto tarda un explorador: 1 turno por cada EXPLORACION.porTurno casillas desde la zona tuya más cercana
+// Cuánto tarda un explorador: 1 año por cada EXPLORACION.porTurno casillas desde la zona tuya más cercana
 function turnosViaje(x, y) {
   let d = Infinity;
   estado.duenos.forEach((dueno, i) => {
@@ -106,7 +106,7 @@ function explorar(x, y) {
   if (!puedeExplorar(x, y).ok) return false;
   const t = turnosViaje(x, y);
   estado.exploradores.push({ x, y, vuelve: estado.turno + t });
-  anotar(`🧭 Un explorador sale hacia lo desconocido. Vuelve en ${t} turno${t > 1 ? "s" : ""}.`);
+  anotar(`🧭 Un explorador sale hacia lo desconocido. Vuelve en ${t} año${t > 1 ? "s" : ""}.`);
   return true;
 }
 
@@ -231,7 +231,7 @@ function puedeAtacarZona(x, y) {
   }
   if (!alcanza(costoZona(x, y))) return { ok: false, motivo: `Te falta ⚖️ poder político: quedarte con esta zona cuesta ${costoZona(x, y).poder} y tenés ${Math.floor(estado.rec.poder)}.` };
   if (soldados() === 0) return { ok: false, motivo: "No tenés soldados. Entrenalos en la pestaña ⚔️ Ejército." };
-  if (soldadosListos() === 0) return { ok: false, motivo: "Todos tus soldados ya pelearon este turno y descansan. El turno que viene vuelven a estar listos." };
+  if (soldadosListos() === 0) return { ok: false, motivo: "Todos tus soldados ya pelearon este año y descansan. El año que viene vuelven a estar listos." };
   return { ok: true };
 }
 
@@ -319,7 +319,7 @@ function soldados() {
   return n;
 }
 
-// Soldados que todavía no pelearon este turno (los que pelearon descansan hasta el turno siguiente)
+// Soldados que todavía no pelearon este año (los que pelearon descansan hasta el año siguiente)
 const listos = (u) => Math.max(0, estado.ejercito[u] - ((estado.cansadas || {})[u] || 0));
 function soldadosListos() {
   let n = 0;
@@ -409,7 +409,7 @@ function puedeAccion(id) {
   const a = ACCIONES[id];
   if (a.requiere && cuenta(a.requiere) === 0) return { ok: false, motivo: `Necesitás ${articuloEd(a.requiere)} ${EDIFICIOS[a.requiere].nombre} terminado.` };
   const faltan = accionLista(id) - estado.turno;
-  if (faltan > 0) return { ok: false, motivo: `Podés repetirla en ${faltan} turno${faltan > 1 ? "s" : ""}.` };
+  if (faltan > 0) return { ok: false, motivo: `Podés repetirla en ${faltan} año${faltan > 1 ? "s" : ""}.` };
   if (a.costo && !alcanza(a.costo)) return { ok: false, motivo: "No te alcanzan los recursos." };
   return { ok: true };
 }
@@ -431,7 +431,7 @@ function hacerAccion(id) {
 
 // ---------- Producción ----------
 
-// Devuelve lo que entra y sale por turno, recurso por recurso
+// Devuelve lo que entra y sale por año, recurso por recurso
 function balance() {
   const b = { comida: 0, madera: 0, piedra: 0, oro: 0, ciencia: 0, poder: 0 };
   const efi = eficiencia() * productividad();
@@ -479,7 +479,7 @@ function construir(ciudad, lote, tipo) {
   const ed = EDIFICIOS[tipo];
   pagar(ed.costo);
   lotes[lote] = { tipo, falta: ed.turnos };
-  anotar(`🚧 Empieza la obra en ${nombreCiudad(ciudad)}: ${ed.nombre} (${ed.turnos} turno${ed.turnos > 1 ? "s" : ""}).`);
+  anotar(`🚧 Empieza la obra en ${nombreCiudad(ciudad)}: ${ed.nombre} (${ed.turnos} año${ed.turnos > 1 ? "s" : ""}).`);
   return true;
 }
 
@@ -828,7 +828,7 @@ function atacarZona(x, y, envio) {
     e.fuerza = Math.max(1, e.fuerza * (1 - r.perdidaGanador * 0.8));
     anotar(`💀 Derrota en ${lugar}. Volvieron ${enviados - muertos} de ${enviados} soldados.${cambiarApoyo(APOYO.sucesos.derrota)}`, "mal");
   }
-  // Los que vuelven quedan cansados hasta el turno siguiente; los que se quedaron en casa pueden seguir atacando
+  // Los que vuelven quedan cansados hasta el año siguiente; los que se quedaron en casa pueden seguir atacando
   estado.cansadas = estado.cansadas || {};
   for (const u in grupo) {
     estado.ejercito[u] += grupo[u];
@@ -978,7 +978,7 @@ function defenderRoma(id) {
 const lugarLibre = () => capacidad() - estado.habitantes - soldados();
 
 function puedeInmigracion() {
-  if (estado.inmigroEsteTurno) return { ok: false, motivo: "Ya lo hiciste este turno." };
+  if (estado.inmigroEsteTurno) return { ok: false, motivo: "Ya lo hiciste este año." };
   if (lugarLibre() <= 0) return { ok: false, motivo: "No hay lugar: construí casas." };
   if (!alcanza(INMIGRACION.costo)) return { ok: false, motivo: "No te alcanza el oro." };
   return { ok: true };
@@ -994,7 +994,7 @@ function incitarInmigracion() {
   return true;
 }
 
-// ---------- Fin de turno ----------
+// ---------- Fin de año ----------
 
 function terminarTurno() {
   if (estado.terminado) return;
@@ -1055,7 +1055,7 @@ function terminarTurno() {
       if (!e.guerra) anotar(`⚔️ ¡Los ${datos.nombre.toLowerCase()} le declaran la guerra a Roma!`, "mal");
       e.guerra = true;
       e.marcha = { fuerza: Math.round(e.fuerza * 0.6), llega: e.proximo, objetivo: elegirObjetivo(id) };
-      anotar(`⚠️ ¡Los ${datos.nombre.toLowerCase()} marchan hacia ${nombreObjetivo(e.marcha)}! Llegan en ${e.proximo - estado.turno} turnos con unos ${estimar(e.marcha.fuerza)} de fuerza.`, "mal");
+      anotar(`⚠️ ¡Los ${datos.nombre.toLowerCase()} marchan hacia ${nombreObjetivo(e.marcha)}! Llegan en ${e.proximo - estado.turno} años con unos ${estimar(e.marcha.fuerza)} de fuerza.`, "mal");
       if (!vista(datos.x, datos.y)) {
         revelar(datos.x, datos.y, 1);
         anotar(`👀 Tus vigías siguen las huellas y descubren de dónde vienen: ${datos.ciudad}. Ya aparece en el mapa.`);
