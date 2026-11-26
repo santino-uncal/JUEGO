@@ -127,13 +127,23 @@ const descubierto = (id) => estado.duenos.some((d, i) => d === id && estado.vist
 
 // ---------- Exploración ----------
 
+// Mejora de los exploradores por tecnologías ("velocidad", "radio" o "hallazgo")
+function mejoraExploracion(clave) {
+  let total = 0;
+  for (const id in estado.techs) {
+    const e = TECNOLOGIAS[id] && TECNOLOGIAS[id].efecto && TECNOLOGIAS[id].efecto.exploracion;
+    if (e && e[clave]) total += e[clave];
+  }
+  return total;
+}
+
 // Cuánto tarda un explorador: 1 año por cada EXPLORACION.porTurno casillas desde la zona tuya más cercana
 function turnosViaje(x, y) {
   let d = Infinity;
   estado.duenos.forEach((dueno, i) => {
     if (dueno === "roma") d = Math.min(d, distancia(x, y, i % MAPA_ANCHO, Math.floor(i / MAPA_ANCHO)));
   });
-  return Math.max(1, Math.ceil(d / EXPLORACION.porTurno));
+  return Math.max(1, Math.ceil(d / (EXPLORACION.porTurno + mejoraExploracion("velocidad"))));
 }
 
 function puedeExplorar(x, y) {
@@ -158,12 +168,12 @@ function volverExploradores() {
   for (const ex of estado.exploradores) {
     if (estado.turno < ex.vuelve) { quedan.push(ex); continue; }
     const antes = Object.keys(ENEMIGOS).filter(descubierto);
-    revelar(ex.x, ex.y, EXPLORACION.radio);
+    revelar(ex.x, ex.y, EXPLORACION.radio + mejoraExploracion("radio"));
     let texto = "🧭 Vuelve un explorador y dibuja una parte nueva del mapa.";
     for (const id in ENEMIGOS) {
       if (descubierto(id) && !antes.includes(id)) texto += ` ¡Descubrió las tierras de los ${ENEMIGOS[id].nombre.toLowerCase()}!`;
     }
-    if (Math.random() < EXPLORACION.probHallazgo) {
+    if (Math.random() < EXPLORACION.probHallazgo + mejoraExploracion("hallazgo")) {
       const h = EXPLORACION.hallazgos[Math.floor(Math.random() * EXPLORACION.hallazgos.length)];
       for (const r in h.efecto) estado.rec[r] += h.efecto[r];
       const premio = Object.entries(h.efecto).map(([r, v]) => `+${v} ${RECURSOS[r].icono}`).join(" ");

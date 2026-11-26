@@ -83,6 +83,8 @@ const EDIFICIOS = {
 //   crecimiento: 1     llega 1 habitante más por año (si hay comida y lugar)
 //   tributo:     1     los pueblos conquistados pagan +100% de tributo
 //   descuentoTropas: 0.25   los soldados cuestan 25% menos
+//   exploracion: { velocidad: n, radio: n, hallazgo: n }  los exploradores avanzan n casillas más por año,
+//                descubren n casillas más alrededor y tienen más chance de traer algo (0.2 = +20%)
 //   trabajadores: { edificio: n }  cada edificio de ese tipo necesita n trabajadores más (n negativo = menos)
 // necesita (opcional): edificio que hay que tener terminado para que el efecto funcione
 //
@@ -115,6 +117,8 @@ const TECNOLOGIAS = {
                  efecto: { mejora: { biblioteca: { ciencia: 2 } } } },
   filosofia:   { nombre: "Filosofía",    icono: "🦉", periodo: "monarquia", fila: 6.5, costo: 45, desc: "Los sabios debaten en la Regia: +2 de conocimiento por año.", requiere: ["escritura"],
                  efecto: { mejora: { regia: { ciencia: 2 } } } },
+  cartografia: { nombre: "Cartografía",  icono: "🧭", periodo: "monarquia", fila: 8, costo: 40, desc: "Mapas y brújulas para los viajeros: tus exploradores viajan más rápido (6 casillas por año en vez de 4), descubren una zona más grande y traen cosas más seguido.", requiere: ["escritura"],
+                 efecto: { exploracion: { velocidad: 2, radio: 1, hallazgo: 0.2 } } },
 
   // Reyes sabinos
   equitacion:  { nombre: "Equitación",   icono: "🐴", periodo: "monarquia", fila: 0, costo: 70, desc: "Desbloquea Establo y Caballería.", requiere: ["riego"] },
