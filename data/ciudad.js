@@ -433,6 +433,18 @@ const FUNDACION = {
   nombres: ["Ostia", "Tibur", "Antium", "Ardea", "Lavinium", "Praeneste", "Tusculum", "Gabii"],
 };
 
+// Lo que rodea a cada ciudad en el mapa: bosques y montañas cerca hacen rendir más a algunos edificios.
+//   radio: hasta qué distancia de la ciudad se cuentan las casillas (2 = dos casillas para cada lado)
+//   edificios: para cada edificio, qué terreno lo ayuda (letra de MAPA.terrenos), qué recurso suma,
+//              cuánto por cada casilla de ese terreno y hasta cuánto como máximo
+const ALREDEDORES = {
+  radio: 2,
+  edificios: {
+    aserradero: { terreno: "f", recurso: "madera", porCasilla: 1, maximo: 4 },
+    cantera:    { terreno: "m", recurso: "piedra", porCasilla: 1, maximo: 4 },
+  },
+};
+
 // Íconos de las ciudades en el mapa y en los botones de arriba de la ciudad
 const ICONOS_CIUDAD = {
   roma: "👑",          // Roma

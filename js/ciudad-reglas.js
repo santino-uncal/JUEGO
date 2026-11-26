@@ -570,13 +570,15 @@ function hacerAccion(id) {
 function balance() {
   const b = { comida: 0, madera: 0, piedra: 0, oro: 0, ciencia: 0, poder: 0 };
   const efi = eficiencia() * productividad();
-  for (const l of todosLotes()) {
-    if (!l || l.falta > 0) continue;
-    const ed = EDIFICIOS[l.tipo];
-    const factor = ed.trabajadores ? efi : productividad();
-    for (const r in b) {
-      const valor = ((ed.produce && ed.produce[r]) || 0) + mejoraEdificio(l.tipo, r);
-      b[r] += valor * factor;
+  for (let i = 0; i <= estado.colonias.length; i++) {
+    for (const l of lotesDe(i)) {
+      if (!l || l.falta > 0) continue;
+      const ed = EDIFICIOS[l.tipo];
+      const factor = ed.trabajadores ? efi : productividad();
+      for (const r in b) {
+        const valor = ((ed.produce && ed.produce[r]) || 0) + mejoraEdificio(l.tipo, r) + extraAlrededor(i, l.tipo, r);
+        b[r] += valor * factor;
+      }
     }
   }
   // Impuestos: cada 3 habitantes pagan 1 de oro
@@ -652,6 +654,31 @@ const nombreCiudad = (i) => (i === 0 ? "Roma" : estado.colonias[i - 1].nombre);
 function coloniaEn(x, y) {
   return (estado.colonias || []).findIndex((c) => c.x === x && c.y === y) + 1;
 }
+
+// ---------- Lo que rodea a cada ciudad (bosques, montañas) ----------
+
+// Dónde está una ciudad en el mapa: 0 = Roma, 1 en adelante = fundadas y conquistadas
+const posCiudad = (i) => (i === 0 ? MAPA.roma : estado.colonias[i - 1]);
+
+// Cuántas casillas de un terreno hay cerca de (x, y)
+function contarAlrededor(x, y, letra, radio = ALREDEDORES.radio) {
+  let n = 0;
+  for (let dy = -radio; dy <= radio; dy++)
+    for (let dx = -radio - 1; dx <= radio + 1; dx++)
+      if (dentro(x + dx, y + dy) && distancia(x, y, x + dx, y + dy) <= radio && terreno(x + dx, y + dy) === letra) n++;
+  return n;
+}
+
+// Lo que un edificio de una ciudad produce de más por lo que tiene alrededor (en un lugar del mapa)
+function extraEnLugar(x, y, tipo, recurso) {
+  const a = ALREDEDORES.edificios[tipo];
+  if (!a || a.recurso !== recurso) return 0;
+  return Math.min(a.maximo, contarAlrededor(x, y, a.terreno) * a.porCasilla);
+}
+const extraAlrededor = (i, tipo, recurso) => {
+  const p = posCiudad(i);
+  return p ? extraEnLugar(p.x, p.y, tipo, recurso) : 0;
+};
 
 // Ícono de cada ciudad (Roma, fundada o conquistada)
 const iconoCiudad = (i) => ICONOS_CIUDAD[i === 0 ? "roma" : esConquistada(i) ? "conquistada" : "fundada"];

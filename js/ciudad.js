@@ -50,6 +50,25 @@ function textoProduce(ed) {
   return partes.join(" · ");
 }
 
+// Lo que un edificio produce de más por los bosques o montañas cerca de un lugar del mapa
+function textoExtraLugar(x, y, tipo) {
+  const a = ALREDEDORES.edificios[tipo];
+  if (!a) return "";
+  const extra = extraEnLugar(x, y, tipo, a.recurso);
+  const ter = MAPA.terrenos[a.terreno];
+  const n = contarAlrededor(x, y, a.terreno);
+  return extra > 0
+    ? `+${extra} ${RECURSOS[a.recurso].icono} más por tener ${n} ${ter.icono} cerca`
+    : `sin ${ter.icono} ${ter.nombre.toLowerCase()} cerca: no rinde de más`;
+}
+const textoExtra = (tipo, ciudad) => { const p = posCiudad(ciudad); return p ? textoExtraLugar(p.x, p.y, tipo) : ""; };
+
+// Bosques y montañas alrededor de un lugar, p. ej. "🌲 5 · 🏔️ 1"
+function textoEntorno(x, y) {
+  const letras = [...new Set(Object.values(ALREDEDORES.edificios).map((a) => a.terreno))];
+  return letras.map((t) => `${MAPA.terrenos[t].icono} ${contarAlrededor(x, y, t)}`).join(" · ");
+}
+
 const signo = (n) => (n > 0 ? "+" + n : "" + n);
 
 // ---------- Dibujo ----------
@@ -89,7 +108,8 @@ function dibujarCiudad() {
   const maximo = nivelMaximo(ciudadVista);
   const pn = puedeSubirNivel(ciudadVista);
   $("nivel-ciudad").innerHTML = `<span>${iconoCiudad(ciudadVista)} <b>${nombreCiudad(ciudadVista)}</b> · nivel <b>${nivel}</b> de ${maximo}
-      · ${lotesDe(ciudadVista).length} terrenos</span>` +
+      · ${lotesDe(ciudadVista).length} terrenos
+      · <span title="Bosques y montañas cerca de la ciudad: hacen rendir más a los aserraderos y las canteras">cerca: ${textoEntorno(posCiudad(ciudadVista).x, posCiudad(ciudadVista).y)}</span></span>` +
     (nivel >= maximo ? `<small>Llegó a su tamaño máximo.</small>` :
       `<button data-accion="subir-nivel" ${pn.ok && !estado.terminado ? "" : "disabled"}>⬆️ Agrandar a nivel ${nivel + 1}
         <small>(+${NIVELES.terrenos} terrenos · ${textoCosto(costoNivel(ciudadVista))} · 👥 ${genteParaNivel(nivel + 1)})</small></button>` +
@@ -161,6 +181,7 @@ function panelConstruir() {
     let html = `<h3>${ed.icono} ${ed.nombre}</h3><p>${ed.desc}</p>`;
     const prod = textoProduce(ed);
     if (prod) html += `<p>Da: <b>${prod}</b>${ed.trabajadores ? ` (con ${trabajadoresDe(l.tipo)} trabajador${trabajadoresDe(l.tipo) > 1 ? "es" : ""})` : ""}</p>`;
+    if (ALREDEDORES.edificios[l.tipo]) html += `<p class="ayuda">${textoExtra(l.tipo, ciudadVista)}.</p>`;
     if (l.falta > 0) html += `<p class="ayuda">En obra: faltan ${l.falta} año(s).</p>`;
     if (moviendo !== null) {
       html += `<p class="ayuda">↔️ Tocá el terreno al que lo querés llevar. Si ahí hay otro edificio, cambian de lugar.</p>
@@ -182,7 +203,7 @@ function panelConstruir() {
         <div class="item-icono">${bloqueado ? "🔒" : ed.icono}</div>
         <div class="item-texto">
           <b>${ed.nombre}</b> <small>· ${ed.turnos} año${ed.turnos > 1 ? "s" : ""}${ed.trabajadores ? ` · 👷 ${trabajadoresDe(tipo)}` : ""}</small><br>
-          <small>${ed.desc}${textoProduce(ed) ? " <b>" + textoProduce(ed) + "</b>" : ""}</small><br>
+          <small>${ed.desc}${textoProduce(ed) ? " <b>" + textoProduce(ed) + "</b>" : ""}${ALREDEDORES.edificios[tipo] ? ` <i>(${textoExtra(tipo, ciudadVista)})</i>` : ""}</small><br>
           <small>Cuesta: ${textoCosto(ed.costo)}</small>
           ${p.ok ? "" : `<br><small class="motivo">${p.motivo}</small>`}
         </div>
@@ -670,6 +691,7 @@ function infoZona() {
     return `<h3>${ter.icono} ${ter.nombre} · territorio romano</h3>
       ${prohibido ? `<p class="ayuda">No se puede fundar una ciudad en ${ter.nombre.toLowerCase()}.</p>` : `<p>🏘️ Podés fundar una ciudad nueva: ${FUNDACION.lotes} terrenos más para construir.<br>
       <small>Cuesta: ${textoCosto(costoFundar())} y necesita ${FUNDACION.colonos} 👥 habitantes libres.</small></p>
+      <p><small>Cerca: ${textoEntorno(x, y)}<br>${Object.keys(ALREDEDORES.edificios).map((t) => `${EDIFICIOS[t].icono} ${EDIFICIOS[t].nombre}: ${textoExtraLugar(x, y, t)}`).join("<br>")}</small></p>
       ${p.ok ? "" : `<p class="motivo"><small>${p.motivo}</small></p>`}
       <button data-accion="fundar" ${p.ok && !estado.terminado ? "" : "disabled"}>🏘️ Fundar ${FUNDACION.nombres[fundadas()] || "ciudad"}</button>`}`;
   }
