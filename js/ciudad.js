@@ -366,6 +366,7 @@ function tarjetaEnemigo(id) {
       <div class="item-texto">
         <b>${muestra} ${d.nombre}</b> <small>· capital: ${d.ciudad} · ${zonasDe(id)} zonas</small><br>
         <small>${d.desc}</small><br>
+        ${d.lejano ? `<small>🌍 Queda lejos del Mediterráneo: no hace falta conquistarlo para ganar.</small><br>` : ""}
         <small>Ejército: ~${estimar(e.fuerza)} · Defensa de su capital: ~${estimar(defensaEnemiga(id))}${d.muro ? ` (murallas +${d.muro * 100}%)` : ""}</small><br>
         ${estadoTexto}
       </div>
@@ -1121,7 +1122,7 @@ function mostrarFin() {
     <button data-accion="nueva">Jugar de nuevo</button>`);
     return;
   }
-  abrirModal(`<h2>¡Ave, ${PERIODOS[periodoActual()].titulo}! 🏆</h2><p>Sometiste a todos los pueblos vecinos en ${estado.turno} años. Roma domina el mundo.</p>
+  abrirModal(`<h2>¡Ave, ${PERIODOS[periodoActual()].titulo}! 🏆</h2><p>Sometiste a todos los pueblos del Mediterráneo en ${estado.turno} años. Roma domina el <i>Mare Nostrum</i>.</p>
     <button data-accion="nueva">Jugar de nuevo</button>`);
 }
 

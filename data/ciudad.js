@@ -279,6 +279,7 @@ const BARCOS_GUERRA = {
 };
 
 // Pueblos del mapa. Cada uno tiene su territorio en el mapa (ver MAPA.duenos).
+//   lejano: true si queda fuera del Mediterráneo: no hace falta conquistarlo para ganar la partida
 //   singular: true si se nombra en singular ("la Liga griega" en vez de "los ...")
 //   letra: con qué letra aparece su territorio en MAPA.duenos
 //   color: color de su territorio en el mapa
@@ -339,13 +340,13 @@ const ENEMIGOS = {
               fuerza: 18, crece: 1.5, muro: 0, cada: 8, botin: { comida: 80, oro: 60 }, tributo: { comida: 4, oro: 3 },
               desc: "Pastores del oeste de Hispania, en la punta de Europa." },
   // --- Más lejos ---
-  britanos: { nombre: "Celtas", ciudad: "Camulodunum", icono: "🍀", letra: "W", color: "#fff200", x: 96, y: 89,
+  britanos: { nombre: "Celtas", lejano: true, ciudad: "Camulodunum", icono: "🍀", letra: "W", color: "#fff200", x: 96, y: 89,
               fuerza: 22, crece: 1.8, muro: 0.25, cada: 8, botin: { madera: 100, oro: 80 }, tributo: { madera: 4, oro: 4 },
               desc: "Tribus de las islas de Britania e Hibernia, con druidas y carros de guerra. Para llegar necesitás ⛵ Navegación." },
-  germanos: { nombre: "Germanos", ciudad: "Teutoburgo", icono: "🐻", letra: "G", color: "#00ff40", x: 168, y: 115,
+  germanos: { nombre: "Germanos", lejano: true, ciudad: "Teutoburgo", icono: "🐻", letra: "G", color: "#00ff40", x: 168, y: 115,
               fuerza: 32, crece: 2.6, muro: 0, cada: 6, botin: { madera: 150, comida: 80 }, tributo: { madera: 6, comida: 4 },
               desc: "Tribus germánicas de los bosques del norte. Muchos guerreros y muy pocas ciudades." },
-  dacios:   { nombre: "Dacios", ciudad: "Sarmizegetusa", icono: "🐉", letra: "D", color: "#00ffff", x: 291, y: 152,
+  dacios:   { nombre: "Dacios", lejano: true, ciudad: "Sarmizegetusa", icono: "🐉", letra: "D", color: "#00ffff", x: 291, y: 152,
               fuerza: 24, crece: 2, muro: 0.5, cada: 7, botin: { oro: 150, piedra: 60 }, tributo: { oro: 6, piedra: 3 },
               desc: "Montañeses de los Cárpatos, ricos en oro y con fortalezas en las alturas." },
   tracios:  { nombre: "Tracios", ciudad: "Seutópolis", icono: "🐎", letra: "X", color: "#8080ff", x: 299, y: 183,
@@ -357,16 +358,16 @@ const ENEMIGOS = {
   bereberes:{ nombre: "Bereberes", ciudad: "Garama", icono: "🏜️", letra: "Q", color: "#ffff80", x: 187, y: 310,
               fuerza: 16, crece: 1.2, muro: 0, cada: 9, botin: { oro: 80, comida: 40 }, tributo: { oro: 4, comida: 2 },
               desc: "Tribus del desierto que llevan caravanas por el Sahara." },
-  kush:     { nombre: "Reino de Kush", singular: true, ciudad: "Napata", icono: "🏹", letra: "V", color: "#804040", x: 343, y: 411,
+  kush:     { nombre: "Reino de Kush", lejano: true, singular: true, ciudad: "Napata", icono: "🏹", letra: "V", color: "#804040", x: 343, y: 411,
               fuerza: 45, crece: 3, muro: 0.5, cada: 7, botin: { oro: 300, piedra: 80 }, tributo: { oro: 12, piedra: 3 },
               desc: "Reino de arqueros y pirámides al sur de Egipto, sobre el río Nilo." },
-  damot:    { nombre: "Reino de Damot", singular: true, ciudad: "Yeha", icono: "⛰️", letra: "F", color: "#8080c0", x: 398, y: 476,
+  damot:    { nombre: "Reino de Damot", lejano: true, singular: true, ciudad: "Yeha", icono: "⛰️", letra: "F", color: "#8080c0", x: 398, y: 476,
               fuerza: 35, crece: 2.4, muro: 0.5, cada: 8, botin: { oro: 200, comida: 100 }, tributo: { oro: 8, comida: 4 },
               desc: "Reino de las montañas del Cuerno de África, con templos de piedra." },
-  indios:   { nombre: "Confederación india", singular: true, ciudad: "Pataliputra", icono: "🐅", letra: "O", color: "#0000a0", x: 737, y: 382,
+  indios:   { nombre: "Confederación india", lejano: true, singular: true, ciudad: "Pataliputra", icono: "🐅", letra: "O", color: "#0000a0", x: 737, y: 382,
               fuerza: 90, crece: 5, muro: 0.75, cada: 6, botin: { oro: 500, ciencia: 150 }, tributo: { oro: 20, ciencia: 6 },
               desc: "Los reinos de la India, a orillas del Ganges, con elefantes de guerra. Están en la otra punta del mundo." },
-  zhou:     { nombre: "Dinastía Zhou", singular: true, ciudad: "Luoyang", icono: "🐲", letra: "J", color: "#008000", x: 949, y: 281,
+  zhou:     { nombre: "Dinastía Zhou", lejano: true, singular: true, ciudad: "Luoyang", icono: "🐲", letra: "J", color: "#008000", x: 949, y: 281,
               fuerza: 100, crece: 6, muro: 0.75, cada: 6, botin: { oro: 600, ciencia: 200 }, tributo: { oro: 25, ciencia: 8 },
               desc: "El gran reino de China, en el fin del mundo conocido. Casi nadie en Roma sabe que existe." },
 };
