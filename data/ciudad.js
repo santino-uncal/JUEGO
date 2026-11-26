@@ -440,6 +440,7 @@ const FUNDACION = {
 const ALREDEDORES = {
   radio: 2,
   edificios: {
+    granja:     { terreno: "f", recurso: "comida", porCasilla: 1, maximo: 3 },
     aserradero: { terreno: "f", recurso: "madera", porCasilla: 1, maximo: 4 },
     cantera:    { terreno: "m", recurso: "piedra", porCasilla: 1, maximo: 4 },
   },

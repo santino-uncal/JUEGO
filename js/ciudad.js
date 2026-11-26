@@ -109,7 +109,7 @@ function dibujarCiudad() {
   const pn = puedeSubirNivel(ciudadVista);
   $("nivel-ciudad").innerHTML = `<span>${iconoCiudad(ciudadVista)} <b>${nombreCiudad(ciudadVista)}</b> · nivel <b>${nivel}</b> de ${maximo}
       · ${lotesDe(ciudadVista).length} terrenos
-      · <span title="Bosques y montañas cerca de la ciudad: hacen rendir más a los aserraderos y las canteras">cerca: ${textoEntorno(posCiudad(ciudadVista).x, posCiudad(ciudadVista).y)}</span></span>` +
+      · <span title="Bosques y montañas cerca de la ciudad: hacen rendir más a las granjas, los aserraderos y las canteras">cerca: ${textoEntorno(posCiudad(ciudadVista).x, posCiudad(ciudadVista).y)}</span></span>` +
     (nivel >= maximo ? `<small>Llegó a su tamaño máximo.</small>` :
       `<button data-accion="subir-nivel" ${pn.ok && !estado.terminado ? "" : "disabled"}>⬆️ Agrandar a nivel ${nivel + 1}
         <small>(+${NIVELES.terrenos} terrenos · ${textoCosto(costoNivel(ciudadVista))} · 👥 ${genteParaNivel(nivel + 1)})</small></button>` +
