@@ -55,18 +55,19 @@ function textoExtraLugar(x, y, tipo) {
   const a = ALREDEDORES.edificios[tipo];
   if (!a) return "";
   const extra = extraEnLugar(x, y, tipo, a.recurso);
-  const ter = MAPA.terrenos[a.terreno];
-  const n = contarAlrededor(x, y, a.terreno);
+  const letras = Object.keys(a.terrenos);
+  const tiene = letras.filter((t) => contarAlrededor(x, y, t) > 0).map((t) => `${contarAlrededor(x, y, t)} ${simboloTerreno(t)}`);
   return extra > 0
-    ? `+${extra} ${RECURSOS[a.recurso].icono} más por tener ${n} ${ter.icono} cerca`
-    : `sin ${ter.icono} ${ter.nombre.toLowerCase()} cerca: no rinde de más`;
+    ? `+${extra} ${RECURSOS[a.recurso].icono} más por tener ${tiene.join(" y ")} cerca`
+    : `sin ${letras.map((t) => `${simboloTerreno(t)} ${MAPA.terrenos[t].nombre.toLowerCase()}`).join(" ni ")} cerca: no rinde de más`;
 }
 const textoExtra = (tipo, ciudad) => { const p = posCiudad(ciudad); return p ? textoExtraLugar(p.x, p.y, tipo) : ""; };
+const simboloTerreno = (t) => MAPA.terrenos[t].simbolo || MAPA.terrenos[t].icono;
 
-// Bosques y montañas alrededor de un lugar, p. ej. "🌲 5 · 🏔️ 1"
+// Bosques, colinas y montañas alrededor de un lugar, p. ej. "🌲 5 · ⛰️ 0 · 🏔️ 1"
 function textoEntorno(x, y) {
-  const letras = [...new Set(Object.values(ALREDEDORES.edificios).map((a) => a.terreno))];
-  return letras.map((t) => `${MAPA.terrenos[t].icono} ${contarAlrededor(x, y, t)}`).join(" · ");
+  const letras = [...new Set(Object.values(ALREDEDORES.edificios).flatMap((a) => Object.keys(a.terrenos)))];
+  return letras.map((t) => `${simboloTerreno(t)} ${contarAlrededor(x, y, t)}`).join(" · ");
 }
 
 const signo = (n) => (n > 0 ? "+" + n : "" + n);
@@ -109,7 +110,7 @@ function dibujarCiudad() {
   const pn = puedeSubirNivel(ciudadVista);
   $("nivel-ciudad").innerHTML = `<span>${iconoCiudad(ciudadVista)} <b>${nombreCiudad(ciudadVista)}</b> · nivel <b>${nivel}</b> de ${maximo}
       · ${lotesDe(ciudadVista).length} terrenos
-      · <span title="Bosques y montañas cerca de la ciudad: hacen rendir más a las granjas, los aserraderos y las canteras">cerca: ${textoEntorno(posCiudad(ciudadVista).x, posCiudad(ciudadVista).y)}</span></span>` +
+      · <span title="Bosques, colinas y montañas cerca de la ciudad: hacen rendir más a las granjas, los aserraderos y las canteras">cerca: ${textoEntorno(posCiudad(ciudadVista).x, posCiudad(ciudadVista).y)}</span></span>` +
     (nivel >= maximo ? `<small>Llegó a su tamaño máximo.</small>` :
       `<button data-accion="subir-nivel" ${pn.ok && !estado.terminado ? "" : "disabled"}>⬆️ Agrandar a nivel ${nivel + 1}
         <small>(+${NIVELES.terrenos} terrenos · ${textoCosto(costoNivel(ciudadVista))} · 👥 ${genteParaNivel(nivel + 1)})</small></button>` +

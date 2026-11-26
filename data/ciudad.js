@@ -433,16 +433,16 @@ const FUNDACION = {
   nombres: ["Ostia", "Tibur", "Antium", "Ardea", "Lavinium", "Praeneste", "Tusculum", "Gabii"],
 };
 
-// Lo que rodea a cada ciudad en el mapa: bosques y montañas cerca hacen rendir más a algunos edificios.
+// Lo que rodea a cada ciudad en el mapa: bosques, colinas y montañas cerca hacen rendir más a algunos edificios.
 //   radio: hasta qué distancia de la ciudad se cuentan las casillas (2 = dos casillas para cada lado)
-//   edificios: para cada edificio, qué terreno lo ayuda (letra de MAPA.terrenos), qué recurso suma,
-//              cuánto por cada casilla de ese terreno y hasta cuánto como máximo
+//   edificios: para cada edificio, qué recurso suma, hasta cuánto como máximo, y qué terrenos lo ayudan
+//              (letra de MAPA.terrenos) con cuánto suma cada casilla (0.5 = 1 cada 2 casillas)
 const ALREDEDORES = {
   radio: 2,
   edificios: {
-    granja:     { terreno: "f", recurso: "comida", porCasilla: 1, maximo: 3 },
-    aserradero: { terreno: "f", recurso: "madera", porCasilla: 1, maximo: 4 },
-    cantera:    { terreno: "m", recurso: "piedra", porCasilla: 1, maximo: 4 },
+    granja:     { recurso: "comida", maximo: 3, terrenos: { f: 1 } },
+    aserradero: { recurso: "madera", maximo: 4, terrenos: { f: 1 } },
+    cantera:    { recurso: "piedra", maximo: 4, terrenos: { m: 1, h: 0.5 } },
   },
 };
 
@@ -538,7 +538,7 @@ const MAPA = {
     "~": { nombre: "Mar",      icono: "" },
     ".": { nombre: "Llanura",  icono: "" },
     "f": { nombre: "Bosque",   icono: "🌲" },
-    "h": { nombre: "Colinas",  icono: "" },
+    "h": { nombre: "Colinas",  icono: "", simbolo: "⛰️" },   // simbolo: se usa en los textos (en el mapa no se dibuja)
     "m": { nombre: "Montañas", icono: "🏔️" },
   },
   // Al atacar una zona que no es la capital, la defienden estos soldados de su ejército (0.35 = 35%),

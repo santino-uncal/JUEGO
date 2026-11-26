@@ -673,7 +673,9 @@ function contarAlrededor(x, y, letra, radio = ALREDEDORES.radio) {
 function extraEnLugar(x, y, tipo, recurso) {
   const a = ALREDEDORES.edificios[tipo];
   if (!a || a.recurso !== recurso) return 0;
-  return Math.min(a.maximo, contarAlrededor(x, y, a.terreno) * a.porCasilla);
+  let total = 0;
+  for (const t in a.terrenos) total += contarAlrededor(x, y, t) * a.terrenos[t];
+  return Math.min(a.maximo, Math.floor(total));
 }
 const extraAlrededor = (i, tipo, recurso) => {
   const p = posCiudad(i);
