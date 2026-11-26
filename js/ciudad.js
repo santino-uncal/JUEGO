@@ -12,11 +12,33 @@ let tecElegida = null;          // tecnología tocada en el árbol
 
 const $ = (id) => document.getElementById(id);
 
-function guardar() { localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(estado)); }
+// El mapa tiene cientos de miles de casillas: para que la partida entre en el navegador, las listas
+// de casillas se guardan "comprimidas" (cada valor con cuántas veces se repite seguido).
+// Ejemplo: [null, null, null, "roma", "roma"] → { rle: [null, 3, "roma", 2] }
+function comprimir(lista) {
+  const rle = [];
+  for (let i = 0; i < lista.length; i++) {
+    if (rle.length && rle[rle.length - 2] === lista[i]) rle[rle.length - 1]++;
+    else rle.push(lista[i], 1);
+  }
+  return { rle };
+}
+function descomprimir(c) {
+  if (!c || !c.rle) return c;
+  const lista = [];
+  for (let i = 0; i < c.rle.length; i += 2) for (let k = 0; k < c.rle[i + 1]; k++) lista.push(c.rle[i]);
+  return lista;
+}
+
+function guardar() {
+  const copia = { ...estado, duenos: comprimir(estado.duenos), visto: comprimir(estado.visto) };
+  localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(copia));
+}
 
 function cargar() {
   try {
     const d = JSON.parse(localStorage.getItem(CLAVE_GUARDADO));
+    if (d) { d.duenos = descomprimir(d.duenos); d.visto = descomprimir(d.visto); }
     if (d && d.lotes && d.lotes.length >= INICIO.lotes) {
       for (const id in d.techs) if (!TECNOLOGIAS[id]) delete d.techs[id];
       if (d.meta && !TECNOLOGIAS[d.meta]) d.meta = null;
@@ -429,13 +451,16 @@ function zoomMapa(factor, px, py) {
 function dibujarMapa() {
   const n = MAPA_ANCHO * MAPA_ALTO;
   const capa = { color: new Array(n), atacables: [], explorables: [], viajes: [], lugares: [] };
+  const viajes = new Set(estado.exploradores.map((ex) => ex.y * MAPA_ANCHO + ex.x));
+  const juntoAVisto = (x, y) => direcciones(y).some(([dx, dy]) => vista(x + dx, y + dy));
   for (let y = 0; y < MAPA_ALTO; y++) {
     for (let x = 0; x < MAPA_ANCHO; x++) {
       const i = y * MAPA_ANCHO + x;
-      if (!vista(x, y)) {
-        const viajando = estado.exploradores.some((ex) => ex.x === x && ex.y === y);
+      if (!estado.visto[i]) {
+        const viajando = viajes.has(i);
         if (viajando) capa.viajes.push(i);
-        if (viajando || puedeExplorar(x, y).ok) { capa.color[i] = "#4a3d2e"; capa.explorables.push(i); }
+        // (primero se mira si está pegada a algo visto: es lo más rápido y descarta casi todas)
+        if (viajando || (juntoAVisto(x, y) && puedeExplorar(x, y).ok)) { capa.color[i] = "#4a3d2e"; capa.explorables.push(i); }
         else capa.color[i] = "#2a231b";
         continue;
       }
@@ -454,6 +479,28 @@ function dibujarMapa() {
     const vivo = estado.enemigos[id].vivo;
     capa.lugares.push({ x: d.x, y: d.y, icono: ICONOS_CIUDAD[vivo ? "enemiga" : "conquistada"], nombre: d.ciudad, mio: !vivo });
   }
+  // De lejos el mapa se pinta como una imagen (mucho más rápido que dibujar cada hexágono):
+  // cada casilla son 2 píxeles de ancho y las filas impares se corren 1 píxel, como los hexágonos.
+  const img = document.createElement("canvas");
+  const anchoImg = 2 * MAPA_ANCHO + 1;
+  img.width = anchoImg; img.height = MAPA_ALTO;
+  const ictx = img.getContext("2d");
+  const datos = ictx.createImageData(anchoImg, MAPA_ALTO);
+  const pixeles = new Uint32Array(datos.data.buffer);   // un número por píxel (rojo, verde, azul y opacidad juntos)
+  const valor = new Map();
+  for (const c of new Set(capa.color)) {
+    const [r, g, b] = [1, 3, 5].map((k) => parseInt(c.substr(k, 2), 16));
+    valor.set(c, (255 << 24 | b << 16 | g << 8 | r) >>> 0);
+  }
+  for (let y = 0; y < MAPA_ALTO; y++) {
+    for (let x = 0; x < MAPA_ANCHO; x++) {
+      const v = valor.get(capa.color[y * MAPA_ANCHO + x]);
+      const p = y * anchoImg + 2 * x + (y & 1);
+      pixeles[p] = v; pixeles[p + 1] = v;
+    }
+  }
+  ictx.putImageData(datos, 0, 0);
+  capa.imagen = img;
   capaMapa = capa;
   pintarMapa();
   $("mapa-info").innerHTML = infoCasilla();
@@ -498,15 +545,21 @@ function pintarMapa() {
     : hexagono(path, x, y, 1.04));
 
   // Colores de cada casilla (se juntan las del mismo color para pintar más rápido)
-  const porColor = new Map();
-  for (let y = y0; y <= y1; y++) {
-    for (let x = x0; x <= x1; x++) {
-      const c = capaMapa.color[y * MAPA_ANCHO + x];
-      if (!porColor.has(c)) porColor.set(c, new Path2D());
-      forma(porColor.get(c), x, y);
+  // (hasta un zoom mediano se usa la imagen; de cerca, hexágonos de verdad)
+  if (e < 10) {
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(capaMapa.imagen, camara.ox, camara.oy + (RADIO_HEX - FILA_HEX / 2) * e, (MAPA_ANCHO + 0.5) * e, MAPA_ALTO * FILA_HEX * e);
+  } else {
+    const porColor = new Map();
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const c = capaMapa.color[y * MAPA_ANCHO + x];
+        if (!porColor.has(c)) porColor.set(c, new Path2D());
+        forma(porColor.get(c), x, y);
+      }
     }
+    for (const [c, path] of porColor) { ctx.fillStyle = c; ctx.fill(path); }
   }
-  for (const [c, path] of porColor) { ctx.fillStyle = c; ctx.fill(path); }
 
   // Íconos del terreno (solo bien de cerca)
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -1068,7 +1121,7 @@ function mostrarFin() {
     <button data-accion="nueva">Jugar de nuevo</button>`);
     return;
   }
-  abrirModal(`<h2>¡Ave, ${PERIODOS[periodoActual()].titulo}! 🏆</h2><p>Sometiste a todos los pueblos vecinos en ${estado.turno} años. Roma domina Europa.</p>
+  abrirModal(`<h2>¡Ave, ${PERIODOS[periodoActual()].titulo}! 🏆</h2><p>Sometiste a todos los pueblos vecinos en ${estado.turno} años. Roma domina el mundo.</p>
     <button data-accion="nueva">Jugar de nuevo</button>`);
 }
 

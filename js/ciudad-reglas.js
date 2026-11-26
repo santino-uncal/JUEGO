@@ -31,7 +31,7 @@ const enemigoNuevo = (id) => ({
   proximo: ENEMIGOS[id].primerAtaque || null, cada: ENEMIGOS[id].cada, marcha: null,
 });
 
-// Agrega el mapa de Europa a una partida (también arregla las partidas guardadas con el mapa viejo)
+// Agrega el mapa a una partida (también arregla las partidas guardadas con el mapa viejo)
 function prepararMapa(partida) {
   // Pueblos: se borran los que ya no existen y se agregan los nuevos
   for (const id in partida.enemigos) if (!ENEMIGOS[id]) delete partida.enemigos[id];
@@ -233,9 +233,9 @@ const esMia = (x, y) => duenoDe(x, y) === "roma";
 const zonasDe = (id) => estado.duenos.filter((d) => d === id).length;
 
 // Los 6 vecinos de un hexágono: derecha, abajo a la derecha, abajo a la izquierda, izquierda, arriba a la izquierda, arriba a la derecha
-const direcciones = (y) => (y & 1
-  ? [[1, 0], [1, 1], [0, 1], [-1, 0], [0, -1], [1, -1]]
-  : [[1, 0], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1]]);
+const DIRS_IMPAR = [[1, 0], [1, 1], [0, 1], [-1, 0], [0, -1], [1, -1]];
+const DIRS_PAR = [[1, 0], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1]];
+const direcciones = (y) => (y & 1 ? DIRS_IMPAR : DIRS_PAR);
 const vecinas = (x, y) => {
   const v = [];
   for (const [dx, dy] of direcciones(y)) if (dentro(x + dx, y + dy)) v.push({ x: x + dx, y: y + dy });
