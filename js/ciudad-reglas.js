@@ -653,8 +653,8 @@ function coloniaEn(x, y) {
   return (estado.colonias || []).findIndex((c) => c.x === x && c.y === y) + 1;
 }
 
-// Ícono de cada ciudad: 👑 Roma, ⛲ fundada, 🦅 conquistada
-const iconoCiudad = (i) => (i === 0 ? "👑" : esConquistada(i) ? "🦅" : "⛲");
+// Ícono de cada ciudad (Roma, fundada o conquistada)
+const iconoCiudad = (i) => ICONOS_CIUDAD[i === 0 ? "roma" : esConquistada(i) ? "conquistada" : "fundada"];
 
 // Cuántas ciudades fundaste vos (sin contar las conquistadas)
 const fundadas = () => (estado.colonias || []).filter((c) => !c.conquistada).length;

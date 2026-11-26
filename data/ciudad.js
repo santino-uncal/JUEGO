@@ -433,6 +433,14 @@ const FUNDACION = {
   nombres: ["Ostia", "Tibur", "Antium", "Ardea", "Lavinium", "Praeneste", "Tusculum", "Gabii"],
 };
 
+// Íconos de las ciudades en el mapa y en los botones de arriba de la ciudad
+const ICONOS_CIUDAD = {
+  roma: "👑",          // Roma
+  fundada: "🏛️",       // las que fundás vos
+  conquistada: "🦅",   // capitales de pueblos que conquistaste
+  enemiga: "🏰",       // capitales de pueblos que todavía no son tuyos
+};
+
 // Ciudades conquistadas: cuando tomás la capital de un pueblo (o se une a Roma por la fama),
 // esa ciudad pasa a ser tuya y podés construir en ella como en las que fundás.
 //   lotes:     terrenos con los que viene (filas de 5)

@@ -405,13 +405,13 @@ function dibujarMapa() {
     }
   }
   // Ciudades: Roma, las fundadas y las capitales que ya viste
-  capa.lugares.push({ x: MAPA.roma.x, y: MAPA.roma.y, icono: "👑", nombre: "Roma", mio: true });
-  estado.colonias.forEach((c) => { if (!c.conquistada) capa.lugares.push({ x: c.x, y: c.y, icono: "⛲", nombre: c.nombre, mio: true }); });
+  capa.lugares.push({ x: MAPA.roma.x, y: MAPA.roma.y, icono: ICONOS_CIUDAD.roma, nombre: "Roma", mio: true });
+  estado.colonias.forEach((c) => { if (!c.conquistada) capa.lugares.push({ x: c.x, y: c.y, icono: ICONOS_CIUDAD.fundada, nombre: c.nombre, mio: true }); });
   for (const id in ENEMIGOS) {
     const d = ENEMIGOS[id];
     if (!vista(d.x, d.y)) continue;
     const vivo = estado.enemigos[id].vivo;
-    capa.lugares.push({ x: d.x, y: d.y, icono: vivo ? d.icono : "🦅", nombre: d.ciudad, mio: !vivo });
+    capa.lugares.push({ x: d.x, y: d.y, icono: ICONOS_CIUDAD[vivo ? "enemiga" : "conquistada"], nombre: d.ciudad, mio: !vivo });
   }
   capaMapa = capa;
   pintarMapa();
@@ -677,7 +677,7 @@ function infoZona() {
   const d = ENEMIGOS[dueno];
   const p = puedeAtacarZona(x, y);
   const capital = lugar === dueno;
-  const titulo = capital ? `${d.icono} ${d.ciudad}, capital de los ${d.nombre.toLowerCase()}` : `${ter.icono} ${ter.nombre} de los ${d.nombre.toLowerCase()}`;
+  const titulo = capital ? `${ICONOS_CIUDAD.enemiga} ${d.ciudad}, capital de los ${d.nombre.toLowerCase()}` : `${ter.icono} ${ter.nombre} de los ${d.nombre.toLowerCase()}`;
   const bonus = MAPA.bonusTerreno[terreno(x, y)];
   const detalle = capital
     ? `Si la tomás, los ${d.nombre.toLowerCase()} se rinden y <b>todo su territorio</b> pasa a ser tuyo.`
