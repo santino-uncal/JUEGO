@@ -82,13 +82,13 @@ function dibujarCiudad() {
   if (!lotesDe(ciudadVista)) ciudadVista = 0;
   const nombres = ["Roma", ...estado.colonias.map((col) => col.nombre)];
   $("ciudades").innerHTML = nombres.length < 2 ? "" : nombres.map((n, i) =>
-    `<button data-accion="ver-ciudad" data-ciudad="${i}" class="${i === ciudadVista ? "activa" : ""}">${i === 0 ? "👑" : "⛲"} ${n}</button>`).join("");
+    `<button data-accion="ver-ciudad" data-ciudad="${i}" class="${i === ciudadVista ? "activa" : ""}">${iconoCiudad(i)} ${n}</button>`).join("");
 
   // Nivel de la ciudad y botón para agrandarla
   const nivel = nivelCiudad(ciudadVista);
   const maximo = nivelMaximo(ciudadVista);
   const pn = puedeSubirNivel(ciudadVista);
-  $("nivel-ciudad").innerHTML = `<span>${ciudadVista === 0 ? "👑" : "⛲"} <b>${nombreCiudad(ciudadVista)}</b> · nivel <b>${nivel}</b> de ${maximo}
+  $("nivel-ciudad").innerHTML = `<span>${iconoCiudad(ciudadVista)} <b>${nombreCiudad(ciudadVista)}</b> · nivel <b>${nivel}</b> de ${maximo}
       · ${lotesDe(ciudadVista).length} terrenos</span>` +
     (nivel >= maximo ? `<small>Llegó a su tamaño máximo.</small>` :
       `<button data-accion="subir-nivel" ${pn.ok && !estado.terminado ? "" : "disabled"}>⬆️ Agrandar a nivel ${nivel + 1}
@@ -286,7 +286,9 @@ function tarjetaEnemigo(id) {
   const muestra = `<span class="muestra" style="background:${d.color}"></span>`;
   if (!e.vivo) {
     const trib = Object.entries(d.tributo).map(([r, v]) => `+${v} ${RECURSOS[r].icono}`).join(" ");
-    return `<div class="item hecha"><div class="item-icono">🦅</div><div class="item-texto"><b>${d.nombre}</b> – conquistados<br><small>Te pagan ${trib} por año.</small></div></div>`;
+    const col = coloniaEn(d.x, d.y);
+    return `<div class="item hecha"><div class="item-icono">🦅</div><div class="item-texto"><b>${d.nombre}</b> – conquistados<br><small>Te pagan ${trib} por año.</small></div>
+      ${col ? `<button data-accion="ver-ciudad" data-ciudad="${col}">🏛️ Ver ${d.ciudad}</button>` : ""}</div>`;
   }
   let estadoTexto;
   if (e.marcha) estadoTexto = `<span class="motivo">⚠️ Su ejército marcha hacia ${nombreObjetivo(e.marcha)}: ¡sus zonas quedaron poco defendidas!</span>`;
@@ -404,7 +406,7 @@ function dibujarMapa() {
   }
   // Ciudades: Roma, las fundadas y las capitales que ya viste
   capa.lugares.push({ x: MAPA.roma.x, y: MAPA.roma.y, icono: "👑", nombre: "Roma", mio: true });
-  estado.colonias.forEach((c) => capa.lugares.push({ x: c.x, y: c.y, icono: "⛲", nombre: c.nombre, mio: true }));
+  estado.colonias.forEach((c) => { if (!c.conquistada) capa.lugares.push({ x: c.x, y: c.y, icono: "⛲", nombre: c.nombre, mio: true }); });
   for (const id in ENEMIGOS) {
     const d = ENEMIGOS[id];
     if (!vista(d.x, d.y)) continue;
@@ -657,7 +659,8 @@ function infoZona() {
   if (lugar === "roma") return `<h3>👑 Roma</h3><p>Tu ciudad. Desde acá salen tus ejércitos.</p>`;
   const col = coloniaEn(x, y);
   if (col) {
-    return `<h3>⛲ ${estado.colonias[col - 1].nombre}</h3><p>Una ciudad fundada por Roma: puede tener todos los edificios que tiene Roma. Comparte con Roma los recursos y los habitantes.</p>
+    const conq = estado.colonias[col - 1].conquistada;
+    return `<h3>${iconoCiudad(col)} ${estado.colonias[col - 1].nombre}</h3><p>${conq ? `Antigua capital de los ${ENEMIGOS[conq].nombre.toLowerCase()}, ahora es de Roma` : "Una ciudad fundada por Roma"}: puede tener todos los edificios que tiene Roma. Comparte con Roma los recursos y los habitantes.</p>
       <button data-accion="ver-ciudad" data-ciudad="${col}">🏛️ Ver la ciudad</button>`;
   }
   if (!dueno) return `<h3>${ter.nombre}</h3><p class="ayuda">Tierra de nadie: acá no vive ningún pueblo.</p>`;
@@ -668,7 +671,7 @@ function infoZona() {
       ${prohibido ? `<p class="ayuda">No se puede fundar una ciudad en ${ter.nombre.toLowerCase()}.</p>` : `<p>🏘️ Podés fundar una ciudad nueva: ${FUNDACION.lotes} terrenos más para construir.<br>
       <small>Cuesta: ${textoCosto(costoFundar())} y necesita ${FUNDACION.colonos} 👥 habitantes libres.</small></p>
       ${p.ok ? "" : `<p class="motivo"><small>${p.motivo}</small></p>`}
-      <button data-accion="fundar" ${p.ok && !estado.terminado ? "" : "disabled"}>🏘️ Fundar ${FUNDACION.nombres[estado.colonias.length] || "ciudad"}</button>`}`;
+      <button data-accion="fundar" ${p.ok && !estado.terminado ? "" : "disabled"}>🏘️ Fundar ${FUNDACION.nombres[fundadas()] || "ciudad"}</button>`}`;
   }
   // Zona de otro pueblo
   const d = ENEMIGOS[dueno];

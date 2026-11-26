@@ -51,12 +51,21 @@ function prepararMapa(partida) {
     }
     // Las ciudades fundadas en el mapa viejo se mudan a un lugar libre de tu territorio
     const puestas = [];
+    // (las conquistadas se quedan donde está la capital de su pueblo)
     for (const c of partida.colonias || []) {
+      if (c.conquistada && ENEMIGOS[c.conquistada]) {
+        c.x = ENEMIGOS[c.conquistada].x; c.y = ENEMIGOS[c.conquistada].y;
+        puestas.push(c);
+        continue;
+      }
       const lugar = lugarParaColonia(partida, puestas, c);
       if (lugar) { c.x = lugar.x; c.y = lugar.y; }
       puestas.push(c);
     }
   }
+  // Los pueblos que ya conquistaste te dan su ciudad (también en partidas guardadas de antes)
+  partida.colonias = partida.colonias || [];
+  for (const id in ENEMIGOS) if (!partida.enemigos[id].vivo) sumarCiudadConquistada(id, partida);
   // Niebla: al empezar solo conocés tu territorio y lo que está pegado a él
   if (!partida.visto || partida.visto.length !== MAPA_ANCHO * MAPA_ALTO) {
     partida.visto = Array(MAPA_ANCHO * MAPA_ALTO).fill(0);
@@ -512,7 +521,8 @@ function alianzasPorFama() {
     const zonas = zonasDe(id);
     estado.duenos = estado.duenos.map((d) => (d === id ? "roma" : d));
     revelarTerritorio();
-    anotar(`🤝 ¡La fama de Roma llegó a ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se unen a Roma sin pelear: sus ${zonas} zonas pasan a ser tuyas y te pagan tributo.${cambiarApoyo(APOYO.sucesos.zona)}`, "bien");
+    sumarCiudadConquistada(id);
+    anotar(`🤝 ¡La fama de Roma llegó a ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se unen a Roma sin pelear: sus ${zonas} zonas pasan a ser tuyas, te pagan tributo y ya podés construir en ${datos.ciudad}.${cambiarApoyo(APOYO.sucesos.zona)}`, "bien");
     return;   // como mucho uno por año
   }
 }
@@ -643,9 +653,31 @@ function coloniaEn(x, y) {
   return (estado.colonias || []).findIndex((c) => c.x === x && c.y === y) + 1;
 }
 
+// Ícono de cada ciudad: 👑 Roma, ⛲ fundada, 🦅 conquistada
+const iconoCiudad = (i) => (i === 0 ? "👑" : esConquistada(i) ? "🦅" : "⛲");
+
+// Cuántas ciudades fundaste vos (sin contar las conquistadas)
+const fundadas = () => (estado.colonias || []).filter((c) => !c.conquistada).length;
+const esConquistada = (i) => i > 0 && !!(estado.colonias[i - 1] && estado.colonias[i - 1].conquistada);
+
+// La capital de un pueblo conquistado pasa a ser una ciudad tuya donde podés construir
+function sumarCiudadConquistada(id, partida = estado) {
+  partida.colonias = partida.colonias || [];
+  if (partida.colonias.some((c) => c.conquistada === id)) return;
+  const d = ENEMIGOS[id];
+  const lotes = Array(CONQUISTA.lotes).fill(null);
+  lotes[CONQUISTA.lotePlaza] = { tipo: "plaza", falta: 0 };
+  let i = 0;
+  for (const tipo of CONQUISTA.edificios) {
+    while (lotes[i]) i++;
+    if (i < lotes.length) lotes[i] = { tipo, falta: 0 };
+  }
+  partida.colonias.push({ nombre: d.ciudad, x: d.x, y: d.y, lotes, conquistada: id });
+}
+
 // Cada ciudad nueva cuesta más que la anterior
 function costoFundar() {
-  const n = (estado.colonias || []).length;
+  const n = fundadas();
   const c = {};
   for (const r in FUNDACION.costo) c[r] = Math.round(FUNDACION.costo[r] * (1 + FUNDACION.aumento * n));
   return c;
@@ -654,7 +686,7 @@ function costoFundar() {
 function puedeFundar(x, y) {
   if (!esMia(x, y)) return { ok: false, motivo: "Solo podés fundar ciudades en tu territorio." };
   if (FUNDACION.prohibidos.includes(terreno(x, y))) return { ok: false, motivo: `No se puede fundar una ciudad en ${MAPA.terrenos[terreno(x, y)].nombre.toLowerCase()}.` };
-  if (estado.colonias.length >= FUNDACION.nombres.length) return { ok: false, motivo: "Ya fundaste todas las ciudades posibles." };
+  if (fundadas() >= FUNDACION.nombres.length) return { ok: false, motivo: "Ya fundaste todas las ciudades posibles." };
   const otras = [MAPA.roma, ...Object.values(ENEMIGOS), ...estado.colonias];
   if (otras.some((o) => distancia(x, y, o.x, o.y) < FUNDACION.distancia)) {
     return { ok: false, motivo: "Está muy pegada a otra ciudad: dejá al menos una casilla en el medio." };
@@ -667,7 +699,7 @@ function puedeFundar(x, y) {
 function fundarCiudad(x, y) {
   if (!puedeFundar(x, y).ok) return 0;
   pagar(costoFundar());
-  const nombre = FUNDACION.nombres[estado.colonias.length];
+  const nombre = FUNDACION.nombres[fundadas()];
   const lotes = Array(FUNDACION.lotes).fill(null);
   lotes[FUNDACION.lotePlaza] = { tipo: "plaza", falta: 0 };
   estado.colonias.push({ nombre, x, y, lotes });
@@ -679,7 +711,7 @@ function fundarCiudad(x, y) {
 
 // Con cuántos terrenos empieza una ciudad, su nivel (1, 2...) y hasta qué nivel puede llegar.
 // El nivel sale de cuántos terrenos tiene: así las partidas guardadas de antes andan solas.
-const lotesIniciales = (i) => (i === 0 ? INICIO.lotes : FUNDACION.lotes);
+const lotesIniciales = (i) => (i === 0 ? INICIO.lotes : esConquistada(i) ? CONQUISTA.lotes : FUNDACION.lotes);
 const nivelCiudad = (i) => 1 + Math.round((lotesDe(i).length - lotesIniciales(i)) / NIVELES.terrenos);
 const nivelMaximo = (i) => (i === 0 ? NIVELES.maximo.roma : NIVELES.maximo.ciudad);
 const gente = () => estado.habitantes + soldados();
@@ -967,8 +999,9 @@ function atacarZona(x, y, envio) {
     const zonas = zonasDe(id);
     estado.duenos = estado.duenos.map((d) => (d === id ? "roma" : d));
     revelarTerritorio();
+    sumarCiudadConquistada(id);
     for (const rec in datos.botin) estado.rec[rec] += datos.botin[rec];
-    anotar(`🏆 ¡Conquistaste ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se rinden y sus ${zonas} zonas pasan a ser de Roma. Botín: ${textoRecursos(datos.botin)}. Ahora te pagan tributo.${cambiarApoyo(APOYO.sucesos.conquista)}${cambiarFama(FAMA.sucesos.conquista)}`, "bien");
+    anotar(`🏆 ¡Conquistaste ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se rinden y sus ${zonas} zonas pasan a ser de Roma. Botín: ${textoRecursos(datos.botin)}. Ahora te pagan tributo y podés construir en ${datos.ciudad}.${cambiarApoyo(APOYO.sucesos.conquista)}${cambiarFama(FAMA.sucesos.conquista)}`, "bien");
   } else if (r.ganaA) {
     muertos = aplicarBajas(grupo, r.perdidaGanador);
     estado.duenos[y * MAPA_ANCHO + x] = "roma";

@@ -30,7 +30,7 @@ const INICIO = {
 const EDIFICIOS = {
   regia:      { nombre: "Regia", icono: "👑", desc: "El palacio del rey. Corazón de Roma.",
                 produce: { comida: 3, oro: 2, ciencia: 3, poder: 2 }, capacidad: 10, unico: true, fijo: true },
-  plaza:      { nombre: "Plaza", icono: "⛲", desc: "El centro de una ciudad que fundaste.",
+  plaza:      { nombre: "Plaza", icono: "⛲", desc: "El centro de una ciudad que fundaste o conquistaste.",
                 produce: { comida: 2, oro: 1, ciencia: 1, poder: 1 }, capacidad: 5, fijo: true },
   casa:       { nombre: "Casas", icono: "🏠", desc: "Lugar para que viva más gente.",
                 costo: { madera: 15 }, turnos: 1, capacidad: 5 },
@@ -431,6 +431,17 @@ const FUNDACION = {
   distancia: 2,
   prohibidos: ["~", "m"],
   nombres: ["Ostia", "Tibur", "Antium", "Ardea", "Lavinium", "Praeneste", "Tusculum", "Gabii"],
+};
+
+// Ciudades conquistadas: cuando tomás la capital de un pueblo (o se une a Roma por la fama),
+// esa ciudad pasa a ser tuya y podés construir en ella como en las que fundás.
+//   lotes:     terrenos con los que viene (filas de 5)
+//   lotePlaza: dónde está su plaza
+//   edificios: lo que ya tenía construido el pueblo (terminado y listo para usar)
+const CONQUISTA = {
+  lotes: 10,
+  lotePlaza: 2,
+  edificios: ["casa", "granja"],
 };
 
 // Niveles de las ciudades: subir de nivel agranda la ciudad (más terrenos para construir).
