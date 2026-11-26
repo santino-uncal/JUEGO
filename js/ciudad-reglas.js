@@ -301,6 +301,32 @@ function construirBarco(n = 1) {
   return true;
 }
 
+// ---------- Barcos de guerra ----------
+
+const flota = () => estado.flota || 0;
+const flotaLista = () => Math.max(0, flota() - (estado.flotaUsada || 0));
+
+function puedeConstruirNave(n = 1) {
+  const B = BARCOS_GUERRA;
+  if (!tiene(B.requiere)) return { ok: false, motivo: `Necesitás ${TECNOLOGIAS[B.requiere].icono} ${TECNOLOGIAS[B.requiere].nombre}.` };
+  if (cuenta(B.edificio) === 0) return { ok: false, motivo: `Necesitás un ${EDIFICIOS[B.edificio].nombre} terminado.` };
+  if (!alcanza(multiplicar(B.costo, n))) return { ok: false, motivo: "No te alcanzan los recursos." };
+  return { ok: true };
+}
+
+function construirNave(n = 1) {
+  if (!puedeConstruirNave(n).ok) return false;
+  pagar(multiplicar(BARCOS_GUERRA.costo, n));
+  estado.flota = flota() + n;
+  anotar(`${BARCOS_GUERRA.icono} Botás ${n} ${(n > 1 ? BARCOS_GUERRA.plural : BARCOS_GUERRA.nombre).toLowerCase()} de guerra al mar.`);
+  return true;
+}
+
+// Cuánto suman los barcos de guerra al atacar una zona (solo si está en la costa)
+const ataqueNaval = (x, y) => (costera(x, y) ? flotaLista() * BARCOS_GUERRA.ataque * bonusAtaque() : 0);
+// Cuánto suman al defender un lugar tuyo en la costa
+const defensaNaval = (x, y) => (costera(x, y) ? flota() * BARCOS_GUERRA.defensa * bonusDefensa() : 0);
+
 function puedeAtacarZona(x, y) {
   const id = duenoDe(x, y);
   if (!id || id === "roma") return { ok: false, motivo: "Acá no hay a quién atacar." };
@@ -931,7 +957,8 @@ function poderDefensa(ciudad = 0) {
   let p = 0;
   for (const u in estado.ejercito) p += estado.ejercito[u] * UNIDADES[u].defensa;
   const vecinos = estado.habitantes * 0.3 * (ciudad === 0 ? 1 : ATAQUES_ENEMIGOS.genteColonia);
-  p = p * bonusDefensa() + 2 + vecinos;
+  const pos = posCiudad(ciudad) || MAPA.roma;
+  p = p * bonusDefensa() + 2 + vecinos + defensaNaval(pos.x, pos.y);   // los barcos de guerra ayudan si está en la costa
   return p * (1 + bonusMuralla(ciudad));
 }
 
@@ -940,7 +967,7 @@ function poderDefensaZona(x, y) {
   let p = 0;
   for (const u in estado.ejercito) p += estado.ejercito[u] * UNIDADES[u].defensa;
   p = (p * bonusDefensa() + 1) * ATAQUES_ENEMIGOS.ejercitoZona;
-  return p * (1 + (MAPA.bonusTerreno[terreno(x, y)] || 0)) * (1 + bonusGeneral(estado.ejercito, x, y));
+  return p * (1 + (MAPA.bonusTerreno[terreno(x, y)] || 0)) * (1 + bonusGeneral(estado.ejercito, x, y)) + defensaNaval(x, y);
 }
 
 // Bonus de los generales según el terreno de la batalla (si alguno pelea ahí). Se usa el mejor.
@@ -954,11 +981,11 @@ function bonusGeneral(grupo, x, y) {
   return b;
 }
 
-// x, y (opcional): dónde es la batalla, para el bonus del general
+// x, y (opcional): dónde es la batalla, para el bonus del general y los barcos de guerra
 function poderAtaque(envio, x, y) {
   let p = 0;
   for (const u in envio) p += (envio[u] || 0) * UNIDADES[u].ataque;
-  return p * bonusAtaque() * (1 + bonusGeneral(envio, x, y));
+  return p * bonusAtaque() * (1 + bonusGeneral(envio, x, y)) + (x === undefined ? 0 : ataqueNaval(x, y));
 }
 
 // Defensa de una ciudad enemiga (si su ejército salió a marchar, queda menos gente)
@@ -1015,6 +1042,9 @@ function atacarZona(x, y, envio) {
 
   for (const u in grupo) estado.ejercito[u] -= grupo[u];
   const r = choque(poderAtaque(grupo, x, y), defensaZona(x, y, grupo.catapulta));
+  // Si es en la costa, van todos los barcos de guerra listos (después descansan hasta el año que viene)
+  const deGuerra = costera(x, y) ? flotaLista() : 0;
+  estado.flotaUsada = (estado.flotaUsada || 0) + deGuerra;
   const enviados = total;
   const lugar = capital ? datos.ciudad : `una zona de los ${datos.nombre.toLowerCase()}`;
   let muertos;
@@ -1043,9 +1073,12 @@ function atacarZona(x, y, envio) {
   } else {
     muertos = aplicarBajas(grupo, 0.75);
     e.fuerza = Math.max(1, e.fuerza * (1 - r.perdidaGanador * 0.8));
-    const hundidos = Math.min(naves, Math.ceil(naves * BARCOS.hundidos));
+    // Los barcos de guerra cuidan a las trirremes, pero algunos se hunden
+    const hundidos = Math.max(0, Math.min(naves, Math.ceil(naves * BARCOS.hundidos) - deGuerra * BARCOS_GUERRA.protege));
     if (hundidos) { estado.barcos -= hundidos; estado.barcosUsados -= hundidos; }
-    anotar(`💀 Derrota en ${lugar}. Volvieron ${enviados - muertos} de ${enviados} soldados.${hundidos ? ` Se hundieron ${hundidos} ${BARCOS.icono}.` : ""}${cambiarApoyo(APOYO.sucesos.derrota)}${cambiarFama(FAMA.sucesos.derrota)}`, "mal");
+    const hundidasGuerra = Math.min(deGuerra, Math.floor(deGuerra * BARCOS_GUERRA.hundidos));
+    if (hundidasGuerra) { estado.flota -= hundidasGuerra; estado.flotaUsada -= hundidasGuerra; }
+    anotar(`💀 Derrota en ${lugar}. Volvieron ${enviados - muertos} de ${enviados} soldados.${hundidos ? ` Se hundieron ${hundidos} ${BARCOS.icono}.` : ""}${hundidasGuerra ? ` Se hundieron ${hundidasGuerra} ${BARCOS_GUERRA.icono}.` : ""}${cambiarApoyo(APOYO.sucesos.derrota)}${cambiarFama(FAMA.sucesos.derrota)}`, "mal");
   }
   // Los que vuelven quedan cansados hasta el año siguiente; los que se quedaron en casa pueden seguir atacando
   estado.cansadas = estado.cansadas || {};
@@ -1285,6 +1318,7 @@ function terminarTurno() {
   alianzasPorFama();
   estado.cansadas = {};
   estado.barcosUsados = 0;
+  estado.flotaUsada = 0;
   estado.inmigroEsteTurno = false;
   if (revisarFin()) return;
 

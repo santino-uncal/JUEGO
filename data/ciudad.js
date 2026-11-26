@@ -167,9 +167,10 @@ const TECNOLOGIAS = {
                  efecto: { tributo: 1 } },
   rutas:       { nombre: "Rutas marítimas", icono: "🚢", periodo: "republica", fila: 1, costo: 140, desc: "Comercio por mar: cada puerto da +3 de oro.", requiere: ["navegacion"],
                  efecto: { mejora: { puerto: { oro: 3 } } } },
-  legion:      { nombre: "Legión profesional", icono: "💪", periodo: "republica", fila: 2.5, costo: 160, desc: "Soldados con sueldo fijo: desbloquea Legionarios y entrenar tropas cuesta 25% menos.", requiere: ["tacticas"],
+  flota:       { nombre: "Flota de guerra", icono: "🛳️", periodo: "republica", fila: 2, costo: 140, desc: "Barcos con espolón y puentes para abordar: desbloquea las Quinquerremes, que pelean en el mar.", requiere: ["navegacion"] },
+  legion:     { nombre: "Legión profesional", icono: "💪", periodo: "republica", fila: 3, costo: 160, desc: "Soldados con sueldo fijo: desbloquea Legionarios y entrenar tropas cuesta 25% menos.", requiere: ["tacticas"],
                  efecto: { descuentoTropas: 0.25 } },
-  pretoriana:  { nombre: "Guardia pretoriana", icono: "⚜️", periodo: "republica", fila: 3.5, costo: 170, desc: "Desbloquea Pretorianos, la élite del ejército.", requiere: ["tacticas"] },
+  pretoriana:  { nombre: "Guardia pretoriana", icono: "⚜️", periodo: "republica", fila: 4, costo: 170, desc: "Desbloquea Pretorianos, la élite del ejército.", requiere: ["tacticas"] },
 
   // Fin de la república
   principado:  { nombre: "Principado",   icono: "🌿", periodo: "republica", fila: 5.5, costo: 220, desc: "Un general victorioso junta todo el poder en sus manos. Te permite proclamar el Imperio.",
@@ -262,7 +263,19 @@ const UNIDADES = {
 const BARCOS = {
   nombre: "Trirreme", plural: "Trirremes", icono: "🚢", edificio: "puerto",
   costo: { madera: 40, oro: 15 }, lleva: 5, hundidos: 0.5,
-  desc: "Barco de guerra con tres filas de remeros.",
+  desc: "Barco con tres filas de remeros para llevar soldados.",
+};
+
+// Barcos de guerra: se construyen en el Puerto (con la tecnología "requiere") y pelean en el mar.
+// No llevan soldados ni ocupan habitantes.
+//   ataque:   cuánto suma cada uno cuando atacás una zona en la costa (van todos los que estén listos)
+//   defensa:  cuánto suma cada uno cuando defendés una ciudad o zona tuya en la costa
+//   protege:  cuántas trirremes cuida cada uno para que no se hundan si perdés
+//   hundidos: qué parte de ellos se hunde si perdés la batalla (0.25 = un cuarto)
+const BARCOS_GUERRA = {
+  nombre: "Quinquerreme", plural: "Quinquerremes", icono: "🛳️", edificio: "puerto", requiere: "flota",
+  costo: { madera: 70, oro: 35, piedra: 10 }, ataque: 8, defensa: 6, protege: 2, hundidos: 0.25,
+  desc: "Barco de guerra con cinco filas de remeros y un espolón de bronce para hundir a los enemigos.",
 };
 
 // Pueblos de Italia. Cada uno tiene su territorio en el mapa (ver MAPA.duenos).

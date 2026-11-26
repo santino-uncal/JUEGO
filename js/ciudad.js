@@ -283,6 +283,25 @@ function panelEjercito() {
           <button data-accion="barco" data-n="5" ${b5.ok ? "" : "disabled"}>+5</button>
         </div>
       </div>`;
+  // Barcos de guerra
+  const G = BARCOS_GUERRA;
+  const g1 = puedeConstruirNave(1), g5 = puedeConstruirNave(5);
+  const sinGuerra = !tiene(G.requiere);
+  html += `
+      <div class="item ${sinGuerra ? "bloqueado" : ""}">
+        <div class="item-icono">${sinGuerra ? "🔒" : G.icono}</div>
+        <div class="item-texto">
+          <b>${G.plural}</b> <span class="cantidad">× ${flota()}</span>${flotaLista() < flota() ? ` <small>(${flota() - flotaLista()} ya pelearon este año)</small>` : ""}<br>
+          <small>${G.desc} Cuando atacás una zona en la costa, van todas las listas: cada una suma <b>${G.ataque} ⚔️</b> y cuida ${G.protege} ${BARCOS.plural.toLowerCase()} para que no se hundan.
+            Cuando te atacan una ciudad o zona en la costa, cada una suma <b>${G.defensa} 🛡️</b>. No ocupan habitantes.</small><br>
+          <small>Cuesta: ${textoCosto(G.costo)}</small>
+          ${g1.ok ? "" : `<br><small class="motivo">${g1.motivo}</small>`}
+        </div>
+        <div class="botones">
+          <button data-accion="nave" data-n="1" ${g1.ok ? "" : "disabled"}>+1</button>
+          <button data-accion="nave" data-n="5" ${g5.ok ? "" : "disabled"}>+5</button>
+        </div>
+      </div>`;
   return html + "</div>";
 }
 
@@ -1000,6 +1019,7 @@ function prepararAtaque(x, y) {
     <p>¿Cuántos soldados mandás? Los que se quedan siguen defendiendo Roma y pueden atacar otra zona este mismo año. Los que pelean descansan hasta el año que viene.</p>
     <p><small>Si ganás, pagás ${textoCosto(costoZona(x, y))} de poder político para quedarte con ${esCapital(x, y) === id ? "todo su territorio" : "la zona"}.</small></p>
     ${porMar(x, y) ? `<p>${BARCOS.icono} <b>Por mar:</b> tenés ${barcosListos()} barco${barcosListos() === 1 ? "" : "s"} listo${barcosListos() === 1 ? "" : "s"}, que llevan hasta <b>${barcosListos() * BARCOS.lleva}</b> soldados.</p>` : ""}
+    ${costera(x, y) && flotaLista() ? `<p>${BARCOS_GUERRA.icono} <b>Desde el mar</b> te acompañan ${flotaLista()} ${(flotaLista() === 1 ? BARCOS_GUERRA.nombre : BARCOS_GUERRA.plural).toLowerCase()}: suman <b>${Math.round(ataqueNaval(x, y))}</b> de ataque.</p>` : ""}
     ${filas}
     <p id="comparacion"></p>
     <div class="fila centrado">
@@ -1177,6 +1197,7 @@ document.addEventListener("click", (ev) => {
     }
     case "entrenar": entrenar(d.unidad, +d.n); break;
     case "barco": construirBarco(+d.n); break;
+    case "nave": construirNave(+d.n); break;
     case "gobierno": hacerAccion(d.id); break;
     case "preparar": if (casillaElegida) prepararAtaque(casillaElegida.x, casillaElegida.y); return;
     case "atacar": {
