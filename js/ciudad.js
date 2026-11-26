@@ -509,6 +509,43 @@ function dibujarMapa() {
   $("mapa-info").innerHTML = infoCasilla();
 }
 
+// Molde de la grilla: un pedazo de 1 casilla de ancho y 2 filas de alto con los bordes de los hexágonos.
+// Se rehace solo cuando cambia el zoom; al mover el mapa alcanza con correrlo.
+const MOLDE_ANCHO = 48, MOLDE_ALTO = Math.round(2 * FILA_HEX * 48);
+let moldeGrilla = null;
+function patronGrilla(ctx, e) {
+  if (!moldeGrilla || moldeGrilla.e !== e) {
+    const c = document.createElement("canvas");
+    c.width = MOLDE_ANCHO; c.height = MOLDE_ALTO;
+    const m = c.getContext("2d");
+    m.scale(MOLDE_ANCHO, MOLDE_ALTO / (2 * FILA_HEX));   // de acá en adelante se mide en casillas
+    // de lejos la línea es más suave, para no oscurecer todo el mapa
+    const opacidad = Math.min(0.22, 0.07 + (e - 3) * 0.04);
+    m.strokeStyle = `rgba(20,14,8,${opacidad})`;
+    m.lineWidth = 1 / e;   // 1 píxel en pantalla
+    m.beginPath();
+    // centros de los hexágonos que tocan el molde (fila par en x = 0,5; fila impar en x = 0 y 1)
+    const centros = [];
+    for (const fila of [-2, -1, 0, 1, 2]) {
+      const desde = (fila & 1) ? 0 : -0.5;
+      for (let x = desde; x <= 1.5; x++) centros.push([x, RADIO_HEX + fila * FILA_HEX]);
+    }
+    for (const [cx, cy] of centros) {
+      for (let k = 0; k <= 6; k++) {
+        const g = (-90 + 60 * k) * Math.PI / 180;
+        const px = cx + Math.cos(g) * RADIO_HEX, py = cy + Math.sin(g) * RADIO_HEX;
+        k ? m.lineTo(px, py) : m.moveTo(px, py);
+      }
+    }
+    m.stroke();
+    moldeGrilla = { e, patron: ctx.createPattern(c, "repeat") };
+  }
+  moldeGrilla.patron.setTransform(new DOMMatrix()
+    .translate(camara.ox, camara.oy)
+    .scale(e / MOLDE_ANCHO, 2 * FILA_HEX * e / MOLDE_ALTO));
+  return moldeGrilla.patron;
+}
+
 // Pinta en pantalla la parte del mapa que se ve (se llama al mover o acercar, sin recalcular nada)
 function pintarMapa() {
   const cv = $("mapa");
@@ -562,6 +599,13 @@ function pintarMapa() {
       }
     }
     for (const [c, path] of porColor) { ctx.fillStyle = c; ctx.fill(path); }
+  }
+
+  // Grilla de hexágonos: una línea finita en el borde de cada casilla, para que se note la forma
+  // también de lejos. Se pinta con un "molde" que se repite (rapidísimo, aunque haya miles de casillas).
+  if (e >= 3) {
+    ctx.fillStyle = patronGrilla(ctx, e);
+    ctx.fillRect(0, 0, w, h);
   }
 
   // Íconos del terreno (solo bien de cerca)
