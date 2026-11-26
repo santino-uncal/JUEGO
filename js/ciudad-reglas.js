@@ -1138,7 +1138,69 @@ function defenderse(id) {
   return defenderRoma(id);
 }
 
-// Atacan una zona tuya: si ganan, la recuperan
+// ---------- Guerras entre los otros pueblos ----------
+
+// Para cada pueblo vivo, las zonas de cada vecino que tocan su territorio: fronteras[a][b] = [índices de casillas de b]
+function fronterasPueblos() {
+  const f = {};
+  estado.duenos.forEach((b, i) => {
+    if (!b || b === "roma" || !estado.enemigos[b] || !estado.enemigos[b].vivo) return;
+    const x = i % MAPA_ANCHO, y = Math.floor(i / MAPA_ANCHO);
+    if (lugarEn(x, y) === b) return;   // la capital no se puede tomar
+    for (const c of vecinas(x, y)) {
+      const a = duenoDe(c.x, c.y);
+      if (!a || a === "roma" || a === b || !estado.enemigos[a] || !estado.enemigos[a].vivo) continue;
+      f[a] = f[a] || {};
+      f[a][b] = f[a][b] || [];
+      if (!f[a][b].includes(i)) f[a][b].push(i);
+    }
+  });
+  return f;
+}
+
+// Cada año, algunos pueblos invaden a un vecino y le sacan zonas
+function guerrasEntrePueblos() {
+  const G = GUERRAS_PUEBLOS;
+  const fronteras = fronterasPueblos();
+  const yaPelearon = new Set();
+  for (const a in fronteras) {
+    const ea = estado.enemigos[a];
+    if (yaPelearon.has(a) || ea.marcha || Math.random() >= G.prob) continue;
+    // Elige a quién invadir: casi siempre al vecino más débil
+    const vecinos = Object.keys(fronteras[a]).filter((b) => !yaPelearon.has(b));
+    if (!vecinos.length) continue;
+    vecinos.sort((p, q) => estado.enemigos[p].fuerza - estado.enemigos[q].fuerza);
+    const b = Math.random() < 0.7 ? vecinos[0] : vecinos[Math.floor(Math.random() * vecinos.length)];
+    const eb = estado.enemigos[b];
+    yaPelearon.add(a); yaPelearon.add(b);
+
+    const enCasaB = eb.fuerza - (eb.marcha ? eb.marcha.fuerza : 0);
+    const r = choque(ea.fuerza * G.ejercito, Math.max(1, enCasaB) * G.defensa * (1 + G.bonusCasa));
+    const ganador = r.ganaA ? a : b, perdedor = r.ganaA ? b : a;
+    const eg = estado.enemigos[ganador], ep = estado.enemigos[perdedor];
+    eg.fuerza = Math.max(1, eg.fuerza * (1 - G.perdidaGanador));
+    ep.fuerza = Math.max(1, ep.fuerza * (1 - G.perdidaPerdedor));
+    const conocidos = descubierto(a) || descubierto(b);
+    const invadio = `⚔️ ${mayuscula(pueblo(a))} ${verbo(a, "invadieron", "invadió")} a ${pueblo(b)}`;
+    if (!r.ganaA) {
+      if (conocidos) anotar(`${invadio}, pero ${verbo(a, "perdieron", "perdió")} la batalla.`);
+      continue;
+    }
+    // Ganó el que invadió: se queda con algunas zonas de la frontera
+    const zonas = fronteras[a][b].sort(() => Math.random() - 0.5);
+    const cuantas = Math.min(zonas.length, Math.floor(azar(G.zonas[0], G.zonas[1] + 1)));
+    for (let k = 0; k < cuantas; k++) estado.duenos[zonas[k]] = a;
+    ea.fuerza += cuantas * G.fuerzaPorZona;
+    if (conocidos) anotar(`${invadio} y ${verbo(b, "les", "le")} ${verbo(a, "quitaron", "quitó")} ${cuantas} zona${cuantas > 1 ? "s" : ""}. Mirá el 🗺️ Mapa.`);
+  }
+}
+
+// "los samnitas" / "la liga griega", y el verbo que corresponde
+const pueblo = (id) => `${ENEMIGOS[id].singular ? "la" : "los"} ${ENEMIGOS[id].nombre.toLowerCase()}`;
+const verbo = (id, plural, singular) => (ENEMIGOS[id].singular ? singular : plural);
+const mayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+// Atacan una zona tuya: si ganan, se la quedan y avanzan sobre alguna zona pegada
 function defenderZona(id, x, y) {
   const e = estado.enemigos[id];
   const datos = ENEMIGOS[id];
@@ -1149,12 +1211,20 @@ function defenderZona(id, x, y) {
   if (r.ganaA) {
     const muertos = aplicarBajas(estado.ejercito, r.perdidaGanador * 0.5);
     e.fuerza = Math.max(1, e.fuerza - atacantes * 0.8);
-    anotar(`🛡️ ¡Los ${datos.nombre.toLowerCase()} quisieron recuperar una zona y los echaste! Perdiste ${muertos} soldado(s).${cambiarApoyo(APOYO.sucesos.rechazo / 2)}${cambiarFama(FAMA.sucesos.rechazo)}`, "bien");
+    anotar(`🛡️ ¡Los ${datos.nombre.toLowerCase()} quisieron quitarte una zona y los echaste! Perdiste ${muertos} soldado(s).${cambiarApoyo(APOYO.sucesos.rechazo / 2)}${cambiarFama(FAMA.sucesos.rechazo)}`, "bien");
   } else {
     aplicarBajas(estado.ejercito, 0.2);
     e.fuerza = Math.max(1, e.fuerza - atacantes * 0.2);
     estado.duenos[y * MAPA_ANCHO + x] = id;
-    anotar(`🏳️ ¡Los ${datos.nombre.toLowerCase()} te quitaron una zona de tu territorio!${cambiarApoyo(APOYO.sucesos.zonaPerdida)}${cambiarFama(FAMA.sucesos.zonaPerdida)}`, "mal");
+    // Avanzan: se quedan también con zonas tuyas pegadas (sin ciudad)
+    let extra = 0;
+    for (const c of vecinas(x, y).sort(() => Math.random() - 0.5)) {
+      if (extra >= ATAQUES_ENEMIGOS.zonasExtra) break;
+      if (!esMia(c.x, c.y) || lugarEn(c.x, c.y) === "roma" || coloniaEn(c.x, c.y)) continue;
+      estado.duenos[c.y * MAPA_ANCHO + c.x] = id;
+      extra++;
+    }
+    anotar(`🏳️ ¡Los ${datos.nombre.toLowerCase()} te conquistaron ${extra ? `${1 + extra} zonas` : "una zona"} de tu territorio!${cambiarApoyo(APOYO.sucesos.zonaPerdida)}${cambiarFama(FAMA.sucesos.zonaPerdida)}`, "mal");
   }
 }
 
@@ -1315,6 +1385,7 @@ function terminarTurno() {
       }
     }
   }
+  if (!estado.terminado) guerrasEntrePueblos();
   alianzasPorFama();
   estado.cansadas = {};
   estado.barcosUsados = 0;

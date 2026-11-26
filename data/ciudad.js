@@ -279,6 +279,7 @@ const BARCOS_GUERRA = {
 };
 
 // Pueblos de Italia. Cada uno tiene su territorio en el mapa (ver MAPA.duenos).
+//   singular: true si se nombra en singular ("la Liga griega" en vez de "los ...")
 //   letra: con qué letra aparece su territorio en MAPA.duenos
 //   color: color de su territorio en el mapa
 //   ciudad, x, y: su capital (columna y fila del mapa, empezando en 0).
@@ -316,7 +317,7 @@ const ENEMIGOS = {
   cartagineses: { nombre: "Cartagineses", ciudad: "Cartago", icono: "🐘", letra: "K", color: "#a349a5", x: 94, y: 243,
               fuerza: 30, crece: 2.5, muro: 0.75, cada: 6, botin: { oro: 250, comida: 80 }, tributo: { oro: 12 },
               desc: "Mercaderes y marinos de África. Tienen Cerdeña, Córcega, el oeste de Sicilia y el sur de Hispania. Muy poderosos." },
-  liga:     { nombre: "Liga griega", ciudad: "Atenas", icono: "🦉", letra: "H", color: "#804000", x: 144, y: 225,
+  liga:     { nombre: "Liga griega", singular: true, ciudad: "Atenas", icono: "🦉", letra: "H", color: "#804000", x: 144, y: 225,
               fuerza: 40, crece: 3, muro: 0.75, cada: 7, botin: { oro: 300, ciencia: 120 }, tributo: { oro: 12, ciencia: 5 },
               desc: "Las ciudades griegas unidas: Grecia y sus colonias del sur de Italia y de Sicilia, como Siracusa. Filósofos, templos y falanges temibles." },
   persas:   { nombre: "Persas", ciudad: "Sardes", icono: "🦁", letra: "P", color: "#c8bfe6", x: 165, y: 219,
@@ -369,12 +370,24 @@ const APOYO = {
 };
 
 // Cómo atacan los pueblos enemigos.
-//   probZona:     probabilidad de que vayan a recuperar una zona tuya pegada a su territorio (0.35 = 35%)
+//   probZona:     probabilidad de que vayan a conquistarte una zona pegada a su territorio (0.5 = 50%)
+//   zonasExtra:   si te ganan una zona, avanzan y se quedan también con hasta esta cantidad de zonas tuyas pegadas
 //   probCercana:  si van por una ciudad, probabilidad de que elijan la más cercana (si no, cualquiera)
 //   ejercitoZona: qué parte de tu ejército llega a defender una zona que no es ciudad (0.5 = la mitad)
 //   genteColonia: qué parte de los habitantes ayuda a defender una ciudad fundada (Roma tiene a todos)
 //   aplastante:   si te ganan en Roma con el doble (o más) de fuerza, toman Roma y perdés la partida
-const ATAQUES_ENEMIGOS = { probZona: 0.35, probCercana: 0.6, ejercitoZona: 0.5, genteColonia: 0.3, aplastante: 2 };
+const ATAQUES_ENEMIGOS = { probZona: 0.5, zonasExtra: 1, probCercana: 0.6, ejercitoZona: 0.5, genteColonia: 0.3, aplastante: 2 };
+
+// Guerras entre los otros pueblos: cada año, cada pueblo puede invadir a un vecino con el que tiene frontera.
+// Nunca toman la capital del otro: solo le sacan zonas (así ningún pueblo desaparece, salvo que lo conquistes vos).
+//   prob:      chance por año de que un pueblo invada a un vecino (0.04 = 4%)
+//   ejercito:  qué parte de su ejército manda el que invade (0.5 = la mitad)
+//   defensa:   qué parte de su ejército defiende la frontera el invadido, con un bonus por pelear en casa
+//   zonas:     cuántas zonas gana el vencedor (entre el primero y el segundo número)
+//   perdidaGanador / perdidaPerdedor: qué parte de su ejército pierde cada uno (0.1 = 10%)
+//   fuerzaPorZona: cuánto más fuerte se hace el que gana, por cada zona nueva
+const GUERRAS_PUEBLOS = { prob: 0.04, ejercito: 0.5, defensa: 0.35, bonusCasa: 0.2, zonas: [1, 3],
+  perdidaGanador: 0.1, perdidaPerdedor: 0.2, fuerzaPorZona: 0.5 };
 
 // Acciones del gobierno (pestaña 🎭 Acciones): ganás o perdés apoyo.
 //   costo:   lo que pagás
