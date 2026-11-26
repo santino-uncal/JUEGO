@@ -23,6 +23,7 @@ function cargar() {
       if (d.apoyo === undefined) d.apoyo = APOYO.inicio;
       if (d.rec.poder === undefined) d.rec.poder = INICIO.recursos.poder;
       d.colonias = d.colonias || [];
+      for (const u in UNIDADES) d.ejercito[u] = d.ejercito[u] || 0;   // tropas nuevas (p. ej. el General)
       // Ya no se pierde por saqueos: las partidas que habían terminado así siguen
       if (d.resultado === "derrota") { d.terminado = false; d.resultado = null; }
       prepararMapa(d);
@@ -159,7 +160,7 @@ function panelConstruir() {
     const ed = EDIFICIOS[l.tipo];
     let html = `<h3>${ed.icono} ${ed.nombre}</h3><p>${ed.desc}</p>`;
     const prod = textoProduce(ed);
-    if (prod) html += `<p>Da: <b>${prod}</b>${ed.trabajadores ? ` (con ${ed.trabajadores} trabajador${ed.trabajadores > 1 ? "es" : ""})` : ""}</p>`;
+    if (prod) html += `<p>Da: <b>${prod}</b>${ed.trabajadores ? ` (con ${trabajadoresDe(l.tipo)} trabajador${trabajadoresDe(l.tipo) > 1 ? "es" : ""})` : ""}</p>`;
     if (l.falta > 0) html += `<p class="ayuda">En obra: faltan ${l.falta} año(s).</p>`;
     if (moviendo !== null) {
       html += `<p class="ayuda">↔️ Tocá el terreno al que lo querés llevar. Si ahí hay otro edificio, cambian de lugar.</p>
@@ -180,7 +181,7 @@ function panelConstruir() {
       <div class="item ${bloqueado ? "bloqueado" : ""}">
         <div class="item-icono">${bloqueado ? "🔒" : ed.icono}</div>
         <div class="item-texto">
-          <b>${ed.nombre}</b> <small>· ${ed.turnos} año${ed.turnos > 1 ? "s" : ""}${ed.trabajadores ? ` · 👷 ${ed.trabajadores}` : ""}</small><br>
+          <b>${ed.nombre}</b> <small>· ${ed.turnos} año${ed.turnos > 1 ? "s" : ""}${ed.trabajadores ? ` · 👷 ${trabajadoresDe(tipo)}` : ""}</small><br>
           <small>${ed.desc}${textoProduce(ed) ? " <b>" + textoProduce(ed) + "</b>" : ""}</small><br>
           <small>Cuesta: ${textoCosto(ed.costo)}</small>
           ${p.ok ? "" : `<br><small class="motivo">${p.motivo}</small>`}
@@ -993,7 +994,7 @@ function leerEnvio() {
 
 function actualizarComparacion(x, y) {
   const envio = leerEnvio();
-  const mio = poderAtaque(envio);
+  const mio = poderAtaque(envio, x, y);
   const suyo = defensaZona(x, y, envio.catapulta || 0);
   let consejo;
   if (mio > suyo * 1.3) consejo = `<span class="bien">Tenés clara ventaja.</span>`;

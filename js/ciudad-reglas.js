@@ -300,6 +300,7 @@ function efecto(clave) {
   let total = 0;
   for (const id in estado.techs) {
     const e = TECNOLOGIAS[id] && TECNOLOGIAS[id].efecto;
+    if (TECNOLOGIAS[id] && TECNOLOGIAS[id].necesita && cuenta(TECNOLOGIAS[id].necesita) === 0) continue;
     if (e && e[clave]) total += e[clave];
   }
   for (let i = 0; i <= periodoActual(); i++) {
@@ -361,10 +362,21 @@ function capacidad() {
   return c;
 }
 
+// Trabajadores que necesita un edificio (algunas tecnologías, como Riego, los bajan)
+function trabajadoresDe(tipo) {
+  let n = EDIFICIOS[tipo].trabajadores || 0;
+  if (!n) return 0;
+  for (const id in estado.techs) {
+    const t = TECNOLOGIAS[id] && TECNOLOGIAS[id].efecto && TECNOLOGIAS[id].efecto.trabajadores;
+    if (t && t[tipo]) n += t[tipo];
+  }
+  return Math.max(1, n);
+}
+
 // Habitantes que necesitan todos los edificios (también los que están en obra)
 function trabajosOcupados() {
   let n = 0;
-  for (const l of todosLotes()) if (l) n += EDIFICIOS[l.tipo].trabajadores || 0;
+  for (const l of todosLotes()) if (l) n += trabajadoresDe(l.tipo);
   return n;
 }
 
@@ -532,7 +544,7 @@ function puedeConstruir(tipo, ciudad = 0) {
   if (ed.unico && (lotesDe(ciudad) || []).some((l) => l && l.tipo === tipo)) return { ok: false, motivo: `Ya hay uno en ${nombreCiudad(ciudad)}.` };
   if (ed.maravilla && cuenta(tipo, true) > 0) return { ok: false, motivo: `Ya tenés ${articuloEd(tipo) === "una" ? "la" : "el"} ${ed.nombre}: hay uno solo en todo el reino.` };
   if (ed.maravilla && ciudad !== 0) return { ok: false, motivo: "Esta gran obra solo se puede construir en Roma." };
-  if ((ed.trabajadores || 0) > libres()) return { ok: false, motivo: `Necesita ${ed.trabajadores} habitantes libres (tenés ${libres()}).` };
+  if (trabajadoresDe(tipo) > libres()) return { ok: false, motivo: `Necesita ${trabajadoresDe(tipo)} habitantes libres (tenés ${libres()}).` };
   if (!alcanza(ed.costo)) return { ok: false, motivo: "No te alcanzan los recursos." };
   return { ok: true };
 }
@@ -774,6 +786,7 @@ function avanzarPeriodo() {
 function puedeEntrenar(tipo, n = 1) {
   const u = UNIDADES[tipo];
   if (u.requiere && !tiene(u.requiere)) return { ok: false, motivo: `Necesitás ${TECNOLOGIAS[u.requiere].nombre}.` };
+  if (u.maximo && (estado.ejercito[tipo] || 0) + n > u.maximo) return { ok: false, motivo: `Podés tener ${u.maximo === 1 ? "uno solo" : "hasta " + u.maximo}.` };
   if (cuenta(u.edificio) === 0) return { ok: false, motivo: `Necesitás un ${EDIFICIOS[u.edificio].nombre} terminado.` };
   if (libres() < n) return { ok: false, motivo: "No hay habitantes libres para alistar." };
   if (!alcanza(multiplicar(costoUnidad(tipo), n))) return { ok: false, motivo: "No te alcanzan los recursos." };
@@ -814,13 +827,25 @@ function poderDefensaZona(x, y) {
   let p = 0;
   for (const u in estado.ejercito) p += estado.ejercito[u] * UNIDADES[u].defensa;
   p = (p * bonusDefensa() + 1) * ATAQUES_ENEMIGOS.ejercitoZona;
-  return p * (1 + (MAPA.bonusTerreno[terreno(x, y)] || 0));
+  return p * (1 + (MAPA.bonusTerreno[terreno(x, y)] || 0)) * (1 + bonusGeneral(estado.ejercito, x, y));
 }
 
-function poderAtaque(envio) {
+// Bonus de los generales según el terreno de la batalla (si alguno pelea ahí). Se usa el mejor.
+function bonusGeneral(grupo, x, y) {
+  if (x === undefined) return 0;
+  let b = 0;
+  for (const u in grupo) {
+    const bt = UNIDADES[u] && UNIDADES[u].bonusTerreno;
+    if (bt && grupo[u] > 0) b = Math.max(b, bt[terreno(x, y)] || 0);
+  }
+  return b;
+}
+
+// x, y (opcional): dónde es la batalla, para el bonus del general
+function poderAtaque(envio, x, y) {
   let p = 0;
   for (const u in envio) p += (envio[u] || 0) * UNIDADES[u].ataque;
-  return p * bonusAtaque();
+  return p * bonusAtaque() * (1 + bonusGeneral(envio, x, y));
 }
 
 // Defensa de una ciudad enemiga (si su ejército salió a marchar, queda menos gente)
@@ -876,7 +901,7 @@ function atacarZona(x, y, envio) {
   estado.barcosUsados = (estado.barcosUsados || 0) + naves;
 
   for (const u in grupo) estado.ejercito[u] -= grupo[u];
-  const r = choque(poderAtaque(grupo), defensaZona(x, y, grupo.catapulta));
+  const r = choque(poderAtaque(grupo, x, y), defensaZona(x, y, grupo.catapulta));
   const enviados = total;
   const lugar = capital ? datos.ciudad : `una zona de los ${datos.nombre.toLowerCase()}`;
   let muertos;

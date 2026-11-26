@@ -51,7 +51,7 @@ const EDIFICIOS = {
   muralla:    { nombre: "Muralla", icono: "🧱", desc: "Tus defensores pelean +50% mejor.",
                 costo: { madera: 20, piedra: 40 }, turnos: 3, unico: true, requiere: "albanileria" },
                 // (solo la muralla de Roma ayuda a defender, porque los enemigos atacan Roma)
-  herreria:   { nombre: "Herrería", icono: "⚒️", desc: "Forja armas de hierro para legionarios.",
+  herreria:   { nombre: "Herrería", icono: "⚒️", desc: "Forja armas de hierro: con la tecnología Hierro, todo tu ejército pelea mejor. Entrena legionarios.",
                 costo: { madera: 20, piedra: 20 }, turnos: 2, trabajadores: 1, unico: true, requiere: "hierro" },
   establo:    { nombre: "Establo", icono: "🐴", desc: "Cría caballos para la caballería.",
                 costo: { madera: 30, piedra: 10 }, turnos: 2, trabajadores: 1, unico: true, requiere: "equitacion" },
@@ -83,6 +83,8 @@ const EDIFICIOS = {
 //   crecimiento: 1     llega 1 habitante más por año (si hay comida y lugar)
 //   tributo:     1     los pueblos conquistados pagan +100% de tributo
 //   descuentoTropas: 0.25   los soldados cuestan 25% menos
+//   trabajadores: { edificio: n }  cada edificio de ese tipo necesita n trabajadores más (n negativo = menos)
+// necesita (opcional): edificio que hay que tener terminado para que el efecto funcione
 //
 // periodo: a qué período de Roma pertenece ("monarquia", "republica" o "imperio").
 //   En el árbol solo se ve el período en el que estás, y sus tecnologías no se
@@ -97,7 +99,7 @@ const TECNOLOGIAS = {
   // ===== Monarquía =====
   // fila: altura fija en el árbol (0 = arriba). Si un período no la tiene, se acomoda solo.
   // Fundación
-  agricultura: { nombre: "Agricultura",  icono: "🌱", periodo: "monarquia", fila: 0, costo: 20, desc: "Arado de hierro: cada granja da +2 de comida.",
+  agricultura: { nombre: "Agricultura",  icono: "🌱", periodo: "monarquia", fila: 0, costo: 20, desc: "Arados y semillas mejores: cada granja da +2 de comida.",
                  efecto: { mejora: { granja: { comida: 2 } } } },
   mineria:     { nombre: "Minería",      icono: "⛰️", periodo: "monarquia", fila: 1.2, costo: 20, desc: "Desbloquea la Cantera." },
   alfareria:   { nombre: "Alfarería",    icono: "🏺", periodo: "monarquia", fila: 3, costo: 20, desc: "Vasijas para guardar y vender: desbloquea el Mercado y cada casa da +2 de lugar.",
@@ -105,8 +107,8 @@ const TECNOLOGIAS = {
   escritura:   { nombre: "Escritura",    icono: "✍️", periodo: "monarquia", fila: 6.5, costo: 20, desc: "Desbloquea la Biblioteca." },
 
   // Primeros reyes
-  riego:       { nombre: "Riego",        icono: "💧", periodo: "monarquia", fila: 0, costo: 45, desc: "Canales desde el Tíber: cada granja da +2 de comida más.", requiere: ["agricultura"],
-                 efecto: { mejora: { granja: { comida: 2 } } } },
+  riego:       { nombre: "Riego",        icono: "💧", periodo: "monarquia", fila: 0, costo: 45, desc: "Canales desde el Tíber: cada granja necesita 1 trabajador en vez de 2.", requiere: ["agricultura"],
+                 efecto: { trabajadores: { granja: -1 } } },
   bronce:      { nombre: "Bronce",       icono: "🔱", periodo: "monarquia", fila: 1.2, costo: 45, desc: "Desbloquea Lanceros y Arqueros.", requiere: ["mineria"] },
   albanileria: { nombre: "Albañilería",  icono: "🧱", periodo: "monarquia", fila: 3, costo: 45, desc: "Desbloquea Templo y Muralla.", requiere: ["alfareria"] },
   matematicas: { nombre: "Matemáticas",  icono: "📐", periodo: "monarquia", fila: 5, costo: 45, desc: "Cada biblioteca da +2 de conocimiento.", requiere: ["escritura"],
@@ -121,7 +123,9 @@ const TECNOLOGIAS = {
   senado:      { nombre: "Senado",       icono: "👴", periodo: "monarquia", fila: 5.8, costo: 70, desc: "Los ancianos aconsejan al rey: desbloquea el Foro.", requiere: ["filosofia"] },
 
   // Reyes etruscos
-  hierro:      { nombre: "Hierro",       icono: "⚒️", periodo: "monarquia", fila: 0.8, costo: 85, desc: "Desbloquea Herrería y Legionarios.", requiere: ["equitacion", "bronce"] },
+  hierro:      { nombre: "Hierro",       icono: "⚒️", periodo: "monarquia", fila: 0.8, costo: 85, desc: "Desbloquea la Herrería. Si tenés una Herrería terminada, todo tu ejército ataca y defiende +15% mejor.", requiere: ["equitacion", "bronce"],
+                 efecto: { ataque: 0.15, defensa: 0.15 }, necesita: "herreria" },
+  general:     { nombre: "General",      icono: "⭐", periodo: "monarquia", fila: 2, costo: 85, desc: "Desbloquea la unidad General: guía al ejército y pelea mejor en llanuras, bosques y montañas.", requiere: ["equitacion", "bronce"] },
 
   // Fin de la monarquía
   democracia:  { nombre: "Democracia",   icono: "🗳️", periodo: "monarquia", fila: 4, costo: 100, desc: "El pueblo quiere elegir a sus gobernantes. Te permite proclamar la República.",
@@ -159,7 +163,7 @@ const TECNOLOGIAS = {
                  efecto: { tributo: 1 } },
   rutas:       { nombre: "Rutas marítimas", icono: "🚢", periodo: "republica", fila: 1, costo: 140, desc: "Comercio por mar: cada puerto da +3 de oro.", requiere: ["navegacion"],
                  efecto: { mejora: { puerto: { oro: 3 } } } },
-  legion:      { nombre: "Legión profesional", icono: "💪", periodo: "republica", fila: 2.5, costo: 160, desc: "Soldados con sueldo fijo: entrenar tropas cuesta 25% menos.", requiere: ["tacticas"],
+  legion:      { nombre: "Legión profesional", icono: "💪", periodo: "republica", fila: 2.5, costo: 160, desc: "Soldados con sueldo fijo: desbloquea Legionarios y entrenar tropas cuesta 25% menos.", requiere: ["tacticas"],
                  efecto: { descuentoTropas: 0.25 } },
   pretoriana:  { nombre: "Guardia pretoriana", icono: "⚜️", periodo: "republica", fila: 3.5, costo: 170, desc: "Desbloquea Pretorianos, la élite del ejército.", requiere: ["tacticas"] },
 
@@ -235,13 +239,17 @@ const UNIDADES = {
   milicia:     { nombre: "Milicia",     icono: "🗡️", ataque: 1, defensa: 2, costo: { oro: 8, comida: 5 },               edificio: "cuartel" },
   lanceros:    { nombre: "Lanceros",    icono: "🔱", ataque: 2, defensa: 4, costo: { oro: 12, madera: 8 },              edificio: "cuartel",  requiere: "bronce" },
   arqueros:    { nombre: "Arqueros",    icono: "🏹", ataque: 4, defensa: 3, costo: { oro: 15, madera: 12 },             edificio: "cuartel",  requiere: "bronce" },
-  legionarios: { nombre: "Legionarios", icono: "🛡️", ataque: 6, defensa: 6, costo: { oro: 25, piedra: 8 },              edificio: "herreria", requiere: "hierro" },
+  legionarios: { nombre: "Legionarios", icono: "🛡️", ataque: 6, defensa: 6, costo: { oro: 25, piedra: 8 },              edificio: "herreria", requiere: "legion" },
   caballeria:  { nombre: "Caballería",  icono: "🐎", ataque: 9, defensa: 3, costo: { oro: 35, comida: 15 },             edificio: "establo",  requiere: "equitacion" },
   catapulta:   { nombre: "Catapulta",   icono: "☄️", ataque: 12, defensa: 1, costo: { oro: 45, madera: 25, piedra: 15 }, edificio: "taller",   requiere: "ingenieria",
                  desc: "Además, cada catapulta rompe parte de las murallas enemigas." },
   pretorianos: { nombre: "Pretorianos", icono: "💂", ataque: 10, defensa: 10, costo: { oro: 50, piedra: 10 },          edificio: "cuartel",  requiere: "pretoriana" },
   auxiliares:  { nombre: "Auxiliares",  icono: "🔰", ataque: 5, defensa: 5, costo: { oro: 16, comida: 8 },              edificio: "cuartel",  requiere: "auxiliares",
                  desc: "Soldados de los pueblos conquistados. Más baratos que los legionarios." },
+  general:     { nombre: "General",     icono: "⭐", ataque: 3, defensa: 3, costo: { oro: 40, comida: 10 },            edificio: "cuartel",  requiere: "general", maximo: 1,
+                 desc: "Si va a la batalla, todo el ejército pelea mejor en llanura (+20%), bosque (+20%) y montaña (+25%).",
+                 // bonus para todo el ejército según el terreno donde se pelea (0.2 = +20%). Letras: ver MAPA.terrenos
+                 bonusTerreno: { ".": 0.2, "f": 0.2, "m": 0.25 } },
 };
 
 // Barcos: se construyen en el Puerto y llevan soldados para atacar zonas a las que solo se llega por mar.
