@@ -734,7 +734,7 @@ function infoCasilla() {
 
 function infoZona() {
   if (!casillaElegida) {
-    return `<p class="ayuda">Tocá una zona del mapa para ver de quién es. En naranja, el territorio de Roma.
+    return `<p class="ayuda">Tocá una zona del mapa para ver de quién es. En rojo, el territorio de Roma.
       Las zonas oscuras con borde dorado se pueden explorar: un habitante libre va y vuelve contando lo que vio.
       Las zonas que titilan son de pueblos en guerra con vos y las podés atacar.</p>`;
   }

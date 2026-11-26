@@ -280,6 +280,7 @@ const BARCOS_GUERRA = {
 
 // Pueblos del mapa. Cada uno tiene su territorio en el mapa (ver MAPA.duenos).
 //   lejano: true si queda fuera del Mediterráneo: no hace falta conquistarlo para ganar la partida
+//   conoce: hasta qué distancia de su territorio tiene dibujado el mapa (se ve al conquistarlo; si no tiene, EXPLORACION.conquista)
 //   singular: true si se nombra en singular ("la Liga griega" en vez de "los ...")
 //   letra: con qué letra aparece su territorio en MAPA.duenos
 //   color: color de su territorio en el mapa
@@ -315,13 +316,13 @@ const ENEMIGOS = {
               fuerza: 10, crece: 0.9, muro: 0.25, cada: 9, botin: { comida: 70, piedra: 40 }, tributo: { comida: 4, piedra: 2 },
               desc: "Campesinos del centro de Sicilia. Para llegar necesitás ⛵ Navegación." },
   // --- El Mediterráneo y Europa ---
-  cartagineses: { nombre: "Cartagineses", ciudad: "Cartago", icono: "🐘", letra: "K", color: "#a349a4", x: 181, y: 265,
+  cartagineses: { nombre: "Cartagineses", conoce: 30, ciudad: "Cartago", icono: "🐘", letra: "K", color: "#a349a4", x: 181, y: 265,
               fuerza: 30, crece: 2.5, muro: 0.75, cada: 6, botin: { oro: 250, comida: 80 }, tributo: { oro: 12 },
               desc: "Mercaderes y marinos de África. Tienen Cerdeña, Córcega, la punta oeste de Sicilia y la costa de Libia. Muy poderosos." },
-  liga:     { nombre: "Liga griega", singular: true, ciudad: "Atenas", icono: "🦉", letra: "H", color: "#b97a57", x: 270, y: 245,
+  liga:     { nombre: "Liga griega", conoce: 25, singular: true, ciudad: "Atenas", icono: "🦉", letra: "H", color: "#b97a57", x: 270, y: 245,
               fuerza: 40, crece: 3, muro: 0.75, cada: 7, botin: { oro: 300, ciencia: 120 }, tributo: { oro: 12, ciencia: 5 },
               desc: "Las ciudades griegas unidas: Grecia y sus colonias del sur de Italia y de Sicilia, como Siracusa. Filósofos, templos y falanges temibles." },
-  persas:   { nombre: "Persas", ciudad: "Sardes", icono: "🦁", letra: "P", color: "#ff7f27", x: 304, y: 235,
+  persas:   { nombre: "Persas", conoce: 20, ciudad: "Sardes", icono: "🦁", letra: "P", color: "#ff7f27", x: 304, y: 235,
               fuerza: 80, crece: 5, muro: 0.5, cada: 6, botin: { oro: 500, comida: 150 }, tributo: { oro: 20, comida: 5 },
               desc: "El imperio más grande del mundo: va de Egipto y Anatolia hasta la India. Enfrentarlos es una locura... por ahora." },
   galos:    { nombre: "Galos", ciudad: "Bibracte", icono: "🪓", letra: "B", color: "#800040", x: 124, y: 158,
@@ -364,10 +365,10 @@ const ENEMIGOS = {
   damot:    { nombre: "Reino de Damot", lejano: true, singular: true, ciudad: "Yeha", icono: "⛰️", letra: "F", color: "#8080c0", x: 398, y: 476,
               fuerza: 35, crece: 2.4, muro: 0.5, cada: 8, botin: { oro: 200, comida: 100 }, tributo: { oro: 8, comida: 4 },
               desc: "Reino de las montañas del Cuerno de África, con templos de piedra." },
-  indios:   { nombre: "Confederación india", lejano: true, singular: true, ciudad: "Pataliputra", icono: "🐅", letra: "O", color: "#0000a0", x: 737, y: 382,
+  indios:   { nombre: "Confederación india", conoce: 15, lejano: true, singular: true, ciudad: "Pataliputra", icono: "🐅", letra: "O", color: "#0000a0", x: 737, y: 382,
               fuerza: 90, crece: 5, muro: 0.75, cada: 6, botin: { oro: 500, ciencia: 150 }, tributo: { oro: 20, ciencia: 6 },
               desc: "Los reinos de la India, a orillas del Ganges, con elefantes de guerra. Están en la otra punta del mundo." },
-  zhou:     { nombre: "Dinastía Zhou", lejano: true, singular: true, ciudad: "Luoyang", icono: "🐲", letra: "J", color: "#008000", x: 949, y: 281,
+  zhou:     { nombre: "Dinastía Zhou", conoce: 15, lejano: true, singular: true, ciudad: "Luoyang", icono: "🐲", letra: "J", color: "#008000", x: 949, y: 281,
               fuerza: 100, crece: 6, muro: 0.75, cada: 6, botin: { oro: 600, ciencia: 200 }, tributo: { oro: 25, ciencia: 8 },
               desc: "El gran reino de China, en el fin del mundo conocido. Casi nadie en Roma sabe que existe." },
 };
@@ -468,6 +469,9 @@ const EXPLORACION = {
   //   alcance:   la zona que te muestra está a hasta esta distancia de donde lo encontraste
   //   radio:     cuánto descubre alrededor de esa zona (3 = un cuadrado de 7 x 7)
   mapas: { cantidad: 12, cerca: 4, lejos: 30, alcance: 20, radio: 3 },
+  // 🗺️ Al conquistar un pueblo te quedás con sus mapas: ves todo lo que está a esta distancia
+  // (en casillas) de su territorio. Cada pueblo puede tener su propio "conoce" en ENEMIGOS.
+  conquista: 10,
 };
 
 // Fundar ciudades nuevas (desde el 🗺️ Mapa, en una casilla de tu territorio).

@@ -171,6 +171,39 @@ function explorar(x, y) {
   return true;
 }
 
+// Al conquistar un pueblo te quedás con sus mapas: se ve todo lo que está cerca de su territorio
+// (el que tiene ahora y el que tenía al empezar). Devuelve el texto para la crónica.
+function heredarMapas(id) {
+  const radio = ENEMIGOS[id].conoce || EXPLORACION.conquista;
+  const letra = ENEMIGOS[id].letra;
+  const antes = Object.keys(ENEMIGOS).filter(descubierto);
+  // Se recorre de casilla en casilla desde todo su territorio, hasta "radio" pasos
+  const dist = new Int16Array(MAPA_ANCHO * MAPA_ALTO).fill(-1);
+  let frente = [];
+  for (let y = 0; y < MAPA_ALTO; y++)
+    for (let x = 0; x < MAPA_ANCHO; x++) {
+      const i = y * MAPA_ANCHO + x;
+      if (estado.duenos[i] === id || MAPA.duenos[y][x] === letra) { dist[i] = 0; frente.push(i); }
+    }
+  let nuevas = 0;
+  for (let paso = 0; frente.length; paso++) {
+    const sig = [];
+    for (const i of frente) {
+      if (!estado.visto[i]) { estado.visto[i] = 1; nuevas++; }
+      if (paso === radio) continue;
+      const x = i % MAPA_ANCHO, y = Math.floor(i / MAPA_ANCHO);
+      for (const [dx, dy] of direcciones(y)) {
+        const j = (y + dy) * MAPA_ANCHO + x + dx;
+        if (dentro(x + dx, y + dy) && dist[j] < 0) { dist[j] = paso + 1; sig.push(j); }
+      }
+    }
+    frente = sig;
+  }
+  if (!nuevas) return "";
+  const nuevos = Object.keys(ENEMIGOS).filter((o) => descubierto(o) && !antes.includes(o));
+  return ` 🗺️ Te quedás con sus mapas y conocés ${nuevas} zonas nuevas${nuevos.length ? `: ¡descubriste ${nuevos.map((o) => pueblo(o)).join(", ")}!` : "."}`;
+}
+
 // Los exploradores que terminaron su viaje vuelven y cuentan lo que vieron
 function volverExploradores() {
   const quedan = [];
@@ -545,10 +578,11 @@ function alianzasPorFama() {
     e.vivo = false;
     e.proximo = null;
     const zonas = zonasDe(id);
+    const mapas = heredarMapas(id);
     estado.duenos = estado.duenos.map((d) => (d === id ? "roma" : d));
     revelarTerritorio();
     sumarCiudadConquistada(id);
-    anotar(`🤝 ¡La fama de Roma llegó a ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se unen a Roma sin pelear: sus ${zonas} zonas pasan a ser tuyas, te pagan tributo y ya podés construir en ${datos.ciudad}.${cambiarApoyo(APOYO.sucesos.zona)}`, "bien");
+    anotar(`🤝 ¡La fama de Roma llegó a ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se unen a Roma sin pelear: sus ${zonas} zonas pasan a ser tuyas, te pagan tributo y ya podés construir en ${datos.ciudad}.${mapas}${cambiarApoyo(APOYO.sucesos.zona)}`, "bien");
     return;   // como mucho uno por año
   }
 }
@@ -1056,11 +1090,12 @@ function atacarZona(x, y, envio) {
     e.guerra = false;
     e.marcha = null;
     const zonas = zonasDe(id);
+    const mapas = heredarMapas(id);
     estado.duenos = estado.duenos.map((d) => (d === id ? "roma" : d));
     revelarTerritorio();
     sumarCiudadConquistada(id);
     for (const rec in datos.botin) estado.rec[rec] += datos.botin[rec];
-    anotar(`🏆 ¡Conquistaste ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se rinden y sus ${zonas} zonas pasan a ser de Roma. Botín: ${textoRecursos(datos.botin)}. Ahora te pagan tributo y podés construir en ${datos.ciudad}.${cambiarApoyo(APOYO.sucesos.conquista)}${cambiarFama(FAMA.sucesos.conquista)}`, "bien");
+    anotar(`🏆 ¡Conquistaste ${datos.ciudad}! Los ${datos.nombre.toLowerCase()} se rinden y sus ${zonas} zonas pasan a ser de Roma. Botín: ${textoRecursos(datos.botin)}. Ahora te pagan tributo y podés construir en ${datos.ciudad}.${mapas}${cambiarApoyo(APOYO.sucesos.conquista)}${cambiarFama(FAMA.sucesos.conquista)}`, "bien");
   } else if (r.ganaA) {
     muertos = aplicarBajas(grupo, r.perdidaGanador);
     estado.duenos[y * MAPA_ANCHO + x] = "roma";
