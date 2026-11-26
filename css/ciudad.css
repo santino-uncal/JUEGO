@@ -190,3 +190,7 @@ img.ico { width: 1.35em; height: 1.35em; vertical-align: -0.3em; }
 #nivel-ciudad { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 6px 0 10px; }
 #nivel-ciudad button small { opacity: .85; }
 #nivel-ciudad .motivo { flex-basis: 100%; }
+
+/* Lista de partidas guardadas (dentro de la ventana) */
+#modal .lista { text-align: left; }
+#modal .item-texto { flex: 1; }

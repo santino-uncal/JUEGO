@@ -30,14 +30,16 @@ function descomprimir(c) {
   return lista;
 }
 
-function guardar() {
-  const copia = { ...estado, duenos: comprimir(estado.duenos), visto: comprimir(estado.visto) };
-  localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(copia));
-}
+// Partida → texto para guardar, y al revés
+const empaquetar = (p) => JSON.stringify({ ...p, duenos: comprimir(p.duenos), visto: comprimir(p.visto) });
 
-function cargar() {
+function guardar() { localStorage.setItem(CLAVE_GUARDADO, empaquetar(estado)); }
+
+function cargar() { return desempaquetar(localStorage.getItem(CLAVE_GUARDADO)); }
+
+function desempaquetar(texto) {
   try {
-    const d = JSON.parse(localStorage.getItem(CLAVE_GUARDADO));
+    const d = JSON.parse(texto);
     if (d) { d.duenos = descomprimir(d.duenos); d.visto = descomprimir(d.visto); }
     if (d && d.lotes && d.lotes.length >= INICIO.lotes) {
       for (const id in d.techs) if (!TECNOLOGIAS[id]) delete d.techs[id];
@@ -1114,16 +1116,18 @@ function mostrarFin() {
     const d = ENEMIGOS[estado.conquistadoPor];
     abrirModal(`<h2>¡Roma ha caído! 💀</h2><p>Los ${d ? d.nombre.toLowerCase() : "enemigos"} llegaron con un ejército mucho más grande que tus defensas, arrasaron con todo y tomaron Roma después de ${estado.turno} años.</p>
     <p><small>Para que no pase: entrená soldados, construí una muralla y mirá los avisos de ejércitos en camino.</small></p>
-    <button data-accion="nueva">Jugar de nuevo</button>`);
+    <div class="fila centrado"><button data-accion="nueva">Jugar de nuevo</button>${botonPartidas()}</div>`);
     return;
   }
   if (estado.resultado === "descontento") {
     abrirModal(`<h2>¡Revuelta en Roma! 🔥</h2><p>El apoyo del pueblo se desplomó (llegó a ${APOYO.derrocado} o menos). Hartos de tu gobierno, asaltaron el palacio y te echaron del trono después de ${estado.turno} años.</p>
-    <button data-accion="nueva">Jugar de nuevo</button>`);
+    <div class="fila centrado"><button data-accion="nueva">Jugar de nuevo</button>${botonPartidas()}</div>`);
     return;
   }
   abrirModal(`<h2>¡Ave, ${PERIODOS[periodoActual()].titulo}! 🏆</h2><p>Sometiste a todos los pueblos del Mediterráneo en ${estado.turno} años. Roma domina el <i>Mare Nostrum</i>.</p>
-    <button data-accion="nueva">Jugar de nuevo</button>`);
+    <p>Podés seguir jugando esta partida, o guardarla para volver a ella cuando quieras y empezar otra.</p>
+    <div class="fila centrado"><button data-accion="seguir">🏛️ Seguir jugando</button>
+    <button data-accion="guardar-y-nueva" class="claro">💾 Guardarla y empezar otra</button></div>`);
 }
 
 // ---------- Clics ----------
@@ -1265,6 +1269,16 @@ document.addEventListener("click", (ev) => {
     }
     case "cerrar": cerrarModal(); return;
     case "nueva": empezarDeNuevo(); return;
+    case "seguir": seguirJugando(); cerrarModal(); break;
+    case "guardar-y-nueva":
+      if (estado.resultado === "victoria") seguirJugando();
+      if (!estado.terminado && !archivar(estado)) return;   // (una partida perdida no se guarda)
+      empezarDeNuevo();
+      return;
+    case "partidas": mostrarPartidas(); return;
+    case "jugar-guardada": jugarGuardada(+d.i); return;
+    case "borrar-guardada": preguntarBorrar(+d.i); return;
+    case "borrar-guardada-si": borrarGuardada(+d.i); mostrarPartidas(); return;
   }
   trasAccion();
 });
@@ -1274,13 +1288,111 @@ $("btn-turno").addEventListener("click", () => {
   trasAccion();
 });
 
+$("btn-partidas").addEventListener("click", mostrarPartidas);
 $("btn-nueva").addEventListener("click", () => {
-  abrirModal(`<h2>¿Empezar una partida nueva?</h2><p>Se pierde la actual.</p>
-    <div class="fila centrado"><button data-accion="nueva">Sí, empezar de nuevo</button><button data-accion="cerrar" class="claro">Cancelar</button></div>`);
+  abrirModal(`<h2>¿Empezar una partida nueva?</h2><p>Podés guardar la actual para volver a ella después (desde el botón 📚 Partidas).</p>
+    <div class="fila centrado"><button data-accion="guardar-y-nueva">💾 Guardar la actual y empezar otra</button>
+    <button data-accion="nueva" class="claro">Empezar sin guardar</button><button data-accion="cerrar" class="claro">Cancelar</button></div>`);
 });
+
+// ---------- Partidas guardadas ----------
+// Además de la partida que estás jugando, se pueden guardar otras (por ejemplo, las que ganaste)
+// para volver a jugarlas cuando quieras. Cada una tiene un resumen para mostrar en la lista.
+const CLAVE_GUARDADAS = "imperium_ciudad_guardadas";
+const MAX_GUARDADAS = 10;
+
+function guardadas() {
+  try { return JSON.parse(localStorage.getItem(CLAVE_GUARDADAS)) || []; } catch (e) { return []; }
+}
+
+function guardarLista(lista) {
+  try {
+    localStorage.setItem(CLAVE_GUARDADAS, JSON.stringify(lista));
+  } catch (e) {
+    abrirModal(`<h2>No hay más lugar 😕</h2><p>El navegador no tiene espacio para guardar otra partida. Borrá alguna de las 📚 Partidas y probá de nuevo.</p>
+      <div class="fila centrado">${botonPartidas()}<button data-accion="cerrar" class="claro">Cerrar</button></div>`);
+    return false;
+  }
+  actualizarBotonPartidas();
+  return true;
+}
+
+// Guarda una partida en la lista (la más nueva primero). Si ya hay MAX_GUARDADAS, se va la más vieja.
+function archivar(p) {
+  const lista = guardadas();
+  lista.unshift({
+    turno: p.turno, gano: p.gano || null, periodo: p.periodo || 0,
+    conquistados: Object.values(p.enemigos).filter((e) => !e.vivo).length,
+    fecha: new Date().toLocaleDateString("es-AR"),
+    datos: empaquetar(p),
+  });
+  return guardarLista(lista.slice(0, MAX_GUARDADAS));
+}
+
+// Después de ganar, la partida sigue: queda anotado en qué año ganaste
+function seguirJugando() {
+  if (estado.resultado !== "victoria") return;
+  estado.gano = estado.turno;
+  estado.terminado = false;
+  estado.resultado = null;
+  anotar("🏆 ¡Roma domina el Mediterráneo! Seguís gobernando: todavía quedan pueblos lejanos por conquistar.", "bien");
+}
+
+const botonPartidas = () => (guardadas().length ? `<button data-accion="partidas" class="claro">📚 Partidas guardadas</button>` : "");
+// El botón 📚 del encabezado aparece solo si hay alguna partida guardada
+const actualizarBotonPartidas = () => $("btn-partidas").classList.toggle("oculto", !guardadas().length);
+
+function mostrarPartidas() {
+  const lista = guardadas();
+  const filas = lista.map((g, i) => `
+    <div class="item">
+      <div class="item-icono">${g.gano ? "🏆" : PERIODOS[g.periodo].icono}</div>
+      <div class="item-texto">
+        <b>${g.gano ? `Ganada en el año ${g.gano}` : `Año ${g.turno}`}</b> <small>· ${PERIODOS[g.periodo].nombre}</small><br>
+        <small>${g.gano ? `Jugada hasta el año ${g.turno} · ` : ""}${g.conquistados} pueblo${g.conquistados === 1 ? "" : "s"} conquistado${g.conquistados === 1 ? "" : "s"} · guardada el ${g.fecha}</small>
+      </div>
+      <button data-accion="jugar-guardada" data-i="${i}">▶️ Jugar</button>
+      <button data-accion="borrar-guardada" data-i="${i}" class="claro" title="Borrar">🗑️</button>
+    </div>`).join("");
+  abrirModal(`<h2>📚 Partidas guardadas</h2>
+    ${lista.length ? `<p><small>Al jugar una, la que tenés ahora se guarda en esta lista para que no la pierdas.</small></p><div class="lista">${filas}</div>`
+                   : "<p>No hay ninguna partida guardada.</p>"}
+    <div class="fila centrado"><button data-accion="cerrar" class="claro">Cerrar</button></div>`);
+}
+
+// Cambia la partida actual por una guardada (la actual pasa a la lista, salvo que la hayas perdido)
+function jugarGuardada(i) {
+  const lista = guardadas();
+  const elegida = lista[i] && desempaquetar(lista[i].datos);
+  if (!elegida) { abrirModal(`<h2>😕</h2><p>Esa partida no se pudo abrir.</p><button data-accion="cerrar">Cerrar</button>`); return; }
+  lista.splice(i, 1);
+  if (!guardarLista(lista)) return;
+  if (!estado.terminado && !archivar(estado)) return;
+  estado = elegida;
+  ciudadVista = 0; loteElegido = null; casillaElegida = null; camara = null; pestania = "construir";
+  cerrarModal();
+  guardar();
+  dibujarTodo();
+  if (estado.terminado) mostrarFin();
+}
+
+function preguntarBorrar(i) {
+  const g = guardadas()[i];
+  if (!g) return;
+  abrirModal(`<h2>🗑️ ¿Borrar esta partida?</h2><p>${g.gano ? `La que ganaste en el año ${g.gano}` : `La del año ${g.turno}`}. Se borra para siempre.</p>
+    <div class="fila centrado"><button data-accion="borrar-guardada-si" data-i="${i}">🗑️ Sí, borrarla</button>
+    <button data-accion="partidas" class="claro">No, volver</button></div>`);
+}
+
+function borrarGuardada(i) {
+  const lista = guardadas();
+  lista.splice(i, 1);
+  guardarLista(lista);
+}
 
 function empezarDeNuevo() {
   estado = partidaNueva();
+  camara = null;
   ciudadVista = 0;
   loteElegido = null;
   pestania = "construir";
@@ -1292,6 +1404,7 @@ function empezarDeNuevo() {
 
 // ---------- Arranque ----------
 
+actualizarBotonPartidas();
 estado = cargar();
 if (estado) {
   dibujarTodo();

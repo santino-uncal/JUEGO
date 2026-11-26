@@ -1421,8 +1421,9 @@ function revisarFin() {
     anotar(`🔥 ¡Revuelta en Roma! El pueblo, harto de tu gobierno, asalta el palacio y te echa del trono.`, "mal");
     return true;
   }
-  // Se gana al conquistar a todos los pueblos del Mediterráneo (los lejanos no hacen falta)
-  if (Object.keys(ENEMIGOS).every((id) => ENEMIGOS[id].lejano || !estado.enemigos[id].vivo)) {
+  // Se gana al conquistar a todos los pueblos del Mediterráneo (los lejanos no hacen falta).
+  // Si ya ganaste y elegiste seguir jugando (estado.gano = año de la victoria), no se vuelve a avisar.
+  if (!estado.gano && Object.keys(ENEMIGOS).every((id) => ENEMIGOS[id].lejano || !estado.enemigos[id].vivo)) {
     estado.terminado = true;
     estado.resultado = "victoria";
     return true;
