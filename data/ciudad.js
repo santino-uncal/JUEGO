@@ -399,6 +399,13 @@ const EXPLORACION = {
     { texto: "encontró unas ruinas con monedas viejas", efecto: { oro: 20 } },
     { texto: "aprendió costumbres de pastores del camino", efecto: { ciencia: 10 } },
   ],
+  // 📜 Mapas antiguos escondidos en el mapa. Cuando descubrís el lugar donde está uno,
+  // te dibuja una zona lejana que todavía no exploraste.
+  //   cantidad:  cuántos hay escondidos en cada partida
+  //   cerca / lejos: a qué distancia de Roma pueden estar escondidos (en casillas)
+  //   alcance:   la zona que te muestra está a hasta esta distancia de donde lo encontraste
+  //   radio:     cuánto descubre alrededor de esa zona (3 = un cuadrado de 7 x 7)
+  mapas: { cantidad: 12, cerca: 4, lejos: 30, alcance: 20, radio: 3 },
 };
 
 // Fundar ciudades nuevas (desde el 🗺️ Mapa, en una casilla de tu territorio).

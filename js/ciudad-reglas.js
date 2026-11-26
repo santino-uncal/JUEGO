@@ -62,8 +62,50 @@ function prepararMapa(partida) {
     partida.visto = Array(MAPA_ANCHO * MAPA_ALTO).fill(0);
     partida.exploradores = [];
     revelarTerritorio(partida);
+    partida.mapas = null;
   }
   partida.exploradores = partida.exploradores || [];
+  if (!partida.mapas) esconderMapas(partida);
+}
+
+// ---------- Mapas antiguos ----------
+
+// Esconde los mapas en casillas de tierra que todavía no se ven, a cierta distancia de Roma
+function esconderMapas(partida) {
+  const M = EXPLORACION.mapas;
+  const lugares = [];
+  for (let y = 0; y < MAPA_ALTO; y++)
+    for (let x = 0; x < MAPA_ANCHO; x++) {
+      const d = distancia(x, y, MAPA.roma.x, MAPA.roma.y);
+      if (esTierra(x, y) && !partida.visto[y * MAPA_ANCHO + x] && d >= M.cerca && d <= M.lejos) lugares.push({ x, y });
+    }
+  partida.mapas = [];
+  for (let i = 0; i < M.cantidad && lugares.length; i++) {
+    partida.mapas.push(lugares.splice(Math.floor(Math.random() * lugares.length), 1)[0]);
+  }
+}
+
+// Si ya se ve algún lugar con un mapa escondido, lo encontrás y te muestra una zona lejana sin explorar
+function buscarMapas() {
+  const M = EXPLORACION.mapas;
+  const quedan = [];
+  for (const m of estado.mapas || []) {
+    if (!vista(m.x, m.y)) { quedan.push(m); continue; }
+    const opciones = [];
+    for (let y = Math.max(0, m.y - M.alcance); y <= Math.min(MAPA_ALTO - 1, m.y + M.alcance); y++)
+      for (let x = Math.max(0, m.x - M.alcance - 1); x <= Math.min(MAPA_ANCHO - 1, m.x + M.alcance + 1); x++)
+        if (esTierra(x, y) && !vista(x, y) && distancia(x, y, m.x, m.y) <= M.alcance) opciones.push({ x, y });
+    if (!opciones.length) { anotar("📜 Encontraste un mapa antiguo, pero muestra tierras que ya conocés."); continue; }
+    const destino = opciones[Math.floor(Math.random() * opciones.length)];
+    const antes = Object.keys(ENEMIGOS).filter(descubierto);
+    revelar(destino.x, destino.y, M.radio);
+    let texto = "📜 ¡Encontraste un mapa antiguo! Te muestra una zona lejana que nadie había explorado.";
+    for (const id in ENEMIGOS) {
+      if (descubierto(id) && !antes.includes(id)) texto += ` ¡Descubriste las tierras de los ${ENEMIGOS[id].nombre.toLowerCase()}!`;
+    }
+    anotar(texto, "bien");
+  }
+  estado.mapas = quedan;
 }
 
 // Muestra tus zonas y las que están pegadas a ellas
@@ -1146,6 +1188,7 @@ function terminarTurno() {
   // 5) Enemigos: crecen, marchan y atacan
   estado.turno++;
   volverExploradores();
+  buscarMapas();
   for (const id in estado.enemigos) {
     const e = estado.enemigos[id];
     if (!e.vivo) continue;
