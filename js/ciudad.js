@@ -332,7 +332,7 @@ function panelEjercito() {
 function panelVecinos() {
   const cansados = soldados() - soldadosListos();
   let html = cansados ? `<p class="ayuda">😴 ${cansados} soldado${cansados > 1 ? "s" : ""} ya pelearon este año y descansan. ${soldadosListos() ? `Te quedan ${soldadosListos()} listos para atacar.` : "El año que viene vuelven a estar listos."}</p>` : "";
-  html += `<p class="ayuda">Cada pueblo tiene su territorio en el 🗺️ Mapa. Declarale la guerra y después tocá en el mapa una zona suya pegada a la tuya para atacarla. Si tomás su capital, se rinde entero. Cada pueblo tiene además otras ciudades: si le tomás más de la mitad, firmar la paz te sale mucho más barato.</p>`;
+  html += `<p class="ayuda">Cada pueblo tiene su territorio en el 🗺️ Mapa. Declarale la guerra y después tocá en el mapa una zona suya pegada a la tuya para atacarla. Si tomás su capital, se rinde entero. Cada pueblo tiene además otras ciudades: si le tomás más de la mitad, firmar la paz te sale mucho más barato. Las ciudades 🛡️ independientes no son de ningún pueblo y nunca atacan primero.</p>`;
   const conocidos = Object.keys(ENEMIGOS).filter(descubierto);
   const ocultos = Object.keys(ENEMIGOS).length - conocidos.length;
   html += `<div class="lista">${conocidos.map(tarjetaEnemigo).join("")}`;
@@ -374,7 +374,7 @@ function tarjetaEnemigo(id) {
   else if (enTregua(id)) estadoTexto = `<small>🕊️ En paz con Roma: firmaron una tregua que dura ${e.tregua - estado.turno} año${e.tregua - estado.turno > 1 ? "s" : ""} más.</small>`;
   else estadoTexto = `<small>🕊️ En paz con Roma.${e.proximo ? ` Pero te van a atacar en unos ${Math.max(1, e.proximo - estado.turno)} años.` : ""}</small>`;
   const tomadas = ciudadesTomadas(id);
-  const ciudadesTexto = `<small>🏰 Ciudades: ${[d.ciudad, ...ciudadesExtra(id).map((c) => c.nombre)].join(", ")}${tomadas ? ` · ya le tomaste ${tomadas} de ${totalCiudades(id)}` : ""}</small><br>`;
+  const ciudadesTexto = d.independiente ? "" : `<small>🏰 Ciudades: ${[d.ciudad, ...ciudadesExtra(id).map((c) => c.nombre)].join(", ")}${tomadas ? ` · ya le tomaste ${tomadas} de ${totalCiudades(id)}` : ""}</small><br>`;
   const pd = puedeDeclararGuerra(id);
   const boton = e.guerra
     ? `<div class="botones-pueblo"><button data-accion="ver-mapa" data-enemigo="${id}">🗺️ Ver</button>${botonPaz(id)}</div>`
@@ -383,14 +383,15 @@ function tarjetaEnemigo(id) {
     <div class="item">
       <div class="item-icono">${d.icono}</div>
       <div class="item-texto">
-        <b>${muestra} ${d.nombre}</b> <small>· capital: ${d.ciudad} · ${zonasDe(id)} zonas</small><br>
+        <b>${muestra} ${d.nombre}</b> <small>· ${d.independiente ? `🛡️ ciudad independiente: ${d.ciudad}` : `capital: ${d.ciudad}`} · ${zonasDe(id)} zonas</small><br>
         <small>${d.desc}</small><br>
         ${ciudadesTexto}
         ${d.lejano ? `<small>🌍 Queda lejos del Mediterráneo: no hace falta conquistarlo para ganar.</small><br>` : ""}
+        ${d.independiente ? `<small>🛡️ No es de ningún pueblo: nunca ataca primero y no hace falta conquistarla para ganar. Si la tomás, te paga tributo.</small><br>` : ""}
         ${d.costoPoder ? `<small>⚖️ Es enorme: quedarte con sus tierras cuesta ${d.costoPoder} veces más poder político.</small><br>` : ""}
-        <small>Ejército: ~${estimar(e.fuerza)} · Defensa de su capital: ~${estimar(defensaEnemiga(id))}${d.muro ? ` (murallas +${d.muro * 100}%)` : ""}</small><br>
+        <small>Ejército: ~${estimar(e.fuerza)} · Defensa de ${d.independiente ? "la ciudad" : "su capital"}: ~${estimar(defensaEnemiga(id))}${d.muro ? ` (murallas +${d.muro * 100}%)` : ""}</small><br>
         ${estadoTexto}
-        ${e.guerra ? `<br><small>${textoPaz(id)}</small>` : ""}
+        ${e.guerra && !d.independiente ? `<br><small>${textoPaz(id)}</small>` : ""}
       </div>
       ${boton}
     </div>`;
@@ -500,7 +501,7 @@ function dibujarMapa() {
     const d = ENEMIGOS[id];
     if (!vista(d.x, d.y)) continue;
     const vivo = estado.enemigos[id].vivo;
-    capa.lugares.push({ x: d.x, y: d.y, icono: ICONOS_CIUDAD[vivo ? "enemiga" : "conquistada"], nombre: d.ciudad, mio: !vivo });
+    capa.lugares.push({ x: d.x, y: d.y, icono: ICONOS_CIUDAD[!vivo ? "conquistada" : d.independiente ? "independiente" : "enemiga"], nombre: d.ciudad, mio: !vivo });
   }
   for (const id in ENEMIGOS) {
     for (const c of ciudadesExtra(id)) {
@@ -882,11 +883,14 @@ function infoZona() {
   const p = puedeAtacarZona(x, y);
   const capital = lugar === dueno;
   const otra = !capital && ciudadEnemigaEn(x, y);
-  const titulo = capital ? `${ICONOS_CIUDAD.enemiga} ${d.ciudad}, capital de ${pueblo(dueno)}`
+  const titulo = capital && d.independiente ? `${ICONOS_CIUDAD.independiente} ${d.ciudad}, ciudad independiente`
+    : capital ? `${ICONOS_CIUDAD.enemiga} ${d.ciudad}, capital de ${pueblo(dueno)}`
     : otra ? `${ICONOS_CIUDAD.enemiga} ${otra.nombre}, ciudad de ${pueblo(dueno)}`
     : `${ter.icono} ${ter.nombre} de ${pueblo(dueno)}`;
   const bonus = MAPA.bonusTerreno[terreno(x, y)];
-  const detalle = capital
+  const detalle = capital && d.independiente
+    ? `${d.desc} No es de ningún pueblo. Si la tomás, es tuya con sus alrededores y ${verbo(dueno, "te pagan", "te paga")} tributo cada año.`
+    : capital
     ? `Si la tomás, ${pueblo(dueno)} se ${verbo(dueno, "rinden", "rinde")} y <b>todo su territorio</b> pasa a ser tuyo, con todas sus ciudades.`
     : otra ? `La defiende la mitad de su ejército con parte de sus murallas. Si la tomás, pasa a ser tuya <b>con las zonas de alrededor</b>, te llevás botín y podés construir en ella.${esPuertaRuta(x, y) ? `<br>🐫 Acá empieza la ${RUTAS_COMERCIALES.nombre}: si es tuya, las caravanas te dejan <b>+${RUTAS_COMERCIALES.oro} 💰 por año</b>.` : ""}<br><small>Ya le tomaste ${ciudadesTomadas(dueno)} de sus ${totalCiudades(dueno)} ciudades. ${textoPaz(dueno)}</small>`
     : `La defiende parte de su ejército${bonus ? ` (${ter.nombre.toLowerCase()}: +${bonus * 100}% de defensa)` : ""}. Si la ganás, pasa a ser tuya y te llevás algo de botín.`;

@@ -294,6 +294,7 @@ const BARCOS_GUERRA = {
 //                 Si no tiene, el pueblo vive en paz hasta que vos le declares la guerra.
 //   cada: años entre un ataque y el siguiente mientras están en guerra.
 //   botin: lo que ganás al tomar su capital. tributo: lo que te pagan cada año después.
+//   independiente: true si es una ciudad libre que no pertenece a ningún pueblo (ver abajo, "Ciudades independientes")
 //   costoPoder: multiplica el ⚖️ poder político que cuesta quedarte con sus zonas y ciudades
 //         (10 = diez veces más caro). Sirve para los reinos enormes y lejanos.
 const ENEMIGOS = {
@@ -400,6 +401,39 @@ const ENEMIGOS = {
               ciudades: [{ nombre: "Haojing", x: 928, y: 281 }, { nombre: "Linzi", x: 984, y: 259 }, { nombre: "Ji", x: 973, y: 228 }, { nombre: "Ying", x: 955, y: 302 }],
               fuerza: 100, crece: 6, muro: 0.75, cada: 6, botin: { oro: 600, ciencia: 200 }, tributo: { oro: 25, ciencia: 8 },
               desc: "El gran reino de China, en el fin del mundo conocido. Casi nadie en Roma sabe que existe." },
+
+  // --- Ciudades independientes ---
+  // Ciudades libres que no son de ningún pueblo. Su territorio es la ciudad y las casillas de alrededor
+  // (se lo sacan al pueblo que estaba ahí al empezar la partida). Nunca atacan primero, no pelean con
+  // los otros pueblos y no hace falta conquistarlas para ganar. Se pueden conquistar o pueden unirse
+  // a Roma por la fama, como cualquier pueblo.
+  masaliotas: { nombre: "Masaliotas", independiente: true, ciudad: "Massalia", icono: "⛵", color: "#f5f0dc", x: 130, y: 191,
+              fuerza: 12, crece: 0.8, muro: 0.75, cada: 8, botin: { oro: 120, comida: 40 }, tributo: { oro: 6 },
+              desc: "Colonia griega independiente en la costa de la Galia. Comerciantes ricos, con buenas murallas." },
+  emporitanos: { nombre: "Emporitanos", independiente: true, ciudad: "Emporion", icono: "⚓", color: "#e6f0f5", x: 116, y: 212,
+              fuerza: 6, crece: 0.5, muro: 0.5, cada: 9, botin: { oro: 60 }, tributo: { oro: 3 },
+              desc: "Pequeño puerto griego en la costa de Hispania, donde se compra y se vende de todo." },
+  gaditanos: { nombre: "Gaditanos", independiente: true, ciudad: "Gades", icono: "🏝️", color: "#f0e6f5", x: 49, y: 256,
+              fuerza: 10, crece: 0.7, muro: 0.5, cada: 8, botin: { oro: 100 }, tributo: { oro: 5 },
+              desc: "Antiquísima ciudad fenicia en la punta de Hispania, junto a las Columnas de Hércules." },
+  cireneos: { nombre: "Cireneos", independiente: true, ciudad: "Cirene", icono: "🌱", color: "#eef5e0", x: 261, y: 301,
+              fuerza: 10, crece: 0.7, muro: 0.5, cada: 8, botin: { comida: 60, oro: 60 }, tributo: { comida: 3, oro: 3 },
+              desc: "Ciudad griega de Libia, famosa por el silfio, una planta que vale su peso en plata." },
+  rodios:   { nombre: "Rodios", independiente: true, ciudad: "Rodas", icono: "☀️", color: "#fff5d6", x: 307, y: 251,
+              fuerza: 14, crece: 1, muro: 0.75, cada: 8, botin: { oro: 150 }, tributo: { oro: 7 },
+              desc: "Ciudad de marinos y mercaderes, con el gran Coloso del dios Sol en su puerto." },
+  bizantinos: { nombre: "Bizantinos", independiente: true, ciudad: "Bizancio", icono: "🐟", color: "#e0eef5", x: 313, y: 196,
+              fuerza: 12, crece: 0.8, muro: 1, cada: 8, botin: { oro: 120, comida: 40 }, tributo: { oro: 6, comida: 2 },
+              desc: "Ciudad griega sobre el estrecho que une el mar Egeo con el mar Negro. Sus murallas son famosas." },
+  sinopenses: { nombre: "Sinopenses", independiente: true, ciudad: "Sinope", icono: "🐬", color: "#e6f5f0", x: 352, y: 206,
+              fuerza: 8, crece: 0.6, muro: 0.5, cada: 9, botin: { oro: 70, madera: 40 }, tributo: { oro: 3, madera: 2 },
+              desc: "Puerto griego en la costa sur del mar Negro, rodeado de bosques." },
+  tirios:   { nombre: "Tirios", independiente: true, ciudad: "Tiro", icono: "🐚", color: "#f5e0ee", x: 351, y: 282,
+              fuerza: 14, crece: 1, muro: 1, cada: 8, botin: { oro: 150 }, tributo: { oro: 8 },
+              desc: "La gran ciudad de los fenicios, madre de Cartago. Fabrican la tintura púrpura que usan los reyes." },
+  bosforo:  { nombre: "Reino del Bósforo", independiente: true, singular: true, ciudad: "Panticapea", icono: "🌾", color: "#f5f5e0", x: 378, y: 155,
+              fuerza: 16, crece: 1, muro: 0.5, cada: 8, botin: { comida: 120, oro: 60 }, tributo: { comida: 6, oro: 2 },
+              desc: "Ciudad griega al norte del mar Negro, que vende trigo a medio Mediterráneo." },
 };
 
 // Apoyo popular 😊 (de 0 a 100). Con mucho apoyo la gente trabaja con ganas y todo rinde más;
@@ -544,6 +578,7 @@ const ICONOS_CIUDAD = {
   fundada: "🏛️",       // las que fundás vos
   conquistada: "🦅",   // capitales de pueblos que conquistaste
   enemiga: "🏰",       // capitales de pueblos que todavía no son tuyos
+  independiente: "🛡️", // ciudades independientes que todavía no son tuyas
 };
 
 // Ciudades conquistadas: cuando tomás la capital de un pueblo (o se une a Roma por la fama),

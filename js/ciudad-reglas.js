@@ -41,6 +41,7 @@ function prepararMapa(partida) {
   }
   if (!partida.duenos || partida.duenos.length !== MAPA_ANCHO * MAPA_ALTO || partida.versionMapa !== MAPA.version) {
     partida.versionMapa = MAPA.version;
+    partida.independientes = [];
     // De quién es cada casilla al empezar (los pueblos ya conquistados pasan a ser tuyos)
     partida.duenos = [];
     for (let y = 0; y < MAPA_ALTO; y++) {
@@ -67,6 +68,7 @@ function prepararMapa(partida) {
       puestas.push(c);
     }
   }
+  ponerIndependientes(partida);
   // Los pueblos que ya conquistaste te dan su ciudad (también en partidas guardadas de antes)
   partida.colonias = partida.colonias || [];
   for (const id in ENEMIGOS) if (!partida.enemigos[id].vivo) sumarCiudadesDelPueblo(id, partida);
@@ -79,6 +81,24 @@ function prepararMapa(partida) {
   }
   partida.exploradores = partida.exploradores || [];
   if (!partida.mapas) esconderMapas(partida);
+}
+
+// Las ciudades independientes se quedan con su casilla y las de alrededor (se hace una sola vez por partida,
+// así también aparecen en las partidas guardadas de antes). Las casillas que ya son de Roma no se tocan.
+function ponerIndependientes(partida) {
+  partida.independientes = partida.independientes || [];
+  for (const id in ENEMIGOS) {
+    const d = ENEMIGOS[id];
+    if (!d.independiente || partida.independientes.includes(id)) continue;
+    const dueno = partida.enemigos[id].vivo ? id : "roma";
+    partida.duenos[d.y * MAPA_ANCHO + d.x] = dueno;
+    for (const c of vecinas(d.x, d.y)) {
+      const i = c.y * MAPA_ANCHO + c.x;
+      if (!esTierra(c.x, c.y) || partida.duenos[i] === "roma" || lugarEn(c.x, c.y) || ciudadPuebloEn(c.x, c.y)) continue;
+      partida.duenos[i] = dueno;
+    }
+    partida.independientes.push(id);
+  }
 }
 
 // ---------- Mapas antiguos ----------
@@ -1319,12 +1339,12 @@ function defenderse(id) {
 function fronterasPueblos() {
   const f = {};
   estado.duenos.forEach((b, i) => {
-    if (!b || b === "roma" || !estado.enemigos[b] || !estado.enemigos[b].vivo) return;
+    if (!b || b === "roma" || !estado.enemigos[b] || !estado.enemigos[b].vivo || ENEMIGOS[b].independiente) return;
     const x = i % MAPA_ANCHO, y = Math.floor(i / MAPA_ANCHO);
     if (lugarEn(x, y) === b || ciudadPuebloEn(x, y)) return;   // las ciudades no se pueden tomar
     for (const c of vecinas(x, y)) {
       const a = duenoDe(c.x, c.y);
-      if (!a || a === "roma" || a === b || !estado.enemigos[a] || !estado.enemigos[a].vivo) continue;
+      if (!a || a === "roma" || a === b || !estado.enemigos[a] || !estado.enemigos[a].vivo || ENEMIGOS[a].independiente) continue;
       f[a] = f[a] || {};
       f[a][b] = f[a][b] || [];
       if (!f[a][b].includes(i)) f[a][b].push(i);
@@ -1596,9 +1616,9 @@ function revisarFin() {
     anotar(`🔥 ¡Revuelta en Roma! El pueblo, harto de tu gobierno, asalta el palacio y te echa del trono.`, "mal");
     return true;
   }
-  // Se gana al conquistar a todos los pueblos del Mediterráneo (los lejanos no hacen falta).
+  // Se gana al conquistar a todos los pueblos del Mediterráneo (los lejanos y las ciudades independientes no hacen falta).
   // Si ya ganaste y elegiste seguir jugando (estado.gano = año de la victoria), no se vuelve a avisar.
-  if (!estado.gano && Object.keys(ENEMIGOS).every((id) => ENEMIGOS[id].lejano || !estado.enemigos[id].vivo)) {
+  if (!estado.gano && Object.keys(ENEMIGOS).every((id) => ENEMIGOS[id].lejano || ENEMIGOS[id].independiente || !estado.enemigos[id].vivo)) {
     estado.terminado = true;
     estado.resultado = "victoria";
     return true;
