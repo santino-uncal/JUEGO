@@ -316,7 +316,7 @@ const ENEMIGOS = {
               fuerza: 10, crece: 0.9, muro: 0.25, cada: 9, botin: { comida: 70, piedra: 40 }, tributo: { comida: 4, piedra: 2 },
               desc: "Campesinos del centro de Sicilia. Para llegar necesitás ⛵ Navegación." },
   // --- El Mediterráneo y Europa ---
-  cartagineses: { nombre: "Cartagineses", conoce: 30, ciudad: "Cartago", icono: "🐘", letra: "K", color: "#a349a4", x: 183, y: 265,
+  cartagineses: { nombre: "Cartagineses", conoce: 30, ciudad: "Cartago", icono: "🐘", letra: "K", color: "#a349a4", x: 181, y: 265,
               fuerza: 30, crece: 2.5, muro: 0.75, cada: 6, botin: { oro: 250, comida: 80 }, tributo: { oro: 12 },
               desc: "Mercaderes y marinos de África. Tienen Cerdeña, Córcega, la punta oeste de Sicilia y la costa de Libia. Muy poderosos." },
   liga:     { nombre: "Liga griega", conoce: 25, singular: true, ciudad: "Atenas", icono: "🦉", letra: "H", color: "#b97a57", x: 270, y: 245,
@@ -337,7 +337,7 @@ const ENEMIGOS = {
   celtiberos: { nombre: "Celtíberos", ciudad: "Numancia", icono: "🗡️", letra: "T", color: "#ff80ff", x: 74, y: 206,
               fuerza: 30, crece: 2.2, muro: 0.5, cada: 7, botin: { oro: 120, piedra: 80 }, tributo: { oro: 6, piedra: 3 },
               desc: "Guerreros del centro de Hispania, famosos por sus espadas." },
-  lusitanos:{ nombre: "Lusitanos", ciudad: "Olisipo", icono: "🐐", letra: "Z", color: "#ffaec9", x: 36, y: 237,
+  lusitanos:{ nombre: "Lusitanos", ciudad: "Olisipo", icono: "🐐", letra: "Z", color: "#ffaec9", x: 32, y: 238,
               fuerza: 18, crece: 1.5, muro: 0, cada: 8, botin: { comida: 80, oro: 60 }, tributo: { comida: 4, oro: 3 },
               desc: "Pastores del oeste de Hispania, en la punta de Europa." },
   // --- Más lejos ---
@@ -590,7 +590,7 @@ const EVENTOS_CIUDAD = [
 // Mapa del mundo antiguo. Las casillas están en data/mapa-mundo.js (salen de la imagen del mapa):
 //   MAPA_TERRENO (el terreno) y MAPA_DUENOS (de quién es cada casilla al empezar).
 const MAPA = {
-  version: 7,          // subirlo cuando cambia el dibujo del mapa: las partidas guardadas se rearman
+  version: 8,          // subirlo cuando cambia el dibujo del mapa: las partidas guardadas se rearman
   filas: MAPA_TERRENO,
   duenos: MAPA_DUENOS,
   roma: { x: 198, y: 209 },  // las filas impares del mapa están corridas medio hexágono

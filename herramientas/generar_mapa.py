@@ -2,7 +2,9 @@
 # Uso (desde la carpeta del juego):   py herramientas/generar_mapa.py
 #
 # 1. Cada píxel de la imagen se clasifica por su color: mar (blanco), tierra de nadie (gris) o un pueblo.
-#    Los nombres escritos en la imagen (letras negras) se borran y se rellenan con el color de al lado.
+#    La imagen no tiene nombres escritos; los píxeles de borde (mezcla de dos colores) toman el color de al lado.
+#    (La imagen nueva está apenas corrida respecto de la vieja: AJUSTE la acomoda para que las coordenadas
+#    de capitales y cordilleras sigan valiendo.)
 # 2. La imagen se pasa a hexágonos (ESCALA hexágonos por píxel; las filas impares corridas medio hexágono).
 # 3. El terreno (llanura, bosque, colinas, montaña) se inventa: cordilleras dibujadas a mano
 #    (en coordenadas de la imagen) + ruido para que bosques y colinas queden en manchas.
@@ -43,10 +45,16 @@ PALETA = [
     ((255, 201, 14), "E"),   # Etruscos
     ((239, 228, 176), "U"),  # Umbros
     ((34, 177, 76), "R"),    # Latinos (pasan a ser Roma)
-    ((153, 217, 234), "S"),  # Samnitas
+    ((0, 162, 232), "S"),    # Samnitas
+    ((220, 68, 60), "R"),    # Roma (el puntito rojo dentro del Lacio)
     ((112, 146, 190), "A"),  # Mesapios
     ((181, 230, 29), "I"),   # Ítalos (los de Sicilia pasan a ser sículos, "L")
 ]
+
+# La imagen nueva (833 x 424) en las coordenadas de la vieja (826 x 426):
+# píxel viejo (x, y) = píxel nuevo (x * sx + tx, y * sy + ty). Calculado comparando las costas.
+AJUSTE = (1.000625, 0.99875, -3.5, -0.75)
+ANCHO_VIEJO, ALTO_VIEJO = 826, 426
 
 # Capitales (en píxeles de la imagen). Se busca la casilla del pueblo más cercana a ese punto.
 # Tienen que coincidir con x, y de ENEMIGOS en data/ciudad.js (el programa las imprime al final).
@@ -59,27 +67,10 @@ CAPITALES = {
     "J": (760, 195),
 }
 
-# En el sur de Italia los nombres tapan la tierra: se dibuja a mano (polígonos en píxeles de la imagen)
+# Parches a mano (polígonos en píxeles de la imagen, letra del pueblo). Con la imagen sin nombres casi no hacen falta:
+# solo el Lacio, para que Roma arranque con el mismo tamaño que antes (en la imagen es un puntito).
 PARCHES = [
-    ("R", [(154, 144), (159, 142), (162, 143), (162, 146), (160, 147), (155, 148)]),            # Lacio (hasta la costa)
-    ("S", [(163, 141), (170, 140), (174, 146), (174, 154), (170, 156), (162, 149), (164, 146)]),  # Samnio y Campania
-    ("A", [(173, 141), (180, 142), (186, 147), (190, 152), (186, 154), (180, 150), (175, 150)]),  # Apulia
-    ("H", [(183, 152), (190, 153), (193, 158), (188, 160), (183, 156)]),                        # Tarento
-    ("I", [(174, 150), (181, 151), (182, 158), (180, 164), (178, 169), (175, 168), (176, 160), (173, 154)]),  # Calabria
-    ("H", [(176, 166), (179, 166), (179, 170), (176, 169)]),                                    # Regio
-    ("L", [(161, 170), (168, 169), (175, 169), (173, 175), (170, 179), (163, 176), (160, 173)]),  # Sicilia
-    ("K", [(157, 170), (161, 169), (162, 174), (158, 173)]),                                    # Lilibeo
-    ("H", [(169, 175), (174, 173), (175, 178), (171, 180)]),                                    # Siracusa
-    # Norte de África: los nombres "Cartago", "Númidas" y "Tribus Bereberes" tapaban las costas
-    ("Q", [(108, 199), (132, 203), (150, 208), (168, 211), (177, 212), (193, 218), (203, 222), (213, 222),
-           (213, 226), (202, 229), (187, 232), (160, 227), (133, 224), (123, 220), (115, 210)]),  # bereberes
-    ("K", [(64, 190), (80, 183), (100, 180), (118, 178), (118, 187), (115, 186), (100, 185), (90, 186),
-           (77, 188), (65, 192.5)]),                                                              # costa cartaginesa
-    ("M", [(65, 192.5), (77, 188), (90, 186), (100, 185), (115, 186), (118, 188), (118, 196), (115, 198),
-           (108, 199), (102, 201), (93, 203), (90, 206), (87, 208), (82, 207), (77, 206), (70, 206),
-           (67, 203), (66, 198)]),                                                                # númidas (bordes redondeados)
-    ("K", [(118, 178), (130, 177), (140, 177), (147, 179), (149, 184), (148, 195), (150, 204), (158, 208),
-           (168, 209), (168, 211), (150, 208), (132, 203), (118, 198)]),                        # Túnez (Cartago)
+    ("R", [(154, 144), (159, 142), (162, 143), (162, 146), (160, 147), (155, 148)]),  # Lacio (hasta la costa)
 ]
 
 # Cordilleras: líneas (en píxeles de la imagen) y su ancho en píxeles
@@ -139,24 +130,12 @@ def clasificar(im):
     w, h = im.size
     px = im.load()
     letra = [[None] * w for _ in range(h)]
-    negro = [[False] * w for _ in range(h)]
     for y in range(h):
         for x in range(w):
-            c = px[x, y]
-            l, d = cerca_color(c)
+            l, d = cerca_color(px[x, y])
             # el gris de la tierra de nadie se confunde con los bordes borrosos de las costas: se pide más parecido
             if d < (14 if l == "-" else 30):
                 letra[y][x] = l
-            elif sum(c) < 360:
-                negro[y][x] = True   # letras (negras o de colores oscuros)
-    # Alrededor de las letras negras hay píxeles de colores raros (bordes de las letras): se borran
-    for y in range(h):
-        for x in range(w):
-            if negro[y][x]:
-                for dy in range(-2, 3):
-                    for dx in range(-2, 3):
-                        if 0 <= x + dx < w and 0 <= y + dy < h:
-                            letra[y + dy][x + dx] = None
     rellenar(letra, w, h)
     # Manchitas sueltas (restos de letras o de bordes): se borran y se vuelven a rellenar,
     # salvo que sea el pedazo más grande de ese pueblo
@@ -183,7 +162,7 @@ def clasificar(im):
             for x, y in celdas:
                 letra[y][x] = None
     rellenar(letra, w, h)
-    # Parches a mano donde las letras tapaban todo (el sur de Italia y Sicilia)
+    # Parches a mano
     capa = Image.new("L", (w, h), 0)
     dibujo = ImageDraw.Draw(capa)
     for i, (_, puntos) in enumerate(PARCHES):
@@ -248,7 +227,10 @@ def dist_segmento(px, py, a, b):
 
 
 def main():
-    im = Image.open(AQUI / "mapa-mundo.png").convert("RGB")
+    nueva = Image.open(AQUI / "mapa-mundo.png").convert("RGB")
+    sx, sy, tx, ty = AJUSTE
+    im = nueva.transform((ANCHO_VIEJO, ALTO_VIEJO), Image.AFFINE, (sx, 0, tx, 0, sy, ty), resample=Image.NEAREST,
+                         fillcolor=(255, 255, 255))
     w, h = im.size
     letra = clasificar(im)
     W = math.ceil(w * ESCALA)
