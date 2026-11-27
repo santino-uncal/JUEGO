@@ -124,6 +124,7 @@ const TECNOLOGIAS = {
   equitacion:  { nombre: "Equitación",   icono: "🐴", periodo: "monarquia", fila: 0, costo: 70, desc: "Desbloquea Establo y Caballería.", requiere: ["riego"] },
   construccion:{ nombre: "Construcción", icono: "🔨", periodo: "monarquia", fila: 4, costo: 70, desc: "Vigas y tejas: cada casa da +3 de lugar y cada aserradero +2 de madera.", requiere: ["albanileria", "matematicas"],
                  efecto: { capacidad: { casa: 3 }, mejora: { aserradero: { madera: 2 } } } },
+  colonizacion:{ nombre: "Colonización", icono: "🚩", periodo: "monarquia", fila: 8, costo: 60, desc: "Colonos que se animan a vivir lejos de Roma: te deja ocupar la tierra de nadie (las zonas grises del mapa).", requiere: ["cartografia"] },
   senado:      { nombre: "Senado",       icono: "👴", periodo: "monarquia", fila: 5.8, costo: 70, desc: "Los ancianos aconsejan al rey: desbloquea el Foro.", requiere: ["filosofia"] },
 
   // Reyes etruscos
@@ -702,6 +703,8 @@ const MAPA = {
   // (Las zonas de las rutas comerciales de Asia no se pueden ocupar: ver RUTAS_COMERCIALES.)
   // Si se llega solo por mar, además hace falta un barco listo (navega ese año).
   ocupar: { poder: 5, comida: 15 },
+  // Tecnología que hace falta para poder ocupar tierra de nadie
+  tecOcupar: "colonizacion",
   // Las islas (o cualquier costa lejos de tu territorio) solo se pueden atacar con esta tecnología
   tecMar: "navegacion",
 };

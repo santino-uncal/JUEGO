@@ -460,6 +460,10 @@ function puedeOcupar(x, y) {
   if (!esTierra(x, y) || duenoDe(x, y)) return { ok: false, motivo: "Esta zona no es tierra de nadie." };
   if (esRutaComercial(x, y)) return { ok: false, motivo: `Por acá solo pasan las caravanas de la ${RUTAS_COMERCIALES.nombre}: no se puede ocupar.` };
   if (!vista(x, y)) return { ok: false, motivo: "Primero explorá esta zona." };
+  if (!tiene(MAPA.tecOcupar)) {
+    const t = TECNOLOGIAS[MAPA.tecOcupar];
+    return { ok: false, motivo: `Para ocupar tierra de nadie primero investigá ${t.icono} ${t.nombre} (en 🌳 Tecnologías).` };
+  }
   if (!alcanzable(x, y)) {
     let motivo = "Queda lejos: tiene que estar pegada a tu territorio.";
     if (costera(x, y) && !tiene(MAPA.tecMar)) motivo = `Queda lejos de tu territorio. Investigá ⛵ ${TECNOLOGIAS[MAPA.tecMar].nombre} para llegar por mar, o ocupá las zonas del medio.`;
