@@ -276,7 +276,8 @@ def main():
         for hx in range(W):
             if duenos[hy][hx] == "R" and (hx, hy) not in ciudad:
                 duenos[hy][hx] = "L"
-    # Tres casillas más al norte y al este de Roma, sacadas a la Liga latina (elegidas a mano)
+    # Tres casillas más al norte y al este de Roma, sacadas a la Liga latina (elegidas a mano).
+    # Así la ciudad de Roma (MAPA.roma en data/ciudad.js: 196,207) queda en el centro de su territorio
     for dx, dy in [(0, -2), (1, -2), (1, -1)]:
         duenos[ry + dy][rx + dx] = "R"
 
