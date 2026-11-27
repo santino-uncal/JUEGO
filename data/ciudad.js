@@ -590,7 +590,7 @@ const EVENTOS_CIUDAD = [
 // Mapa del mundo antiguo. Las casillas están en data/mapa-mundo.js (salen de la imagen del mapa):
 //   MAPA_TERRENO (el terreno) y MAPA_DUENOS (de quién es cada casilla al empezar).
 const MAPA = {
-  version: 10,          // subirlo cuando cambia el dibujo del mapa: las partidas guardadas se rearman
+  version: 11,          // subirlo cuando cambia el dibujo del mapa: las partidas guardadas se rearman
   filas: MAPA_TERRENO,
   duenos: MAPA_DUENOS,
   roma: { x: 196, y: 208 },  // las filas impares del mapa están corridas medio hexágono

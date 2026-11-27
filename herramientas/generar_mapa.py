@@ -276,6 +276,9 @@ def main():
         for hx in range(W):
             if duenos[hy][hx] == "R" and (hx, hy) not in ciudad:
                 duenos[hy][hx] = "L"
+    # Tres casillas más al norte y al este de Roma, sacadas a la Liga latina (elegidas a mano)
+    for dx, dy in [(0, -2), (1, -2), (1, -1)]:
+        duenos[ry + dy][rx + dx] = "R"
 
     # Terreno
     bosque, colina, rugoso, torcer = ruido(1, 6), ruido(2, 5), ruido(3, 2.5), ruido(4, 9)
