@@ -58,6 +58,8 @@ main { grid-template-columns: 1fr 400px; align-items: start; }
 .item.hecha { background: #eef7e8; }
 .item .botones { display: flex; flex-direction: column; gap: 4px; }
 .item button { padding: 6px 10px; }
+.botones-pueblo { display: flex; flex-direction: column; gap: 4px; flex: 0 0 auto; }
+.botones-pueblo button { white-space: nowrap; }
 .motivo { color: #b02a2a; }
 .falta { color: #b02a2a; font-weight: bold; }
 .cantidad { color: #7b1e1e; font-weight: bold; }

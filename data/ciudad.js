@@ -286,6 +286,8 @@ const BARCOS_GUERRA = {
 //   color: color de su territorio en el mapa
 //   ciudad, x, y: su capital (columna y fila del mapa, empezando en 0).
 //         Si conquistás la capital, el pueblo entero se rinde y todo su territorio pasa a ser tuyo.
+//   ciudades: sus otras ciudades (nombre, x, y). Salen de herramientas/ubicar_ciudades.py.
+//         Si tomás una, pasa a ser tuya con las zonas de alrededor (ver CIUDADES_PUEBLO).
 //   fuerza: tamaño de su ejército al empezar. crece: cuánto suma por año.
 //   muro: bonus de las murallas de su capital al defenderse (0.5 = +50%).
 //   primerAtaque: año en que te declaran la guerra y marchan sobre Roma.
@@ -295,80 +297,105 @@ const BARCOS_GUERRA = {
 const ENEMIGOS = {
   // --- Italia ---
   umbros:   { nombre: "Umbros",   ciudad: "Iguvium",  icono: "🐑", letra: "U", color: "#efe4b0", x: 203, y: 196,
+              ciudades: [{ nombre: "Spoletium", x: 202, y: 202 }, { nombre: "Sarsina", x: 200, y: 190 }],
               fuerza: 5,  crece: 0.9, muro: 0, primerAtaque: 10, cada: 9, botin: { comida: 40, oro: 30 }, tributo: { comida: 3, oro: 2 },
               desc: "Pastores de los Apeninos. Son pocos, pero atrevidos." },
   etruscos: { nombre: "Etruscos", ciudad: "Veyes",    icono: "🏺", letra: "E", color: "#ffc90e", x: 189, y: 191,
+              ciudades: [{ nombre: "Tarquinia", x: 187, y: 192 }, { nombre: "Volaterrae", x: 194, y: 187 }],
               fuerza: 12, crece: 1.2, muro: 0.5, primerAtaque: 18, cada: 8, botin: { oro: 80, piedra: 40 }, tributo: { oro: 5, piedra: 2 },
               desc: "Ricos y sabios, con una ciudad amurallada." },
   samnitas: { nombre: "Samnitas", ciudad: "Bovianum", icono: "🐺", letra: "S", color: "#00a1e8", x: 211, y: 210,
+              ciudades: [{ nombre: "Aesernia", x: 211, y: 206 }, { nombre: "Malventum", x: 210, y: 215 }],
               fuerza: 18, crece: 1.8, muro: 0.25, primerAtaque: 26, cada: 7, botin: { oro: 100, madera: 60 }, tributo: { oro: 5, madera: 4 },
               desc: "Guerreros duros de las montañas." },
   celtas:   { nombre: "Galos cisalpinos", ciudad: "Mediolanum", icono: "🐗", letra: "C", color: "#880015", x: 178, y: 174,
+              ciudades: [{ nombre: "Felsina", x: 192, y: 183 }, { nombre: "Brixia", x: 185, y: 173 }, { nombre: "Taurasia", x: 168, y: 178 }],
               fuerza: 25, crece: 2.4, muro: 0, primerAtaque: 34, cada: 6, botin: { oro: 150, comida: 80 }, tributo: { oro: 8, comida: 4 },
               desc: "Celtas feroces del valle del Po, al norte de Italia. Saquean todo a su paso." },
   mesapios: { nombre: "Mesapios", ciudad: "Uria", icono: "🐴", letra: "A", color: "#7092be", x: 222, y: 213,
+              ciudades: [{ nombre: "Brundisium", x: 225, y: 213 }, { nombre: "Hydruntum", x: 228, y: 218 }],
               fuerza: 15, crece: 1.2, muro: 0.25, cada: 8, botin: { comida: 60, oro: 90 }, tributo: { comida: 4, oro: 3 },
               desc: "Criadores de caballos de las llanuras del este. Viven en paz si no los molestás." },
   latinos:  { nombre: "Liga latina", singular: true, ciudad: "Alba Longa", icono: "🌿", letra: "L", color: "#22b14c", x: 200, y: 210,
+              ciudades: [{ nombre: "Tibur", x: 201, y: 207 }, { nombre: "Lavinium", x: 197, y: 210 }],
               fuerza: 10, crece: 1, muro: 0.25, primerAtaque: 14, cada: 9, botin: { comida: 50, oro: 40 }, tributo: { comida: 3, oro: 2 },
               desc: "Las ciudades latinas que rodean a Roma, unidas para defenderse. Tienen casi todo el Lacio y hablan tu misma lengua." },
   italos:   { nombre: "Ítalos", ciudad: "Consentia", icono: "🌲", letra: "I", color: "#b5e61d", x: 223, y: 230,
+              ciudades: [{ nombre: "Petelia", x: 228, y: 230 }, { nombre: "Henna", x: 210, y: 247 }],
               fuerza: 20, crece: 1.6, muro: 0, cada: 8, botin: { madera: 80, oro: 80, comida: 40 }, tributo: { madera: 4, oro: 3, comida: 2 },
               desc: "Pueblos de los bosques del sur de Italia y de los campos del centro de Sicilia. Viven en paz si no los molestás." },
   // --- El Mediterráneo y Europa ---
   cartagineses: { nombre: "Cartagineses", conoce: 30, ciudad: "Cartago", icono: "🐘", letra: "K", color: "#a349a4", x: 181, y: 265,
+              ciudades: [{ nombre: "Caralis", x: 170, y: 237 }, { nombre: "Lilibeo", x: 202, y: 249 }, { nombre: "Leptis Magna", x: 206, y: 306 }],
               fuerza: 30, crece: 2.5, muro: 0.75, cada: 6, botin: { oro: 250, comida: 80 }, tributo: { oro: 12 },
               desc: "Mercaderes y marinos de África. Tienen Cerdeña, Córcega, la punta oeste de Sicilia y la costa de Libia. Muy poderosos." },
   liga:     { nombre: "Liga griega", conoce: 25, singular: true, ciudad: "Atenas", icono: "🦉", letra: "H", color: "#b97a57", x: 270, y: 245,
+              ciudades: [{ nombre: "Siracusa", x: 214, y: 254 }, { nombre: "Esparta", x: 264, y: 251 }, { nombre: "Tarento", x: 233, y: 221 }],
               fuerza: 40, crece: 3, muro: 0.75, cada: 7, botin: { oro: 300, ciencia: 120 }, tributo: { oro: 12, ciencia: 5 },
               desc: "Las ciudades griegas unidas: Grecia y sus colonias del sur de Italia y de Sicilia, como Siracusa. Filósofos, templos y falanges temibles." },
   persas:   { nombre: "Persas", conoce: 20, ciudad: "Sardes", icono: "🦁", letra: "P", color: "#ff7f27", x: 304, y: 235,
+              ciudades: [{ nombre: "Menfis", x: 330, y: 347 }, { nombre: "Babilonia", x: 435, y: 312 }, { nombre: "Persépolis", x: 503, y: 346 }, { nombre: "Bactra", x: 617, y: 256 }],
               fuerza: 80, crece: 5, muro: 0.5, cada: 6, botin: { oro: 500, comida: 150 }, tributo: { oro: 20, comida: 5 },
               desc: "El imperio más grande del mundo: va de Egipto y Anatolia hasta la India. Enfrentarlos es una locura... por ahora." },
   galos:    { nombre: "Galos", ciudad: "Bibracte", icono: "🪓", letra: "B", color: "#800040", x: 124, y: 158,
+              ciudades: [{ nombre: "Lutecia", x: 113, y: 139 }, { nombre: "Gergovia", x: 118, y: 170 }, { nombre: "Burdigala", x: 94, y: 179 }],
               fuerza: 35, crece: 3, muro: 0.25, cada: 6, botin: { comida: 150, oro: 120 }, tributo: { comida: 6, oro: 6 },
               desc: "Tribus guerreras de la Galia, con bosques enormes y muchos guerreros." },
   ilirios:  { nombre: "Ilirios", ciudad: "Escodra", icono: "🛶", letra: "Y", color: "#800080", x: 243, y: 199,
+              ciudades: [{ nombre: "Rhizon", x: 238, y: 195 }, { nombre: "Delminium", x: 227, y: 183 }],
               fuerza: 20, crece: 1.8, muro: 0.25, cada: 8, botin: { madera: 100, oro: 80 }, tributo: { madera: 4, oro: 4 },
               desc: "Piratas y montañeses del otro lado del mar Adriático." },
   peonios:  { nombre: "Peonios", ciudad: "Bylazora", icono: "🏹", letra: "N", color: "#ff8080", x: 262, y: 194,
+              ciudades: [{ nombre: "Stobi", x: 264, y: 196 }, { nombre: "Naissus", x: 263, y: 178 }],
               fuerza: 20, crece: 1.6, muro: 0, cada: 8, botin: { comida: 80, oro: 80 }, tributo: { comida: 4, oro: 3 },
               desc: "Tribus de los Balcanes, al norte de Grecia." },
   celtiberos: { nombre: "Celtíberos", ciudad: "Numancia", icono: "🗡️", letra: "T", color: "#ff80ff", x: 74, y: 206,
+              ciudades: [{ nombre: "Toletum", x: 64, y: 224 }, { nombre: "Bílbilis", x: 80, y: 210 }, { nombre: "Salmantica", x: 53, y: 214 }],
               fuerza: 30, crece: 2.2, muro: 0.5, cada: 7, botin: { oro: 120, piedra: 80 }, tributo: { oro: 6, piedra: 3 },
               desc: "Guerreros del centro de Hispania, famosos por sus espadas." },
   lusitanos:{ nombre: "Lusitanos", ciudad: "Olisipo", icono: "🐐", letra: "Z", color: "#ffaec9", x: 32, y: 238,
+              ciudades: [{ nombre: "Conímbriga", x: 37, y: 225 }, { nombre: "Ebora", x: 40, y: 239 }],
               fuerza: 18, crece: 1.5, muro: 0, cada: 8, botin: { comida: 80, oro: 60 }, tributo: { comida: 4, oro: 3 },
               desc: "Pastores del oeste de Hispania, en la punta de Europa." },
   // --- Más lejos ---
   britanos: { nombre: "Celtas", lejano: true, ciudad: "Camulodunum", icono: "🍀", letra: "W", color: "#fff200", x: 96, y: 89,
+              ciudades: [{ nombre: "Calleva", x: 83, y: 94 }, { nombre: "Eboracum", x: 83, y: 69 }, { nombre: "Tara", x: 46, y: 73 }],
               fuerza: 22, crece: 1.8, muro: 0.25, cada: 8, botin: { madera: 100, oro: 80 }, tributo: { madera: 4, oro: 4 },
               desc: "Tribus de las islas de Britania e Hibernia, con druidas y carros de guerra. Para llegar necesitás ⛵ Navegación." },
   germanos: { nombre: "Germanos", lejano: true, ciudad: "Teutoburgo", icono: "🐻", letra: "G", color: "#00ff40", x: 168, y: 115,
+              ciudades: [{ nombre: "Treva", x: 175, y: 100 }, { nombre: "Mattium", x: 171, y: 123 }, { nombre: "Marobudum", x: 196, y: 133 }],
               fuerza: 32, crece: 2.6, muro: 0, cada: 6, botin: { madera: 150, comida: 80 }, tributo: { madera: 6, comida: 4 },
               desc: "Tribus germánicas de los bosques del norte. Muchos guerreros y muy pocas ciudades." },
   dacios:   { nombre: "Dacios", lejano: true, ciudad: "Sarmizegetusa", icono: "🐉", letra: "D", color: "#00ffff", x: 291, y: 152,
+              ciudades: [{ nombre: "Porolissum", x: 290, y: 138 }, { nombre: "Buridava", x: 298, y: 156 }, { nombre: "Piroboridava", x: 317, y: 150 }],
               fuerza: 24, crece: 2, muro: 0.5, cada: 7, botin: { oro: 150, piedra: 60 }, tributo: { oro: 6, piedra: 3 },
               desc: "Montañeses de los Cárpatos, ricos en oro y con fortalezas en las alturas." },
   tracios:  { nombre: "Tracios", ciudad: "Seutópolis", icono: "🐎", letra: "X", color: "#8080ff", x: 299, y: 183,
+              ciudades: [{ nombre: "Kabyle", x: 306, y: 185 }, { nombre: "Filipópolis", x: 295, y: 188 }],
               fuerza: 24, crece: 2, muro: 0.25, cada: 7, botin: { comida: 100, oro: 100 }, tributo: { comida: 4, oro: 4 },
               desc: "Jinetes y guerreros de los Balcanes, entre el Danubio y el mar Egeo." },
   numidas:  { nombre: "Númidas", ciudad: "Cirta", icono: "🐪", letra: "M", color: "#408080", x: 112, y: 285,
+              ciudades: [{ nombre: "Siga", x: 87, y: 289 }, { nombre: "Thugga", x: 129, y: 284 }, { nombre: "Hippo Regius", x: 120, y: 282 }],
               fuerza: 22, crece: 1.8, muro: 0.25, cada: 7, botin: { comida: 100, oro: 70 }, tributo: { comida: 5, oro: 3 },
               desc: "Jinetes rapidísimos del norte de África, vecinos de Cartago." },
   bereberes:{ nombre: "Bereberes", ciudad: "Garama", icono: "🏜️", letra: "Q", color: "#ffff80", x: 187, y: 310,
+              ciudades: [{ nombre: "Cidamus", x: 148, y: 282 }, { nombre: "Augila", x: 218, y: 308 }, { nombre: "Amonio", x: 262, y: 317 }],
               fuerza: 16, crece: 1.2, muro: 0, cada: 9, botin: { oro: 80, comida: 40 }, tributo: { oro: 4, comida: 2 },
               desc: "Tribus del desierto que llevan caravanas por el Sahara." },
   kush:     { nombre: "Reino de Kush", lejano: true, singular: true, ciudad: "Napata", icono: "🏹", letra: "V", color: "#804040", x: 343, y: 411,
+              ciudades: [{ nombre: "Meroe", x: 366, y: 433 }, { nombre: "Kerma", x: 326, y: 396 }, { nombre: "Buhen", x: 320, y: 382 }],
               fuerza: 45, crece: 3, muro: 0.5, cada: 7, botin: { oro: 300, piedra: 80 }, tributo: { oro: 12, piedra: 3 },
               desc: "Reino de arqueros y pirámides al sur de Egipto, sobre el río Nilo." },
   damot:    { nombre: "Reino de Damot", lejano: true, singular: true, ciudad: "Yeha", icono: "⛰️", letra: "F", color: "#8080c0", x: 398, y: 476,
+              ciudades: [{ nombre: "Adulis", x: 392, y: 464 }, { nombre: "Malao", x: 481, y: 550 }, { nombre: "Aksum", x: 394, y: 479 }],
               fuerza: 35, crece: 2.4, muro: 0.5, cada: 8, botin: { oro: 200, comida: 100 }, tributo: { oro: 8, comida: 4 },
               desc: "Reino de las montañas del Cuerno de África, con templos de piedra." },
   indios:   { nombre: "Confederación india", conoce: 15, lejano: true, singular: true, ciudad: "Pataliputra", icono: "🐅", letra: "O", color: "#0000a0", x: 737, y: 382,
+              ciudades: [{ nombre: "Taxila", x: 648, y: 343 }, { nombre: "Ujjayini", x: 648, y: 397 }, { nombre: "Kausambi", x: 701, y: 384 }, { nombre: "Tamralipta", x: 764, y: 402 }],
               fuerza: 90, crece: 5, muro: 0.75, cada: 6, botin: { oro: 500, ciencia: 150 }, tributo: { oro: 20, ciencia: 6 },
               desc: "Los reinos de la India, a orillas del Ganges, con elefantes de guerra. Están en la otra punta del mundo." },
   zhou:     { nombre: "Dinastía Zhou", conoce: 15, lejano: true, singular: true, ciudad: "Luoyang", icono: "🐲", letra: "J", color: "#008000", x: 949, y: 281,
+              ciudades: [{ nombre: "Haojing", x: 928, y: 281 }, { nombre: "Linzi", x: 984, y: 259 }, { nombre: "Ji", x: 973, y: 228 }, { nombre: "Ying", x: 955, y: 302 }],
               fuerza: 100, crece: 6, muro: 0.75, cada: 6, botin: { oro: 600, ciencia: 200 }, tributo: { oro: 25, ciencia: 8 },
               desc: "El gran reino de China, en el fin del mundo conocido. Casi nadie en Roma sabe que existe." },
 };
@@ -396,6 +423,7 @@ const APOYO = {
     zonaPerdida: -5,  // un pueblo te quita una zona
     rechazo: 10,      // rechazás un ataque a Roma
     conquista: 15,    // conquistás un pueblo (tomás su capital)
+    ciudad: 6,        // le tomás una ciudad (que no es la capital) a otro pueblo
     zona: 3,          // le ganás una zona a otro pueblo
     derrota: -10,     // perdés un ataque contra otro pueblo
     hambre: -3,       // cada año sin comida
@@ -526,6 +554,22 @@ const CONQUISTA = {
   lotePlaza: 2,
   edificios: ["casa", "granja"],
 };
+
+// Las ciudades de un pueblo que no son su capital (ver "ciudades" en ENEMIGOS).
+//   defensa: qué parte de su ejército en casa la defiende (0.5 = la mitad), más la mitad de sus murallas
+//            y el bonus del terreno
+//   poder:   ⚖️ poder político para quedártela (se paga solo si ganás)
+//   botin:   qué parte del botín del pueblo te llevás (0.4 = 40%)
+//   perdida: cuánto pierde su ejército cuando se la tomás (0.25 = 25%)
+// Al tomarla te quedás también con las zonas pegadas a ella, y podés construir ahí.
+const CIUDADES_PUEBLO = { defensa: 0.5, poder: 20, botin: 0.4, perdida: 0.25 };
+
+// 🕊️ Firmar la paz con un pueblo en guerra (en la pestaña Vecinos o tocando su territorio en el mapa).
+// Te quedás con todo lo que le ganaste. Se paga con ⚖️ poder político.
+//   costo:        lo que cuesta normalmente
+//   costoGanando: lo que cuesta si ya le tomaste más de la mitad de sus ciudades (contando la capital)
+//   tregua:       años en que ninguno de los dos puede volver a declarar la guerra
+const PAZ = { costo: 40, costoGanando: 12, tregua: 10 };
 
 // Niveles de las ciudades: subir de nivel agranda la ciudad (más terrenos para construir).
 // Todas las ciudades pueden tener todo lo que tiene Roma (también su propio Cuartel, Muralla, etc.),
