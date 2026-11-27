@@ -850,12 +850,14 @@ function infoZona() {
     const conq = estado.colonias[col - 1].conquistada;
     const antes = estado.colonias[col - 1].ciudad === undefined ? "capital" : "ciudad";
     return `<h3>${iconoCiudad(col)} ${estado.colonias[col - 1].nombre}</h3><p>${conq ? `Antigua ${antes} de ${pueblo(conq)}, ahora es de Roma` : "Una ciudad fundada por Roma"}: puede tener todos los edificios que tiene Roma. Comparte con Roma los recursos y los habitantes.</p>
+      ${esPuertaRuta(x, y) ? `<p>🐫 Acá empieza la ${RUTAS_COMERCIALES.nombre}: las caravanas te dejan <b>+${RUTAS_COMERCIALES.oro} 💰 por año</b>.</p>` : ""}
       <button data-accion="ver-ciudad" data-ciudad="${col}">🏛️ Ver la ciudad</button>`;
   }
   if (esRutaComercial(x, y)) {
     return `<h3>${ter.icono} ${ter.nombre} · ${RUTAS_COMERCIALES.nombre}</h3>
       <p>Estepas, desiertos y montañas entre el Imperio persa, la India y China. Acá no vive ningún pueblo: solo pasan las caravanas que llevan seda y especias.</p>
-      <p class="ayuda">No se puede ocupar ni cruzar con un ejército. A la India y a China solo se llega por mar.</p>`;
+      <p class="ayuda">No se puede ocupar ni cruzar con un ejército. A la India y a China solo se llega por mar.
+        Si conquistás ${RUTAS_COMERCIALES.puerta.nombre}, donde empieza la ruta, las caravanas te dejan +${RUTAS_COMERCIALES.oro} 💰 por año${tenesRuta() ? " (¡ya es tuya!)" : ""}.</p>`;
   }
   if (!dueno) {
     const p = puedeOcupar(x, y);
@@ -886,7 +888,7 @@ function infoZona() {
   const bonus = MAPA.bonusTerreno[terreno(x, y)];
   const detalle = capital
     ? `Si la tomás, ${pueblo(dueno)} se ${verbo(dueno, "rinden", "rinde")} y <b>todo su territorio</b> pasa a ser tuyo, con todas sus ciudades.`
-    : otra ? `La defiende la mitad de su ejército con parte de sus murallas. Si la tomás, pasa a ser tuya <b>con las zonas de alrededor</b>, te llevás botín y podés construir en ella.<br><small>Ya le tomaste ${ciudadesTomadas(dueno)} de sus ${totalCiudades(dueno)} ciudades. ${textoPaz(dueno)}</small>`
+    : otra ? `La defiende la mitad de su ejército con parte de sus murallas. Si la tomás, pasa a ser tuya <b>con las zonas de alrededor</b>, te llevás botín y podés construir en ella.${esPuertaRuta(x, y) ? `<br>🐫 Acá empieza la ${RUTAS_COMERCIALES.nombre}: si es tuya, las caravanas te dejan <b>+${RUTAS_COMERCIALES.oro} 💰 por año</b>.` : ""}<br><small>Ya le tomaste ${ciudadesTomadas(dueno)} de sus ${totalCiudades(dueno)} ciudades. ${textoPaz(dueno)}</small>`
     : `La defiende parte de su ejército${bonus ? ` (${ter.nombre.toLowerCase()}: +${bonus * 100}% de defensa)` : ""}. Si la ganás, pasa a ser tuya y te llevás algo de botín.`;
   const enGuerra = estado.enemigos[dueno].guerra;
   const pd = puedeDeclararGuerra(dueno);

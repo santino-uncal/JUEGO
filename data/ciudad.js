@@ -677,8 +677,12 @@ const MAPA = {
 //   zona:   rectángulo del mapa (columnas x y filas y, de tal a tal) donde la tierra de nadie es ruta comercial
 //   color:  cómo se pinta en el mapa
 //   camino: por dónde pasa la ruta que se dibuja en el mapa (con nombre: una parada de las caravanas)
+//   puerta: la ciudad donde empieza la ruta (Bactra, del Imperio persa). Si es tuya, las caravanas
+//           te dejan "oro" de oro cada año (por los impuestos a la seda y las especias que pasan).
 const RUTAS_COMERCIALES = {
   nombre: "Ruta de la Seda",
+  puerta: { x: 617, y: 256, nombre: "Bactra" },
+  oro: 15,
   zona: { x: [560, 1033], y: [120, 480] },
   color: "#e3cc8f",
   camino: [

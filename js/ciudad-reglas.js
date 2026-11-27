@@ -465,6 +465,10 @@ function ocupar(x, y) {
   return true;
 }
 
+// ¿Bactra (donde empieza la Ruta de la Seda) es tuya? Entonces las caravanas te dejan oro cada año
+const esPuertaRuta = (x, y) => x === RUTAS_COMERCIALES.puerta.x && y === RUTAS_COMERCIALES.puerta.y;
+const tenesRuta = () => duenoDe(RUTAS_COMERCIALES.puerta.x, RUTAS_COMERCIALES.puerta.y) === "roma";
+
 // Tierra de nadie de las rutas comerciales de Asia: no se puede ocupar
 function esRutaComercial(x, y) {
   const z = RUTAS_COMERCIALES.zona;
@@ -741,6 +745,8 @@ function balance() {
   b.oro += Math.floor(estado.habitantes / 3) * (1 + efecto("impuestos")) * productividad();
   // Comerciantes que atrae la fama
   b.oro += Math.floor(fama() / FAMA.oroCada);
+  // Las caravanas de la Ruta de la Seda, si Bactra es tuya
+  if (tenesRuta()) b.oro += RUTAS_COMERCIALES.oro;
   // Tributos de pueblos conquistados
   for (const id in estado.enemigos) {
     if (estado.enemigos[id].vivo) continue;
@@ -1227,6 +1233,7 @@ function atacarZona(x, y, envio) {
     sumarCiudadConquistada(id, estado, otraCiudad.k);
     let texto = `🏰 ¡Tomaste ${lugar}! La ciudad${alrededor ? ` y ${alrededor} zona${alrededor > 1 ? "s" : ""} de alrededor pasan` : " pasa"} a ser de Roma y ya podés construir en ella. Botín: ${textoRecursos(botin)}.`;
     texto += ` Ya le tomaste ${ciudadesTomadas(id)} de sus ${totalCiudades(id)} ciudades a ${pueblo(id)}.`;
+    if (esPuertaRuta(x, y)) texto += ` 🐫 ¡Ahora controlás el comienzo de la ${RUTAS_COMERCIALES.nombre}! Las caravanas te dejan +${RUTAS_COMERCIALES.oro} 💰 por año.`;
     if (!antes && masDeLaMitad(id)) texto += ` ¡Más de la mitad! Ahora firmar la paz te cuesta solo ${PAZ.costoGanando} ⚖️ (en vez de ${PAZ.costo}).`;
     anotar(texto + cambiarApoyo(APOYO.sucesos.ciudad) + cambiarFama(FAMA.sucesos.ciudad), "bien");
   } else if (r.ganaA) {
