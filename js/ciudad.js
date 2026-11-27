@@ -495,13 +495,13 @@ function dibujarMapa() {
     }
   }
   // Ciudades: Roma, las fundadas y las capitales que ya viste
-  capa.lugares.push({ x: MAPA.roma.x, y: MAPA.roma.y, icono: ICONOS_CIUDAD.roma, nombre: "Roma", mio: true });
+  capa.lugares.push({ x: MAPA.roma.x, y: MAPA.roma.y, icono: ICONOS_CIUDAD.roma, nombre: "Roma", mio: true, capital: true });
   estado.colonias.forEach((c) => { if (!c.conquistada) capa.lugares.push({ x: c.x, y: c.y, icono: ICONOS_CIUDAD.fundada, nombre: c.nombre, mio: true }); });
   for (const id in ENEMIGOS) {
     const d = ENEMIGOS[id];
     if (!vista(d.x, d.y)) continue;
     const vivo = estado.enemigos[id].vivo;
-    capa.lugares.push({ x: d.x, y: d.y, icono: ICONOS_CIUDAD[!vivo ? "conquistada" : d.independiente ? "independiente" : "enemiga"], nombre: d.ciudad, mio: !vivo });
+    capa.lugares.push({ x: d.x, y: d.y, icono: ICONOS_CIUDAD[!vivo ? "conquistada" : d.independiente ? "independiente" : "enemiga"], nombre: d.ciudad, mio: !vivo, capital: vivo && !d.independiente });
   }
   for (const id in ENEMIGOS) {
     for (const c of ciudadesExtra(id)) {
@@ -722,6 +722,10 @@ function pintarMapa() {
     if (cx < -60 || cy < -30 || cx > w + 60 || cy > h + 30) continue;
     ctx.font = `${tam}px sans-serif`;
     ctx.fillText(l.icono, cx, cy);
+    if (l.capital) {   // la capital de cada pueblo lleva una estrella arriba del castillo
+      ctx.font = `${Math.round(tam * 0.75)}px sans-serif`;
+      ctx.fillText("⭐", cx, cy - tam * 0.9);
+    }
     if (e < 5 && !(l.mio && l.nombre === "Roma")) continue;   // muy de lejos los nombres se pisan
     ctx.font = "bold 11px sans-serif";
     const tw = ctx.measureText(l.nombre).width + 8;
