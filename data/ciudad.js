@@ -617,6 +617,9 @@ const MAPA = {
   //             (al tomar la capital te quedás con todo su territorio)
   //   maxCapital: lo máximo que puede costar una capital (para los pueblos enormes)
   poder: { zona: 10, capital: 15, porZona: 2, maxCapital: 120 },
+  // Ocupar una zona de tierra de nadie (no hay que pelear): lo que cuesta.
+  // Si se llega solo por mar, además hace falta un barco listo (navega ese año).
+  ocupar: { poder: 5, comida: 15 },
   // Las islas (o cualquier costa lejos de tu territorio) solo se pueden atacar con esta tecnología
   tecMar: "navegacion",
 };

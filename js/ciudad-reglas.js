@@ -383,6 +383,35 @@ function puedeAtacarZona(x, y) {
   return { ok: true };
 }
 
+// Ocupar una zona de tierra de nadie: no hay que pelear, solo llegar y pagar
+function puedeOcupar(x, y) {
+  if (!esTierra(x, y) || duenoDe(x, y)) return { ok: false, motivo: "Esta zona no es tierra de nadie." };
+  if (!vista(x, y)) return { ok: false, motivo: "Primero explorá esta zona." };
+  if (!alcanzable(x, y)) {
+    let motivo = "Queda lejos: tiene que estar pegada a tu territorio.";
+    if (costera(x, y) && !tiene(MAPA.tecMar)) motivo = `Queda lejos de tu territorio. Investigá ⛵ ${TECNOLOGIAS[MAPA.tecMar].nombre} para llegar por mar, o ocupá las zonas del medio.`;
+    else if (costera(x, y)) motivo = `Para llegar por mar necesitás un ⚓ ${EDIFICIOS[BARCOS.edificio].nombre} terminado y barcos.`;
+    return { ok: false, motivo };
+  }
+  if (porMar(x, y) && barcosListos() === 0) {
+    return { ok: false, motivo: barcos() === 0
+      ? `Solo se llega por mar: construí ${BARCOS.icono} ${BARCOS.plural.toLowerCase()} en la pestaña ⚔️ Ejército.`
+      : "Tus barcos ya navegaron este año. El año que viene vuelven a estar listos." };
+  }
+  if (!alcanza(MAPA.ocupar)) return { ok: false, motivo: "No te alcanzan los recursos." };
+  return { ok: true };
+}
+
+function ocupar(x, y) {
+  if (!puedeOcupar(x, y).ok) return false;
+  if (porMar(x, y)) estado.barcosUsados = (estado.barcosUsados || 0) + 1;
+  pagar(MAPA.ocupar);
+  estado.duenos[y * MAPA_ANCHO + x] = "roma";
+  revelar(x, y, 1);
+  anotar(`🚩 Ocupaste una zona de ${MAPA.terrenos[terreno(x, y)].nombre.toLowerCase()} que no era de nadie. Ahora es territorio romano.`, "bien");
+  return true;
+}
+
 // ⚖️ Poder político que cuesta quedarse con una zona
 function costoZona(x, y) {
   const id = duenoDe(x, y);

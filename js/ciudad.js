@@ -804,7 +804,14 @@ function infoZona() {
     return `<h3>${iconoCiudad(col)} ${estado.colonias[col - 1].nombre}</h3><p>${conq ? `Antigua capital de los ${ENEMIGOS[conq].nombre.toLowerCase()}, ahora es de Roma` : "Una ciudad fundada por Roma"}: puede tener todos los edificios que tiene Roma. Comparte con Roma los recursos y los habitantes.</p>
       <button data-accion="ver-ciudad" data-ciudad="${col}">🏛️ Ver la ciudad</button>`;
   }
-  if (!dueno) return `<h3>${ter.nombre}</h3><p class="ayuda">Tierra de nadie: acá no vive ningún pueblo.</p>`;
+  if (!dueno) {
+    const p = puedeOcupar(x, y);
+    return `<h3>${ter.icono} ${ter.nombre} · tierra de nadie</h3>
+      <p>Acá no vive ningún pueblo: no hace falta pelear. Podés ocuparla y pasa a ser territorio romano.<br>
+      <small>Cuesta: ${textoCosto(MAPA.ocupar)}${porMar(x, y) ? ` y un ${BARCOS.icono} barco (llega por mar)` : ""}</small></p>
+      ${p.ok ? "" : `<p class="motivo"><small>${p.motivo}</small></p>`}
+      <button data-accion="ocupar" ${p.ok && !estado.terminado ? "" : "disabled"}>🚩 Ocupar zona</button>`;
+  }
   if (dueno === "roma") {
     const p = puedeFundar(x, y);
     const prohibido = FUNDACION.prohibidos.includes(terreno(x, y));
@@ -1254,6 +1261,7 @@ document.addEventListener("click", (ev) => {
   const d = btn.dataset;
   switch (d.accion) {
     case "explorar": if (casillaElegida) explorar(casillaElegida.x, casillaElegida.y); break;
+    case "ocupar": if (casillaElegida) ocupar(casillaElegida.x, casillaElegida.y); break;
     case "guerra": declararGuerra(d.enemigo); break;
     case "ver-mapa": {
       const e = ENEMIGOS[d.enemigo];
