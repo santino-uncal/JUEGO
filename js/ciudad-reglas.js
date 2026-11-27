@@ -438,6 +438,7 @@ function puedeAtacarZona(x, y) {
 // Ocupar una zona de tierra de nadie: no hay que pelear, solo llegar y pagar
 function puedeOcupar(x, y) {
   if (!esTierra(x, y) || duenoDe(x, y)) return { ok: false, motivo: "Esta zona no es tierra de nadie." };
+  if (esRutaComercial(x, y)) return { ok: false, motivo: `Por acá solo pasan las caravanas de la ${RUTAS_COMERCIALES.nombre}: no se puede ocupar.` };
   if (!vista(x, y)) return { ok: false, motivo: "Primero explorá esta zona." };
   if (!alcanzable(x, y)) {
     let motivo = "Queda lejos: tiene que estar pegada a tu territorio.";
@@ -464,12 +465,19 @@ function ocupar(x, y) {
   return true;
 }
 
-// ⚖️ Poder político que cuesta quedarse con una zona
+// Tierra de nadie de las rutas comerciales de Asia: no se puede ocupar
+function esRutaComercial(x, y) {
+  const z = RUTAS_COMERCIALES.zona;
+  return esTierra(x, y) && !duenoDe(x, y) && x >= z.x[0] && x <= z.x[1] && y >= z.y[0] && y <= z.y[1];
+}
+
+// ⚖️ Poder político que cuesta quedarse con una zona (los reinos con "costoPoder" cuestan varias veces más)
 function costoZona(x, y) {
   const id = duenoDe(x, y);
-  if (esCapital(x, y) === id) return { poder: Math.min(MAPA.poder.maxCapital, MAPA.poder.capital + MAPA.poder.porZona * (zonasDe(id) - 1)) };
-  if (ciudadEnemigaEn(x, y)) return { poder: CIUDADES_PUEBLO.poder };
-  return { poder: MAPA.poder.zona };
+  const veces = ENEMIGOS[id].costoPoder || 1;
+  if (esCapital(x, y) === id) return { poder: veces * Math.min(MAPA.poder.maxCapital, MAPA.poder.capital + MAPA.poder.porZona * (zonasDe(id) - 1)) };
+  if (ciudadEnemigaEn(x, y)) return { poder: veces * CIUDADES_PUEBLO.poder };
+  return { poder: veces * MAPA.poder.zona };
 }
 
 // Defensa de una zona: la capital la defiende todo el ejército que está en casa (con murallas);

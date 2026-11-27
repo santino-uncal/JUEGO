@@ -294,6 +294,8 @@ const BARCOS_GUERRA = {
 //                 Si no tiene, el pueblo vive en paz hasta que vos le declares la guerra.
 //   cada: años entre un ataque y el siguiente mientras están en guerra.
 //   botin: lo que ganás al tomar su capital. tributo: lo que te pagan cada año después.
+//   costoPoder: multiplica el ⚖️ poder político que cuesta quedarte con sus zonas y ciudades
+//         (10 = diez veces más caro). Sirve para los reinos enormes y lejanos.
 const ENEMIGOS = {
   // --- Italia ---
   umbros:   { nombre: "Umbros",   ciudad: "Iguvium",  icono: "🐑", letra: "U", color: "#efe4b0", x: 203, y: 196,
@@ -390,11 +392,11 @@ const ENEMIGOS = {
               ciudades: [{ nombre: "Adulis", x: 392, y: 464 }, { nombre: "Malao", x: 481, y: 550 }, { nombre: "Aksum", x: 394, y: 479 }],
               fuerza: 35, crece: 2.4, muro: 0.5, cada: 8, botin: { oro: 200, comida: 100 }, tributo: { oro: 8, comida: 4 },
               desc: "Reino de las montañas del Cuerno de África, con templos de piedra." },
-  indios:   { nombre: "Confederación india", conoce: 15, lejano: true, singular: true, ciudad: "Pataliputra", icono: "🐅", letra: "O", color: "#0000a0", x: 737, y: 382,
+  indios:   { nombre: "Confederación india", conoce: 15, lejano: true, singular: true, ciudad: "Pataliputra", icono: "🐅", letra: "O", color: "#0000a0", x: 737, y: 382, costoPoder: 10,
               ciudades: [{ nombre: "Taxila", x: 648, y: 343 }, { nombre: "Ujjayini", x: 648, y: 397 }, { nombre: "Kausambi", x: 701, y: 384 }, { nombre: "Tamralipta", x: 764, y: 402 }],
               fuerza: 90, crece: 5, muro: 0.75, cada: 6, botin: { oro: 500, ciencia: 150 }, tributo: { oro: 20, ciencia: 6 },
               desc: "Los reinos de la India, a orillas del Ganges, con elefantes de guerra. Están en la otra punta del mundo." },
-  zhou:     { nombre: "Dinastía Zhou", conoce: 15, lejano: true, singular: true, ciudad: "Luoyang", icono: "🐲", letra: "J", color: "#008000", x: 949, y: 281,
+  zhou:     { nombre: "Dinastía Zhou", conoce: 15, lejano: true, singular: true, ciudad: "Luoyang", icono: "🐲", letra: "J", color: "#008000", x: 949, y: 281, costoPoder: 10,
               ciudades: [{ nombre: "Haojing", x: 928, y: 281 }, { nombre: "Linzi", x: 984, y: 259 }, { nombre: "Ji", x: 973, y: 228 }, { nombre: "Ying", x: 955, y: 302 }],
               fuerza: 100, crece: 6, muro: 0.75, cada: 6, botin: { oro: 600, ciencia: 200 }, tributo: { oro: 25, ciencia: 8 },
               desc: "El gran reino de China, en el fin del mundo conocido. Casi nadie en Roma sabe que existe." },
@@ -662,8 +664,28 @@ const MAPA = {
   //   maxCapital: lo máximo que puede costar una capital (para los pueblos enormes)
   poder: { zona: 10, capital: 15, porZona: 2, maxCapital: 120 },
   // Ocupar una zona de tierra de nadie (no hay que pelear): lo que cuesta.
+  // (Las zonas de las rutas comerciales de Asia no se pueden ocupar: ver RUTAS_COMERCIALES.)
   // Si se llega solo por mar, además hace falta un barco listo (navega ese año).
   ocupar: { poder: 5, comida: 15 },
   // Las islas (o cualquier costa lejos de tu territorio) solo se pueden atacar con esta tecnología
   tecMar: "navegacion",
+};
+
+// Rutas comerciales de Asia (la Ruta de la Seda): entre el Imperio persa, la India y China
+// no hay pueblos ni territorio para conquistar, solo caravanas. La tierra de nadie de esa zona
+// no se puede ocupar, así que a la India y a China no se llega por tierra (solo por mar).
+//   zona:   rectángulo del mapa (columnas x y filas y, de tal a tal) donde la tierra de nadie es ruta comercial
+//   color:  cómo se pinta en el mapa
+//   camino: por dónde pasa la ruta que se dibuja en el mapa (con nombre: una parada de las caravanas)
+const RUTAS_COMERCIALES = {
+  nombre: "Ruta de la Seda",
+  zona: { x: [560, 1033], y: [120, 480] },
+  color: "#e3cc8f",
+  camino: [
+    { x: 617, y: 256 },                        // Bactra (Imperio persa)
+    { x: 640, y: 245, nombre: "Maracanda" },
+    { x: 730, y: 232, nombre: "Kashgar" },
+    { x: 850, y: 232, nombre: "Dunhuang" },
+    { x: 928, y: 281 },                        // Haojing (China)
+  ],
 };

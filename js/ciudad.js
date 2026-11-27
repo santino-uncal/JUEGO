@@ -387,6 +387,7 @@ function tarjetaEnemigo(id) {
         <small>${d.desc}</small><br>
         ${ciudadesTexto}
         ${d.lejano ? `<small>🌍 Queda lejos del Mediterráneo: no hace falta conquistarlo para ganar.</small><br>` : ""}
+        ${d.costoPoder ? `<small>⚖️ Es enorme: quedarte con sus tierras cuesta ${d.costoPoder} veces más poder político.</small><br>` : ""}
         <small>Ejército: ~${estimar(e.fuerza)} · Defensa de su capital: ~${estimar(defensaEnemiga(id))}${d.muro ? ` (murallas +${d.muro * 100}%)` : ""}</small><br>
         ${estadoTexto}
         ${e.guerra ? `<br><small>${textoPaz(id)}</small>` : ""}
@@ -488,7 +489,7 @@ function dibujarMapa() {
       }
       if (!esTierra(x, y)) { capa.color[i] = "#9fd3ea"; continue; }
       const dueno = duenoDe(x, y);
-      capa.color[i] = colorDe(dueno);
+      capa.color[i] = esRutaComercial(x, y) ? RUTAS_COMERCIALES.color : colorDe(dueno);
       if (dueno && dueno !== "roma" && estado.enemigos[dueno].guerra && alcanzable(x, y)) capa.atacables.push(i);
     }
   }
@@ -507,6 +508,10 @@ function dibujarMapa() {
       const mia = duenoDe(c.x, c.y) === "roma";
       capa.lugares.push({ x: c.x, y: c.y, icono: ICONOS_CIUDAD[mia ? "conquistada" : "enemiga"], nombre: c.nombre, mio: mia });
     }
+  }
+  // Paradas de las caravanas de la Ruta de la Seda
+  for (const p of RUTAS_COMERCIALES.camino) {
+    if (p.nombre && vista(p.x, p.y)) capa.lugares.push({ x: p.x, y: p.y, icono: "🐫", nombre: p.nombre, ruta: true });
   }
   // De lejos el mapa se pinta como una imagen (mucho más rápido que dibujar cada hexágono):
   // cada casilla son 2 píxeles de ancho y las filas impares se corren 1 píxel, como los hexágonos.
@@ -693,6 +698,22 @@ function pintarMapa() {
     if (enPantalla(i)) ctx.fillText("🧭", centroHexX(i % MAPA_ANCHO, Math.floor(i / MAPA_ANCHO)), centroHexY(Math.floor(i / MAPA_ANCHO)));
   }
 
+  // Ruta de la Seda: línea punteada entre las paradas que ya viste
+  const camino = RUTAS_COMERCIALES.camino;
+  ctx.save();
+  ctx.setLineDash([Math.max(4, e * 0.8), Math.max(3, e * 0.5)]);
+  ctx.strokeStyle = "#8a5a14";
+  ctx.lineWidth = Math.max(2, e / 4);
+  for (let k = 0; k + 1 < camino.length; k++) {
+    const a = camino[k], b = camino[k + 1];
+    if (!vista(a.x, a.y) || !vista(b.x, b.y)) continue;
+    ctx.beginPath();
+    ctx.moveTo(centroHexX(a.x, a.y), centroHexY(a.y));
+    ctx.lineTo(centroHexX(b.x, b.y), centroHexY(b.y));
+    ctx.stroke();
+  }
+  ctx.restore();
+
   // Ciudades con su nombre
   const tam = Math.max(e < 5 ? 10 : 12, Math.min(30, e * 0.9));
   for (const l of capaMapa.lugares) {
@@ -704,7 +725,7 @@ function pintarMapa() {
     ctx.font = "bold 11px sans-serif";
     const tw = ctx.measureText(l.nombre).width + 8;
     const ty = cy + tam / 2 + 8;
-    ctx.fillStyle = l.mio ? "#22783a" : "#b02a2a";
+    ctx.fillStyle = l.ruta ? "#8a5a14" : l.mio ? "#22783a" : "#b02a2a";
     ctx.beginPath();
     ctx.roundRect ? ctx.roundRect(cx - tw / 2, ty - 7, tw, 14, 4) : ctx.rect(cx - tw / 2, ty - 7, tw, 14);
     ctx.fill();
@@ -830,6 +851,11 @@ function infoZona() {
     const antes = estado.colonias[col - 1].ciudad === undefined ? "capital" : "ciudad";
     return `<h3>${iconoCiudad(col)} ${estado.colonias[col - 1].nombre}</h3><p>${conq ? `Antigua ${antes} de ${pueblo(conq)}, ahora es de Roma` : "Una ciudad fundada por Roma"}: puede tener todos los edificios que tiene Roma. Comparte con Roma los recursos y los habitantes.</p>
       <button data-accion="ver-ciudad" data-ciudad="${col}">🏛️ Ver la ciudad</button>`;
+  }
+  if (esRutaComercial(x, y)) {
+    return `<h3>${ter.icono} ${ter.nombre} · ${RUTAS_COMERCIALES.nombre}</h3>
+      <p>Estepas, desiertos y montañas entre el Imperio persa, la India y China. Acá no vive ningún pueblo: solo pasan las caravanas que llevan seda y especias.</p>
+      <p class="ayuda">No se puede ocupar ni cruzar con un ejército. A la India y a China solo se llega por mar.</p>`;
   }
   if (!dueno) {
     const p = puedeOcupar(x, y);
