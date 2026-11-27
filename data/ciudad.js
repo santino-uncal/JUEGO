@@ -309,12 +309,12 @@ const ENEMIGOS = {
   mesapios: { nombre: "Mesapios", ciudad: "Uria", icono: "🐴", letra: "A", color: "#7092be", x: 222, y: 213,
               fuerza: 15, crece: 1.2, muro: 0.25, cada: 8, botin: { comida: 60, oro: 90 }, tributo: { comida: 4, oro: 3 },
               desc: "Criadores de caballos de las llanuras del este. Viven en paz si no los molestás." },
+  latinos:  { nombre: "Liga latina", singular: true, ciudad: "Alba Longa", icono: "🌿", letra: "L", color: "#22b14c", x: 200, y: 210,
+              fuerza: 7, crece: 0.8, muro: 0.25, primerAtaque: 14, cada: 9, botin: { comida: 50, oro: 40 }, tributo: { comida: 3, oro: 2 },
+              desc: "Las ciudades latinas vecinas de Roma, unidas para defenderse. Hablan tu misma lengua." },
   italos:   { nombre: "Ítalos", ciudad: "Consentia", icono: "🌲", letra: "I", color: "#b5e61d", x: 223, y: 230,
-              fuerza: 16, crece: 1.4, muro: 0, cada: 8, botin: { madera: 80, oro: 80 }, tributo: { madera: 4, oro: 3 },
-              desc: "Pueblos de los bosques del sur de Italia. Viven en paz si no los molestás." },
-  siculos:  { nombre: "Sículos", ciudad: "Henna", icono: "🌾", letra: "L", color: "#a8d61a", x: 208, y: 250,
-              fuerza: 10, crece: 0.9, muro: 0.25, cada: 9, botin: { comida: 70, piedra: 40 }, tributo: { comida: 4, piedra: 2 },
-              desc: "Campesinos del centro de Sicilia. Para llegar necesitás ⛵ Navegación." },
+              fuerza: 20, crece: 1.6, muro: 0, cada: 8, botin: { madera: 80, oro: 80, comida: 40 }, tributo: { madera: 4, oro: 3, comida: 2 },
+              desc: "Pueblos de los bosques del sur de Italia y de los campos del centro de Sicilia. Viven en paz si no los molestás." },
   // --- El Mediterráneo y Europa ---
   cartagineses: { nombre: "Cartagineses", conoce: 30, ciudad: "Cartago", icono: "🐘", letra: "K", color: "#a349a4", x: 181, y: 265,
               fuerza: 30, crece: 2.5, muro: 0.75, cada: 6, botin: { oro: 250, comida: 80 }, tributo: { oro: 12 },
@@ -590,10 +590,10 @@ const EVENTOS_CIUDAD = [
 // Mapa del mundo antiguo. Las casillas están en data/mapa-mundo.js (salen de la imagen del mapa):
 //   MAPA_TERRENO (el terreno) y MAPA_DUENOS (de quién es cada casilla al empezar).
 const MAPA = {
-  version: 8,          // subirlo cuando cambia el dibujo del mapa: las partidas guardadas se rearman
+  version: 9,          // subirlo cuando cambia el dibujo del mapa: las partidas guardadas se rearman
   filas: MAPA_TERRENO,
   duenos: MAPA_DUENOS,
-  roma: { x: 198, y: 209 },  // las filas impares del mapa están corridas medio hexágono
+  roma: { x: 196, y: 208 },  // las filas impares del mapa están corridas medio hexágono
   colorRoma: "#d62828",
   colorNadie: "#d8d2c4",
   terrenos: {

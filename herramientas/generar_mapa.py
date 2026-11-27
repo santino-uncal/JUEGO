@@ -44,11 +44,11 @@ PALETA = [
     ((185, 122, 87), "H"),   # Liga griega
     ((255, 201, 14), "E"),   # Etruscos
     ((239, 228, 176), "U"),  # Umbros
-    ((34, 177, 76), "R"),    # Latinos (pasan a ser Roma)
+    ((34, 177, 76), "L"),    # Liga latina
     ((0, 162, 232), "S"),    # Samnitas
     ((220, 68, 60), "R"),    # Roma (el puntito rojo dentro del Lacio)
     ((112, 146, 190), "A"),  # Mesapios
-    ((181, 230, 29), "I"),   # Ítalos (los de Sicilia pasan a ser sículos, "L")
+    ((181, 230, 29), "I"),   # Ítalos (también los de Sicilia)
 ]
 
 # La imagen nueva (833 x 424) en las coordenadas de la vieja (826 x 426):
@@ -59,8 +59,8 @@ ANCHO_VIEJO, ALTO_VIEJO = 826, 426
 # Capitales (en píxeles de la imagen). Se busca la casilla del pueblo más cercana a ese punto.
 # Tienen que coincidir con x, y de ENEMIGOS en data/ciudad.js (el programa las imprime al final).
 CAPITALES = {
-    "R": (159, 145), "U": (163, 136), "E": (152, 133), "S": (169, 146), "C": (143, 121),
-    "A": (178, 148), "I": (179, 160), "L": (167, 174), "K": (147, 184), "H": (218, 170),
+    "R": (158, 145), "U": (163, 136), "E": (152, 133), "S": (169, 146), "C": (143, 121),
+    "A": (178, 148), "I": (179, 160), "L": (160, 146), "K": (147, 184), "H": (218, 170),
     "P": (242, 163), "B": (100, 110), "Y": (195, 138), "N": (210, 135), "T": (60, 143),
     "Z": (22, 165), "W": (78, 62), "G": (135, 80), "D": (233, 106), "X": (240, 127),
     "M": (90, 198), "Q": (150, 215), "V": (275, 285), "F": (320, 330), "O": (590, 265),
@@ -68,10 +68,15 @@ CAPITALES = {
 }
 
 # Parches a mano (polígonos en píxeles de la imagen, letra del pueblo). Con la imagen sin nombres casi no hacen falta:
-# solo el Lacio, para que Roma arranque con el mismo tamaño que antes (en la imagen es un puntito).
+# solo el Lacio, para que Roma no arranque con un puntito (en la imagen es un puntito rojo).
+# Roma no le saca tierra a la Liga latina (la franjita verde al lado de Roma).
 PARCHES = [
     ("R", [(154, 144), (159, 142), (162, 143), (162, 146), (160, 147), (155, 148)]),  # Lacio (hasta la costa)
 ]
+
+# Sicilia en la imagen queda muy lejos de la punta de Italia: se la corre (en píxeles) hasta dejar un estrecho.
+SICILIA = (156, 170, 176, 181)   # rectángulo donde está la isla (x0, y0, x1, y1)
+MOVER_SICILIA = (4, -1)
 
 # Cordilleras: líneas (en píxeles de la imagen) y su ancho en píxeles
 CORDILLERAS = [
@@ -170,13 +175,16 @@ def clasificar(im):
     cp = capa.load()
     for y in range(h):
         for x in range(w):
-            if cp[x, y] and not (PARCHES[cp[x, y] - 1][0] == "R" and letra[y][x] == "~"):   # Roma no se mete en el mar
+            if cp[x, y] and not (PARCHES[cp[x, y] - 1][0] == "R" and letra[y][x] in "~L"):   # ni en el mar ni en los latinos
                 letra[y][x] = PARCHES[cp[x, y] - 1][0]
-    # Sicilia: los ítalos de la isla son sículos
-    for y in range(h):
-        for x in range(w):
-            if letra[y][x] == "I" and y >= 168 and x < 177:
-                letra[y][x] = "L"
+    # Sicilia se acerca a Italia
+    x0, y0, x1, y1 = SICILIA
+    dx, dy = MOVER_SICILIA
+    isla = [(x, y, letra[y][x]) for y in range(y0, y1 + 1) for x in range(x0, x1 + 1) if letra[y][x] != "~"]
+    for x, y, _ in isla:
+        letra[y][x] = "~"
+    for x, y, l in isla:
+        letra[y + dy][x + dx] = l
     return letra
 
 
@@ -260,7 +268,7 @@ def main():
     # Roma arranca con su casilla y las de alrededor
     rx, ry = capitales["R"]
     for x, y in vecinos(rx, ry, W, H):
-        if duenos[y][x] != "~":
+        if duenos[y][x] not in "~L":
             duenos[y][x] = "R"
 
     # Terreno
@@ -326,7 +334,6 @@ def main():
         print(l, f"x: {x}, y: {y}")
     # Vista previa para revisar
     colores = {l: c for c, l in PALETA}
-    colores["L"] = (120, 200, 0)
     prev = Image.new("RGB", (W, H))
     for y in range(H):
         for x in range(W):
