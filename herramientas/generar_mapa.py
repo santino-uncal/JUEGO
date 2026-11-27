@@ -68,8 +68,8 @@ CAPITALES = {
 }
 
 # Parches a mano (polígonos en píxeles de la imagen, letra del pueblo). Con la imagen sin nombres casi no hacen falta:
-# solo el Lacio, para que Roma no arranque con un puntito (en la imagen es un puntito rojo).
-# Roma no le saca tierra a la Liga latina (la franjita verde al lado de Roma).
+# solo el Lacio, que en la imagen es muy chico. Después Roma se queda solo con su ciudad
+# y el resto del Lacio es de la Liga latina.
 PARCHES = [
     ("R", [(154, 144), (159, 142), (162, 143), (162, 146), (160, 147), (155, 148)]),  # Lacio (hasta la costa)
 ]
@@ -270,6 +270,12 @@ def main():
     for x, y in vecinos(rx, ry, W, H):
         if duenos[y][x] not in "~L":
             duenos[y][x] = "R"
+    # Roma es solo la ciudad (su casilla y las de alrededor): el resto del Lacio es de la Liga latina
+    ciudad = {(rx, ry), *vecinos(rx, ry, W, H)}
+    for hy in range(H):
+        for hx in range(W):
+            if duenos[hy][hx] == "R" and (hx, hy) not in ciudad:
+                duenos[hy][hx] = "L"
 
     # Terreno
     bosque, colina, rugoso, torcer = ruido(1, 6), ruido(2, 5), ruido(3, 2.5), ruido(4, 9)

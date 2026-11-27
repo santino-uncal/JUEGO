@@ -310,8 +310,8 @@ const ENEMIGOS = {
               fuerza: 15, crece: 1.2, muro: 0.25, cada: 8, botin: { comida: 60, oro: 90 }, tributo: { comida: 4, oro: 3 },
               desc: "Criadores de caballos de las llanuras del este. Viven en paz si no los molestás." },
   latinos:  { nombre: "Liga latina", singular: true, ciudad: "Alba Longa", icono: "🌿", letra: "L", color: "#22b14c", x: 200, y: 210,
-              fuerza: 7, crece: 0.8, muro: 0.25, primerAtaque: 14, cada: 9, botin: { comida: 50, oro: 40 }, tributo: { comida: 3, oro: 2 },
-              desc: "Las ciudades latinas vecinas de Roma, unidas para defenderse. Hablan tu misma lengua." },
+              fuerza: 10, crece: 1, muro: 0.25, primerAtaque: 14, cada: 9, botin: { comida: 50, oro: 40 }, tributo: { comida: 3, oro: 2 },
+              desc: "Las ciudades latinas que rodean a Roma, unidas para defenderse. Tienen casi todo el Lacio y hablan tu misma lengua." },
   italos:   { nombre: "Ítalos", ciudad: "Consentia", icono: "🌲", letra: "I", color: "#b5e61d", x: 223, y: 230,
               fuerza: 20, crece: 1.6, muro: 0, cada: 8, botin: { madera: 80, oro: 80, comida: 40 }, tributo: { madera: 4, oro: 3, comida: 2 },
               desc: "Pueblos de los bosques del sur de Italia y de los campos del centro de Sicilia. Viven en paz si no los molestás." },
@@ -590,7 +590,7 @@ const EVENTOS_CIUDAD = [
 // Mapa del mundo antiguo. Las casillas están en data/mapa-mundo.js (salen de la imagen del mapa):
 //   MAPA_TERRENO (el terreno) y MAPA_DUENOS (de quién es cada casilla al empezar).
 const MAPA = {
-  version: 9,          // subirlo cuando cambia el dibujo del mapa: las partidas guardadas se rearman
+  version: 10,          // subirlo cuando cambia el dibujo del mapa: las partidas guardadas se rearman
   filas: MAPA_TERRENO,
   duenos: MAPA_DUENOS,
   roma: { x: 196, y: 208 },  // las filas impares del mapa están corridas medio hexágono
