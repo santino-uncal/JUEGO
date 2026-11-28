@@ -527,6 +527,9 @@ function zoomMapa(factor, px, py) {
   pintarMapa();
 }
 
+// Casilla de mar que tiene alguna tierra vista al lado
+const esCosta = (x, y) => direcciones(y).some(([dx, dy]) => vista(x + dx, y + dy) && esTierra(x + dx, y + dy));
+
 // Calcula qué color y qué marcas lleva cada casilla. Se llama cada vez que cambia la partida.
 function dibujarMapa() {
   const n = MAPA_ANCHO * MAPA_ALTO;
@@ -544,7 +547,8 @@ function dibujarMapa() {
         else capa.color[i] = "#2a231b";
         continue;
       }
-      if (!esTierra(x, y)) { capa.color[i] = "#9fd3ea"; continue; }
+      // Mar: el que toca la costa es más clarito (agua baja), así se distingue bien la orilla
+      if (!esTierra(x, y)) { capa.color[i] = esCosta(x, y) ? "#c4e8f4" : "#9fd3ea"; continue; }
       const dueno = duenoDe(x, y);
       capa.color[i] = esRutaComercial(x, y) ? RUTAS_COMERCIALES.color : colorDe(dueno);
       if (dueno && dueno !== "roma" && estado.enemigos[dueno].guerra && alcanzable(x, y)) capa.atacables.push(i);
@@ -731,6 +735,61 @@ function pintarMapa() {
     ctx.strokeStyle = "#3b2f22";
     ctx.lineWidth = Math.max(1, e / 8);
     ctx.stroke(borde);
+  }
+
+  // Costas: espuma blanca justo en la orilla y, de cerca, olitas en el agua que se van alejando de la tierra.
+  // Se recorre cada casilla de mar y se mira cuál de sus 6 lados toca tierra (el lado k va de la punta k+1 a la k+2).
+  if (!lejos) {
+    const espuma = new Path2D(), olas = new Path2D(), olasLejos = new Path2D();
+    const conOlas = e >= 10;   // de más lejos son tan chiquitas que no se ven
+    // Una ola: línea ondulada con centro en (ox, oy), paralela a la costa.
+    // (px, py) es la dirección "hacia el mar" (de largo 1); la ola corre de costado a esa dirección.
+    const ola = (path, ox, oy, px, py, ancho) => {
+      const tx = -py, ty = px, alto = e * 0.06;
+      for (let s = 0; s <= 12; s++) {
+        const t = s / 12 - 0.5;
+        const onda = Math.sin(s / 12 * 1.5 * Math.PI * 2) * alto;
+        const x = ox + tx * t * ancho + px * onda, y = oy + ty * t * ancho + py * onda;
+        s ? path.lineTo(x, y) : path.moveTo(x, y);
+      }
+    };
+    for (let y = y0; y <= y1; y++) {
+      const dirs = direcciones(y);
+      for (let x = x0; x <= x1; x++) {
+        if (!vista(x, y) || esTierra(x, y)) continue;
+        const cx = centroHexX(x, y), cy = centroHexY(y);
+        const lados = [];
+        for (let k = 0; k < 6; k++) {
+          const vx = x + dirs[k][0], vy = y + dirs[k][1];
+          if (!vista(vx, vy) || !esTierra(vx, vy)) continue;
+          const [p1, p2] = [puntas[(k + 1) % 6], puntas[(k + 2) % 6]];
+          const lado = [cx + p1[0] * r, cy + p1[1] * r, cx + p2[0] * r, cy + p2[1] * r];
+          espuma.moveTo(lado[0], lado[1]); espuma.lineTo(lado[2], lado[3]);
+          lados.push(lado);
+        }
+        if (!conOlas || !lados.length) continue;
+        // Una sola ola por casilla, paralela a la costa: se mira para qué lado queda la tierra en promedio
+        let dx = 0, dy = 0;
+        for (const [ax, ay, bx, by] of lados) { dx += cx - (ax + bx) / 2; dy += cy - (ay + by) / 2; }
+        const largo = Math.hypot(dx, dy);
+        if (largo < r * 0.3) { ola(olas, cx, cy, 0, 1, r * 0.9); continue; }   // bahía: tierra por todos lados
+        const px = dx / largo, py = dy / largo;
+        ola(olas, cx - px * r * 0.15, cy - py * r * 0.15, px, py, r * 0.9);
+        ola(olasLejos, cx + px * r * 0.45, cy + py * r * 0.45, px, py, r * 0.7);
+      }
+    }
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = "rgba(255,255,255,.85)";
+    ctx.lineWidth = Math.max(1.5, e / 7);
+    ctx.stroke(espuma);
+    if (conOlas) {
+      ctx.lineWidth = Math.max(1, e / 13);
+      ctx.strokeStyle = "rgba(40,120,170,.75)";
+      ctx.stroke(olas);
+      ctx.strokeStyle = "rgba(40,120,170,.4)";
+      ctx.stroke(olasLejos);
+    }
+    ctx.lineCap = "butt"; ctx.lineJoin = "miter";
   }
 
   // Zonas que se pueden explorar: borde dorado
