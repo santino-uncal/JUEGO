@@ -195,8 +195,53 @@ function dibujarCiudad() {
 function dibujarPanel() {
   document.querySelectorAll(".pestanias button").forEach((b) => b.classList.toggle("activa", b.dataset.pestania === pestania));
   const fn = { construir: panelConstruir, acciones: panelAcciones, ejercito: panelEjercito, vecinos: panelVecinos }[pestania];
+  const buscando = document.activeElement && document.activeElement.id === "buscador";
   $("contenido").innerHTML = fn();
+  aplicarFiltro();
+  // Si estabas escribiendo en el buscador, seguís escribiendo después de redibujar
+  const b = $("buscador");
+  if (b && buscando) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
 }
+
+// Filtro (todos / disponibles) y texto del buscador de las pestañas Construir y Acciones
+const filtros = { construir: { ver: "todos", texto: "" }, acciones: { ver: "todos", texto: "" } };
+
+// Saca tildes y mayúsculas para que "construccion" encuentre "Construcción"
+const normalizar = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const escaparAtributo = (t) => t.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+
+// Barra con los botones TODOS / DISPONIBLES y el buscador
+function barraFiltro(placeholder) {
+  const f = filtros[pestania];
+  const boton = (valor, texto) =>
+    `<button data-accion="filtro" data-valor="${valor}" class="${f.ver === valor ? "activa" : ""}">${texto}</button>`;
+  return `<div class="filtros">
+      <div class="filtro-botones">${boton("todos", "Todos")}${boton("disponibles", "Disponibles")}</div>
+      <input id="buscador" type="search" placeholder="🔍 ${placeholder}" value="${escaparAtributo(f.texto)}" autocomplete="off">
+    </div>`;
+}
+
+// Muestra u oculta los ítems de la lista según el filtro y lo escrito (sin redibujar todo)
+function aplicarFiltro() {
+  const f = filtros[pestania];
+  const lista = document.querySelector("#contenido .lista[data-filtrable]");
+  if (!f || !lista) return;
+  const palabras = normalizar(f.texto).split(/\s+/).filter(Boolean);
+  let visibles = 0;
+  lista.querySelectorAll(".item").forEach((it) => {
+    const ok = (f.ver === "todos" || it.dataset.ok === "1") && palabras.every((p) => it.dataset.busca.includes(p));
+    it.classList.toggle("oculto", !ok);
+    if (ok) visibles++;
+  });
+  lista.querySelector(".sin-resultados").classList.toggle("oculto", visibles > 0);
+}
+
+// Lo que se escribe en el buscador filtra al instante
+document.addEventListener("input", (ev) => {
+  if (ev.target.id !== "buscador" || !filtros[pestania]) return;
+  filtros[pestania].texto = ev.target.value;
+  aplicarFiltro();
+});
 
 function panelConstruir() {
   if (loteElegido === null) return `<p class="ayuda">Tocá un terreno de la ciudad para construir o ver un edificio.</p>`;
@@ -217,14 +262,15 @@ function panelConstruir() {
     if (!ed.fijo) html += ` <button data-accion="demoler">🔨 Demoler</button>`;
     return html + `</div>`;
   }
-  let html = `<h3>¿Qué construís acá?</h3><div class="lista">`;
+  let html = `<h3>¿Qué construís acá?</h3>${barraFiltro("Buscar edificio…")}<div class="lista" data-filtrable>
+    <p class="ayuda sin-resultados oculto">No hay nada que coincida.</p>`;
   for (const tipo in EDIFICIOS) {
     const ed = EDIFICIOS[tipo];
     if (ed.fijo) continue;
     const p = puedeConstruir(tipo, ciudadVista);
     const bloqueado = ed.requiere && !tiene(ed.requiere);
     html += `
-      <div class="item ${bloqueado ? "bloqueado" : ""}">
+      <div class="item ${bloqueado ? "bloqueado" : ""}" data-ok="${p.ok ? 1 : 0}" data-busca="${escaparAtributo(normalizar(ed.nombre + " " + ed.desc))}">
         <div class="item-icono">${bloqueado ? "🔒" : ed.icono}</div>
         <div class="item-texto">
           <b>${ed.nombre}</b> <small>· ${ed.turnos} año${ed.turnos > 1 ? "s" : ""}${ed.trabajadores ? ` · 👷 ${trabajadoresDe(tipo)}` : ""}</small><br>
@@ -242,7 +288,9 @@ function panelAcciones() {
   const ap = apoyo();
   let html = `<p>😊 Apoyo popular: <b>${ap}</b> de 100 · todo rinde <b>${Math.round(productividad() * 100)}%</b></p>
     <p class="ayuda">Ganarte al pueblo cuesta recursos; exprimirlo te da recursos pero baja el apoyo. Cada acción tarda unos años en poder repetirse.</p>
-    <div class="lista">`;
+    ${barraFiltro("Buscar acción…")}
+    <div class="lista" data-filtrable>
+    <p class="ayuda sin-resultados oculto">No hay nada que coincida.</p>`;
   for (const id in ACCIONES) {
     const a = ACCIONES[id];
     const p = puedeAccion(id);
@@ -252,7 +300,7 @@ function panelAcciones() {
     if (a.costo) partes.push(`Cuesta: ${textoCosto(a.costo)}`);
     if (gana) partes.push(`Da: ${gana}`);
     html += `
-      <div class="item ${bloqueado ? "bloqueado" : ""}">
+      <div class="item ${bloqueado ? "bloqueado" : ""}" data-ok="${p.ok && !estado.terminado ? 1 : 0}" data-busca="${escaparAtributo(normalizar(a.nombre + " " + a.desc))}">
         <div class="item-icono">${bloqueado ? "🔒" : a.icono}</div>
         <div class="item-texto">
           <b>${a.nombre}</b> <small class="${a.apoyo >= 0 ? "bien" : "mal"}">${a.apoyo >= 0 ? "+" : ""}${a.apoyo} 😊</small><br>
@@ -1330,6 +1378,7 @@ document.addEventListener("click", (ev) => {
   if (btn.dataset.pestania) { pestania = btn.dataset.pestania; dibujarPanel(); return; }
   if (btn.dataset.vista) { cambiarVista(btn.dataset.vista); return; }
   const d = btn.dataset;
+  if (d.accion === "filtro") { filtros[pestania].ver = d.valor; dibujarPanel(); return; }
   switch (d.accion) {
     case "explorar": if (casillaElegida) explorar(casillaElegida.x, casillaElegida.y); break;
     case "ocupar": if (casillaElegida) ocupar(casillaElegida.x, casillaElegida.y); break;
