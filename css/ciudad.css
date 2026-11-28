@@ -203,3 +203,9 @@ img.ico { width: 1.35em; height: 1.35em; vertical-align: -0.3em; }
 /* Lista de partidas guardadas (dentro de la ventana) */
 #modal .lista { text-align: left; }
 #modal .item-texto { flex: 1; }
+
+/* Mapa abierto desde el menú (ciudad.html?ver=mapa): solo el mapa, sin la partida */
+body.solo-mapa main { grid-template-columns: 1fr; }
+body.solo-mapa #panel, body.solo-mapa #alertas, body.solo-mapa .vistas,
+body.solo-mapa #recursos, body.solo-mapa #btn-partidas, body.solo-mapa #btn-nueva,
+body.solo-mapa #mapa-info button { display: none; }

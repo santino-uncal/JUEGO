@@ -126,6 +126,9 @@ body.menu { min-height: 100vh; display: flex; flex-direction: column; align-item
 .modo:hover { transform: translateY(-4px) scale(1.02); }
 .modo-icono { font-size: 4rem; }
 .modo h2 { margin: 8px 0; color: #7b1e1e; }
+.ver-mapa { margin-top: 28px; padding: 12px 24px; border: 3px solid #d4a017; border-radius: 10px;
+  color: #fbe9c6; text-decoration: none; font-size: 1.2rem; font-weight: bold; transition: background .15s; }
+.ver-mapa:hover { background: rgba(212,160,23,.25); }
 
 /* Modo TEG con amigos */
 .pantalla { position: fixed; inset: 0; z-index: 10; background: rgba(40,10,10,.75);

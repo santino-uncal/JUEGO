@@ -880,6 +880,10 @@ window.addEventListener("resize", () => { if (vistaActual === "mapa") pintarMapa
 })();
 
 function infoCasilla() {
+  // Mapa abierto desde el menú: no hay partida, así que no se muestran exploradores ni habitantes
+  if (soloMapa) return casillaElegida ? infoZona()
+    : `<p class="ayuda">Así es el mundo de Rey de Roma, todo descubierto. En rojo, Roma; cada color es un pueblo distinto.
+      Tocá una zona para ver de quién es. Cuando juegues, al principio vas a ver solo lo que tenés cerca y vas a tener que explorar el resto.</p>`;
   const pie = `<p class="ayuda">🧭 Exploradores de viaje: ${estado.exploradores.length} · 👥 Habitantes libres: ${libres()}</p>`;
   return infoZona() + pie;
 }
@@ -1585,6 +1589,19 @@ function empezarDeNuevo() {
 
 // ---------- Arranque ----------
 
+// Desde el menú se puede abrir solo el mapa (ciudad.html?ver=mapa) para mirarlo antes de jugar:
+// se arma una partida nueva con todo el mapa descubierto, que no se guarda ni pisa la que tenés.
+const soloMapa = new URLSearchParams(location.search).get("ver") === "mapa";
+if (soloMapa) {
+  document.body.classList.add("solo-mapa");
+  guardar = () => {};
+  estado = partidaNueva();
+  estado.visto.fill(1);
+  vistaActual = "mapa";
+  dibujarTodo();
+  $("titulo").textContent = "🗺️ Mapa del mundo";
+  document.title = "Imperium – Mapa del mundo";
+} else {
 actualizarBotonPartidas();
 estado = cargar();
 if (estado) {
@@ -1592,4 +1609,5 @@ if (estado) {
   if (estado.terminado) mostrarFin();
 } else {
   empezarDeNuevo();
+}
 }
