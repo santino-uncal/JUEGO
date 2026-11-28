@@ -203,8 +203,8 @@ function dibujarPanel() {
   if (b && buscando) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
 }
 
-// Filtro (todos / disponibles) y texto del buscador de las pestañas Construir y Acciones
-const filtros = { construir: { ver: "todos", texto: "" }, acciones: { ver: "todos", texto: "" } };
+// Filtro (todos / disponibles) y texto del buscador de las pestañas Construir, Acciones y Ejército
+const filtros = { construir: { ver: "todos", texto: "" }, acciones: { ver: "todos", texto: "" }, ejercito: { ver: "todos", texto: "" } };
 
 // Saca tildes y mayúsculas para que "construccion" encuentre "Construcción"
 const normalizar = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -317,14 +317,17 @@ function panelAcciones() {
 function panelEjercito() {
   let html = `<p>🛡️ Defensa de Roma: <b>${Math.round(poderDefensa())}</b>
     <small>(soldados + habitantes${bonusMuralla() ? ` + muralla +${bonusMuralla() * 100}%` : ""}${efecto("defensa") ? ` + tecnologías +${Math.round(efecto("defensa") * 100)}%` : ""})</small></p>
-    <p>👥 Habitantes libres para alistar: <b>${libres()}</b></p><div class="lista">`;
+    <p>👥 Habitantes libres para alistar: <b>${libres()}</b></p>
+    ${barraFiltro("Buscar tropa o barco…")}
+    <div class="lista" data-filtrable>
+    <p class="ayuda sin-resultados oculto">No hay nada que coincida.</p>`;
   for (const tipo in UNIDADES) {
     const u = UNIDADES[tipo];
     const p1 = puedeEntrenar(tipo, 1);
     const p5 = puedeEntrenar(tipo, 5);
     const bloqueado = (u.requiere && !tiene(u.requiere));
     html += `
-      <div class="item ${bloqueado ? "bloqueado" : ""}">
+      <div class="item ${bloqueado ? "bloqueado" : ""}" data-ok="${p1.ok ? 1 : 0}" data-busca="${escaparAtributo(normalizar(u.nombre + " " + (u.desc || "")))}">
         <div class="item-icono">${bloqueado ? "🔒" : u.icono}</div>
         <div class="item-texto">
           <b>${u.nombre}</b> <span class="cantidad">× ${estado.ejercito[tipo]}</span>${listos(tipo) < estado.ejercito[tipo] ? ` <small>(${estado.ejercito[tipo] - listos(tipo)} descansando)</small>` : ""}<br>
@@ -342,7 +345,7 @@ function panelEjercito() {
   const b1 = puedeConstruirBarco(1), b5 = puedeConstruirBarco(5);
   const sinBarcos = !tiene(MAPA.tecMar);
   html += `
-      <div class="item ${sinBarcos ? "bloqueado" : ""}">
+      <div class="item ${sinBarcos ? "bloqueado" : ""}" data-ok="${b1.ok ? 1 : 0}" data-busca="${escaparAtributo(normalizar(BARCOS.plural + " barco " + BARCOS.desc))}">
         <div class="item-icono">${sinBarcos ? "🔒" : BARCOS.icono}</div>
         <div class="item-texto">
           <b>${BARCOS.plural}</b> <span class="cantidad">× ${barcos()}</span>${barcosListos() < barcos() ? ` <small>(${barcos() - barcosListos()} ya navegaron este año)</small>` : ""}<br>
@@ -360,7 +363,7 @@ function panelEjercito() {
   const g1 = puedeConstruirNave(1), g5 = puedeConstruirNave(5);
   const sinGuerra = !tiene(G.requiere);
   html += `
-      <div class="item ${sinGuerra ? "bloqueado" : ""}">
+      <div class="item ${sinGuerra ? "bloqueado" : ""}" data-ok="${g1.ok ? 1 : 0}" data-busca="${escaparAtributo(normalizar(G.plural + " barco " + G.desc))}">
         <div class="item-icono">${sinGuerra ? "🔒" : G.icono}</div>
         <div class="item-texto">
           <b>${G.plural}</b> <span class="cantidad">× ${flota()}</span>${flotaLista() < flota() ? ` <small>(${flota() - flotaLista()} ya pelearon este año)</small>` : ""}<br>
