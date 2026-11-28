@@ -134,7 +134,7 @@ const TECNOLOGIAS = {
 
   // Fin de la monarquía
   democracia:  { nombre: "Democracia",   icono: "🗳️", periodo: "monarquia", fila: 4, costo: 100, desc: "El pueblo quiere elegir a sus gobernantes. Te permite proclamar la República.",
-                 requiere: ["hierro", "construccion", "senado"] },
+                 requiere: ["hierro", "senado"] },
 
   // ===== República =====
   // Primeros cónsules
