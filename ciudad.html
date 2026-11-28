@@ -70,6 +70,7 @@
 
       <details class="caja">
         <summary>¿Cómo se juega?</summary>
+        <button data-accion="tutorial" class="claro">🎓 Ver el tutorial</button>
         <ul class="reglas">
           <li>Sos el <b>rey de Roma</b>. Empezás solo con tu palacio (👑) y un puñado de habitantes.</li>
           <li><b>Construí</b> en los terrenos vacíos: granjas para comer, aserraderos para madera, casas para que llegue más gente.</li>
@@ -98,12 +99,14 @@
     </aside>
   </main>
 
+  <div id="tutorial" class="oculto"></div>
+
   <div id="modal" class="oculto">
     <div class="cartel-caja" id="modal-caja"></div>
   </div>
 
   <script>
-    for (const f of ["data/mapa-mundo.js", "data/ciudad.js", "js/ciudad-reglas.js", "js/ciudad.js"]) document.write(`<script src="${f}?v=${Date.now()}"><\/script>`);
+    for (const f of ["data/mapa-mundo.js", "data/ciudad.js", "data/tutorial.js", "js/ciudad-reglas.js", "js/tutorial.js", "js/ciudad.js"]) document.write(`<script src="${f}?v=${Date.now()}"><\/script>`);
   </script>
 </body>
 </html>

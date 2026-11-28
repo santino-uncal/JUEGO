@@ -1513,6 +1513,7 @@ document.addEventListener("click", (ev) => {
     }
     case "cerrar": cerrarModal(); return;
     case "nueva": empezarDeNuevo(); return;
+    case "tutorial": abrirTutorial(); return;
     case "seguir": seguirJugando(); cerrarModal(); break;
     case "guardar-y-nueva":
       if (estado.resultado === "victoria") seguirJugando();
@@ -1644,6 +1645,7 @@ function empezarDeNuevo() {
   cerrarModal();
   guardar();
   dibujarTodo();
+  abrirTutorial();   // cada partida nueva arranca con el tutorial (se puede saltear)
 }
 
 // ---------- Arranque ----------
