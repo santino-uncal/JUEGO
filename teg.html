@@ -56,6 +56,7 @@
 
       <details class="caja">
         <summary>¿Cómo se juega?</summary>
+        <button id="btn-tutorial" class="claro">🎓 Ver el tutorial</button>
         <ul class="reglas">
           <li><b>Solo:</b> sos <b style="color:#c0392b">Roma</b>. Ganás si conquistás todas las provincias. Perdés si cae Roma.</li>
           <li><b>Con amigos:</b> cada uno elige un pueblo y juegan por turnos. Los pueblos que nadie eligió los maneja la computadora. Quedás afuera si perdés todas tus provincias; gana el último que queda.</li>
@@ -114,6 +115,8 @@
     </div>
   </div>
 
+  <div id="tutorial" class="oculto"></div>
+
   <div id="cartel" class="oculto">
     <div class="cartel-caja">
       <h2 id="cartel-titulo"></h2>
@@ -125,7 +128,7 @@
   <!-- PeerJS: conecta los navegadores entre sí para jugar con amigos -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script>
-    for (const f of ["data/provincias.js", "js/red.js", "js/juego.js"]) document.write(`<script src="${f}?v=${Date.now()}"><\/script>`);
+    for (const f of ["data/provincias.js", "data/tutorial-teg.js", "js/red.js", "js/tutorial.js", "js/juego.js"]) document.write(`<script src="${f}?v=${Date.now()}"><\/script>`);
   </script>
 </body>
 </html>

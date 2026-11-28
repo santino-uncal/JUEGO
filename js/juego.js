@@ -531,7 +531,8 @@ function empezarSolo(nueva) {
   miFaccion = "roma";
   finVisto = false;
   estado = nueva ? null : cargarSolo();
-  if (!estado || estado.fin) {
+  const empieza = !estado || estado.fin;   // ¿arranca una partida nueva?
+  if (empieza) {
     estado = partidaNueva([{ faccion: "roma", nombre: "Vos", conectado: true }]);
     anotar("Año 264 a.C. El Senado te encarga expandir la República. ¡Conquistá el Mediterráneo!", "turno");
   }
@@ -540,6 +541,22 @@ function empezarSolo(nueva) {
   mostrarPantalla("juego");
   guardar();
   actualizarTodo();
+  if (empieza) tutorialTEG();   // cada partida nueva arranca con el tutorial (se puede saltear)
+}
+
+// Tutorial (los textos están en data/tutorial-teg.js). Algunos pasos son solo para jugar solo o con amigos.
+// En los pasos de mover y reclutar se elige tu capital para que se vean esos botones.
+function tutorialTEG() {
+  const conAmigos = multi();
+  const pasos = PASOS_TUTORIAL_TEG.filter((p) => (conAmigos ? !p.solo : !p.conAmigos));
+  abrirTutorial(pasos, {
+    alPaso: (paso) => {
+      const mias = provinciasDe(miFaccion);
+      seleccion = paso.elegir && mias.length ? (mias.includes(CAPITAL[miFaccion]) ? CAPITAL[miFaccion] : mias[0]) : null;
+      actualizarTodo();
+    },
+    alCerrar: () => { seleccion = null; actualizarTodo(); },
+  });
 }
 
 // ---------- Pantallas: inicio, sala de espera y juego ----------
@@ -696,6 +713,7 @@ function empezarOnline() {
   ultimoGolpe = 0;
   mostrarPantalla("juego");
   despuesDeCambio();
+  tutorialTEG();
 }
 
 // ----- Invitado -----
@@ -737,6 +755,8 @@ function mensajeDelAnfitrion(msg) {
     if (primera) { ultimoGolpe = estado.golpes.n; sala = null; mostrarPantalla("juego"); }
     if (seleccion && !esMiTurno()) seleccion = null;
     actualizarTodo();
+    // (si entra cuando la partida recién empieza; si vuelve a entrar más tarde, no)
+    if (primera && estado.turno === 1) tutorialTEG();
   }
 }
 
@@ -803,6 +823,7 @@ $("btn-unirse").addEventListener("click", unirse);
 $("codigo-unirse").addEventListener("keydown", (e) => { if (e.key === "Enter") unirse(); });
 $("btn-empezar").addEventListener("click", empezarOnline);
 $("btn-reconectar").addEventListener("click", () => location.reload());
+$("btn-tutorial").addEventListener("click", () => { if (estado) tutorialTEG(); });
 
 dibujarMapa();
 prepararInicio();

@@ -1,9 +1,9 @@
-// Tutorial de Rey de Roma: los carteles que aparecen al empezar cada partida.
+// Tutorial de Rey de Roma: los carteles que aparecen al empezar cada partida (los muestra js/tutorial.js).
 // Cada paso puede:
 //   resaltar: qué parte de la pantalla se marca (un selector CSS, por ejemplo "#recursos")
 //   vista:    qué se muestra a la izquierda ("ciudad", "mapa" o "arbol")
 //   pestania: qué pestaña del panel se abre ("construir", "acciones", "ejercito" o "vecinos")
-const PASOS_TUTORIAL = [
+const PASOS_TUTORIAL_CIUDAD = [
   {
     titulo: "👑 ¡Bienvenido, rey de Roma!",
     texto: "Es el año 753 a.C. Rómulo te deja una colina y un puñado de gente. Tu misión: hacer crecer Roma hasta dominar el Mediterráneo. Te muestro lo básico en unos pocos pasos.",

@@ -1513,7 +1513,7 @@ document.addEventListener("click", (ev) => {
     }
     case "cerrar": cerrarModal(); return;
     case "nueva": empezarDeNuevo(); return;
-    case "tutorial": abrirTutorial(); return;
+    case "tutorial": tutorialCiudad(); return;
     case "seguir": seguirJugando(); cerrarModal(); break;
     case "guardar-y-nueva":
       if (estado.resultado === "victoria") seguirJugando();
@@ -1635,6 +1635,18 @@ function borrarGuardada(i) {
   guardarLista(lista);
 }
 
+// Tutorial (los textos están en data/tutorial-ciudad.js): cada paso puede cambiar la vista o la pestaña
+function tutorialCiudad() {
+  abrirTutorial(PASOS_TUTORIAL_CIUDAD, {
+    alPaso: (paso) => {
+      if (paso.vista) cambiarVista(paso.vista);
+      if (paso.pestania) { pestania = paso.pestania; dibujarPanel(); }
+    },
+    // Al terminar queda todo como al empezar: la ciudad y la pestaña Construir
+    alCerrar: () => { cambiarVista("ciudad"); pestania = "construir"; dibujarPanel(); },
+  });
+}
+
 function empezarDeNuevo() {
   estado = partidaNueva();
   camara = null;
@@ -1645,7 +1657,7 @@ function empezarDeNuevo() {
   cerrarModal();
   guardar();
   dibujarTodo();
-  abrirTutorial();   // cada partida nueva arranca con el tutorial (se puede saltear)
+  tutorialCiudad();   // cada partida nueva arranca con el tutorial (se puede saltear)
 }
 
 // ---------- Arranque ----------
