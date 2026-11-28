@@ -203,8 +203,8 @@ function dibujarPanel() {
   if (b && buscando) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
 }
 
-// Filtro (todos / disponibles) y texto del buscador de las pestañas Construir, Acciones y Ejército
-const filtros = { construir: { ver: "todos", texto: "" }, acciones: { ver: "todos", texto: "" }, ejercito: { ver: "todos", texto: "" } };
+// Filtro (todos / disponibles) y texto del buscador de las pestañas Construir, Acciones, Ejército y Vecinos
+const filtros = { construir: { ver: "todos", texto: "" }, acciones: { ver: "todos", texto: "" }, ejercito: { ver: "todos", texto: "" }, vecinos: { ver: "todos", texto: "" } };
 
 // Saca tildes y mayúsculas para que "construccion" encuentre "Construcción"
 const normalizar = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -386,9 +386,10 @@ function panelVecinos() {
   html += `<p class="ayuda">Cada pueblo tiene su territorio en el 🗺️ Mapa. Declarale la guerra y después tocá en el mapa una zona suya pegada a la tuya para atacarla. Si tomás su capital, se rinde entero. Cada pueblo tiene además otras ciudades: si le tomás más de la mitad, firmar la paz te sale mucho más barato. Las ciudades 🛡️ independientes no son de ningún pueblo y nunca atacan primero.</p>`;
   const conocidos = Object.keys(ENEMIGOS).filter(descubierto);
   const ocultos = Object.keys(ENEMIGOS).length - conocidos.length;
-  html += `<div class="lista">${conocidos.map(tarjetaEnemigo).join("")}`;
+  html += `${barraFiltro("Buscar pueblo o ciudad…")}<div class="lista" data-filtrable>
+    <p class="ayuda sin-resultados oculto">No hay nada que coincida.</p>${conocidos.map(tarjetaEnemigo).join("")}`;
   if (ocultos) {
-    html += `<div class="item bloqueado"><div class="item-icono">❓</div><div class="item-texto">
+    html += `<div class="item bloqueado" data-ok="0" data-busca="sin descubrir pueblos"><div class="item-icono">❓</div><div class="item-texto">
       <b>${ocultos} pueblo${ocultos > 1 ? "s" : ""} sin descubrir</b><br>
       <small>Abrí el 🗺️ Mapa y mandá exploradores para encontrarlos.</small></div></div>`;
   }
@@ -412,11 +413,13 @@ function textoPaz(id) {
 function tarjetaEnemigo(id) {
   const d = ENEMIGOS[id];
   const e = estado.enemigos[id];
+  // Texto para el buscador: nombre, ciudades y descripción
+  const busca = `data-busca="${escaparAtributo(normalizar([d.nombre, d.ciudad, ...(d.independiente ? [] : ciudadesExtra(id).map((c) => c.nombre)), d.desc].join(" ")))}"`;
   const muestra = `<span class="muestra" style="background:${d.color}"></span>`;
   if (!e.vivo) {
     const trib = Object.entries(d.tributo).map(([r, v]) => `+${v} ${RECURSOS[r].icono}`).join(" ");
     const col = coloniaEn(d.x, d.y);
-    return `<div class="item hecha"><div class="item-icono">🦅</div><div class="item-texto"><b>${d.nombre}</b> – conquistados<br><small>Te pagan ${trib} por año.</small></div>
+    return `<div class="item hecha" data-ok="0" ${busca}><div class="item-icono">🦅</div><div class="item-texto"><b>${d.nombre}</b> – conquistados<br><small>Te pagan ${trib} por año.</small></div>
       ${col ? `<button data-accion="ver-ciudad" data-ciudad="${col}">🏛️ Ver ${d.ciudad}</button>` : ""}</div>`;
   }
   let estadoTexto;
@@ -430,8 +433,10 @@ function tarjetaEnemigo(id) {
   const boton = e.guerra
     ? `<div class="botones-pueblo"><button data-accion="ver-mapa" data-enemigo="${id}">🗺️ Ver</button>${botonPaz(id)}</div>`
     : `<button data-accion="guerra" data-enemigo="${id}" ${estado.terminado || !pd.ok ? "disabled" : ""} ${pd.ok ? "" : `title="${pd.motivo}"`}>⚔️ Declarar guerra</button>`;
+  // "Disponible" = estás en guerra con él o le podés declarar la guerra
+  const ok = !estado.terminado && (e.guerra || pd.ok);
   return `
-    <div class="item">
+    <div class="item" data-ok="${ok ? 1 : 0}" ${busca}>
       <div class="item-icono">${d.icono}</div>
       <div class="item-texto">
         <b>${muestra} ${d.nombre}</b> <small>· ${d.independiente ? `🛡️ ciudad independiente: ${d.ciudad}` : `capital: ${d.ciudad}`} · ${zonasDe(id)} zonas</small><br>
